@@ -41,6 +41,10 @@ All documentation is in [docs/](docs/README.md). Start with:
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first: this project is documentation-driven, so every feature starts with a written spec.
 
+## Security
+
+To report a vulnerability, use GitHub's private reporting as described in [SECURITY.md](SECURITY.md). Please do not open a public issue for it.
+
 ## License
 
 Frenchcore Machine is free software under the [GNU Affero General Public License v3.0](LICENSE). Sounds you make with it are yours, with no restrictions.
