@@ -60,6 +60,17 @@ plugin ──► ui ──► core ──► dsp
 - `fcm_dsp` depends only on the standard library and `juce_audio_basics` / `juce_dsp`. It knows nothing about parameters, presets or UI.
 - `fcm_core` owns the parameter layout, the state tree and serialization. It depends on `fcm_dsp` for type definitions (e.g. effect descriptors).
 - `fcm_ui` reads and writes state through `fcm_core`. It never touches DSP objects directly.
+
+How this is built: the four libraries are CMake `INTERFACE` libraries that carry their sources and include paths. Each final binary (the plugin, each test executable) compiles them together with the JUCE modules it links, because JUCE modules must be linked `PRIVATE` by the final target and must not be compiled twice into one binary. The `fcm_dsp` boundary is enforced by the `fcm_dsp_tests` executable, which links only `juce_dsp`: a dsp file that includes UI, APVTS or plugin headers fails to build there.
+
+### Third-party dependencies
+
+| Dependency | Version | Licence | Used for |
+|---|---|---|---|
+| JUCE | 9.0.3 | AGPLv3 (or commercial) | Framework, plugin wrappers, UI, DSP helpers |
+| Catch2 | 3.16.1 | BSL-1.0 | Unit tests (not shipped) |
+| CPM.cmake | 0.43.2 (vendored in `cmake/`) | MIT | Dependency fetching at configure time |
+| pluginval | 1.0.4 | GPLv3 | Plugin validation in CI only (not shipped, not linked) |
 - `plugin` wires everything together and is the only place that knows about the host.
 
 ## 4. Signal flow

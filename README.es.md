@@ -6,7 +6,7 @@ Un sintetizador wavetable en formato plugin con un solo objetivo: hacer kicks de
 
 Frenchcore Machine está a mitad de camino entre arrastrar un sample y construir un kick desde cero en un synth completo. Trae dos osciladores wavetable, una envolvente que ya tiene la forma clásica de kick + bass, una capa de click (el "tock") y una cadena de efectos reordenable con lo que un kick de frenchcore realmente necesita. Pensalo como un Serum o un Vital muy simplificado, enfocado en kicks.
 
-> **Estado:** desarrollo inicial. Todavía no hay nada usable. El avance está en el [plan](docs/PLAN.md) (en inglés).
+> **Estado:** desarrollo inicial. El plugin compila y carga, pero todavía no suena. El avance está en el [plan](docs/PLAN.md) (en inglés).
 
 ## Funciones (previstas para v0.1.0)
 

@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUILD_TYPE: Release
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
+  PLUGINVAL_VERSION: v1.0.4
+
+jobs:
+  format:
+    name: Format check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check clang-format
+        run: |
+          files=$(git ls-files 'src/*.h' 'src/*.cpp' 'tests/*.h' 'tests/*.cpp')
+          clang-format --version
+          clang-format --dry-run --Werror $files
+
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-24.04
+            pluginval: pluginval_Linux.zip
+            pluginval-bin: ./pluginval
+          - name: macOS
+            os: macos-14
+            pluginval: pluginval_macOS.zip
+            pluginval-bin: ./pluginval.app/Contents/MacOS/pluginval
+            extra-cmake-args: '"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13'
+          - name: Windows
+            os: windows-latest
+            pluginval: pluginval_Windows.zip
+            pluginval-bin: ./pluginval.exe
+            extra-cmake-args: -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build xvfb \
+            libasound2-dev libjack-jackd2-dev libfreetype-dev libfontconfig1-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+            libxrandr-dev libxrender-dev libxi-dev libglu1-mesa-dev mesa-common-dev
+
+      - name: Install Ninja (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Set up MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: .cpm-cache
+          key: cpm-${{ runner.os }}-${{ hashFiles('cmake/Dependencies.cmake') }}
+
+      - name: Configure
+        shell: bash
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${{ matrix.extra-cmake-args }}
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --parallel
+
+      - name: Unit tests
+        shell: bash
+        run: ctest --test-dir build --output-on-failure
+
+      - name: pluginval (VST3)
+        shell: bash
+        run: |
+          curl -sSfL -o pluginval.zip "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/${{ matrix.pluginval }}"
+          unzip -q pluginval.zip
+          plugin="build/src/plugin/FrenchcoreMachine_artefacts/${BUILD_TYPE}/VST3/Frenchcore Machine.vst3"
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a ${{ matrix.pluginval-bin }} --strictness-level 10 --skip-gui-tests --validate "$plugin"
+          else
+            ${{ matrix.pluginval-bin }} --strictness-level 10 --skip-gui-tests --validate "$plugin"
+          fi
+
+      - name: Upload plugins
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrenchcoreMachine-${{ matrix.name }}
+          path: |
+            build/src/plugin/FrenchcoreMachine_artefacts/${{ env.BUILD_TYPE }}/VST3
+            build/src/plugin/FrenchcoreMachine_artefacts/${{ env.BUILD_TYPE }}/AU
+            build/src/plugin/FrenchcoreMachine_artefacts/${{ env.BUILD_TYPE }}/Standalone
+          if-no-files-found: error
