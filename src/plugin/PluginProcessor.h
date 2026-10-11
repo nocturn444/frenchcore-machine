@@ -69,6 +69,8 @@ class PluginProcessor : public juce::AudioProcessor
     // in the background; on success the oscillator switches to the User entry, otherwise the
     // reason is kept in wavetableMessage(). Both announce through wavetableChanged.
     void loadUserWavetable(int oscillator, const juce::File& file);
+    // The same for the Tock's user sample (docs/specs/tock.md §4.1); the message is shared.
+    void loadUserTockSample(const juce::File& file);
     const juce::String& wavetableMessage() const noexcept { return lastWavetableMessage; }
     juce::ChangeBroadcaster& wavetableChanged() noexcept { return wavetableBroadcaster; }
 

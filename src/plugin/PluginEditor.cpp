@@ -22,7 +22,8 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
       wavetablePanel(
           owner.getState(), owner.selectorFor(0), owner.selectorFor(1),
           [&owner](int oscillator, const juce::File& file) { owner.loadUserWavetable(oscillator, file); },
-          owner.wavetableChanged(), [&owner] { return owner.wavetableMessage(); }),
+          [&owner](const juce::File& file) { owner.loadUserTockSample(file); }, owner.wavetableChanged(),
+          [&owner] { return owner.wavetableMessage(); }),
       ampPanel(
           owner.getAmpEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
           ui::EnvelopePanel::ampConfig(owner.getState())),

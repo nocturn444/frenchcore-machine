@@ -10,7 +10,7 @@ The **Tock** is a very short click or knock played at the start of every kick, o
 
 - **On**: the Tock is off by default, so the kick sounds as it did before.
 - **Mode**: **Synth** makes the click from scratch (a short tone burst plus a burst of noise); **Sample** plays a short recorded-style sound chosen in **Sample**.
-- **Sample**: four built-in tock sounds, in menu order (the order never changes, new ones are only added at the end): **Click** (a dry, tiny click), **Knock** (a short low thud, a wooden knock), **Snap** (a quick burst of noisy snap) and **Tick** (a short bright tick). A **User** entry for your own sample comes in a later part.
+- **Sample**: four built-in tock sounds, in menu order (the order never changes, new ones are only added at the end): **Click** (a dry, tiny click), **Knock** (a short low thud, a wooden knock), **Snap** (a quick burst of noisy snap) and **Tick** (a short bright tick). A fifth entry, **User**, plays a sample you load yourself (below).
 - **Level**: how loud the Tock is, from silent to +12 dB. Default -12 dB.
 - **Tune**: pitch of the Tock in semitones. In Synth mode it moves the tone of the click; in Sample mode it plays the sample faster or slower (and so higher or lower). Default 0.
 - **Start**: delay between the note and the Tock, 0 to 20 milliseconds. Default 0. A small delay puts the click just after the first bit of the pitch drop.
@@ -18,6 +18,16 @@ The **Tock** is a very short click or knock played at the start of every kick, o
 - **Tone**: darkens or brightens it. At 0 the Tock is dull (a low-pass at 200 Hz), at 1 it is open (20 kHz). Default 0.7.
 
 The Tock is part of the kick: it follows the velocity, the Punch/Tail gain and the amp envelope like the oscillators do (it is added before the amp envelope), so releasing the key and retriggering behave the same for it. **Start, Tune, Decay, Tone, Mode and Sample are read when the note starts**, so changing them affects the next kick, not the one that is sounding. Level and On change smoothly at once.
+
+### Your own tock sample
+
+A **Load Tock Sample...** button (next to the wavetable buttons) opens a WAV file. If it is usable, **Tock Sample** switches to the **User** entry and the Tock plays it in Sample mode.
+
+- Any WAV works as long as it is short: **at most 2 seconds** and 384000 samples, **at least 16 samples**, at any sample rate from 8 kHz to 192 kHz (it plays at the right pitch whatever the rate). Only the first channel is used.
+- It is centred (no DC offset), scaled so its loudest point is full scale, and given a 2 ms fade-out at the end so it never ends with a click.
+- An unusable file is refused with a short message under the buttons ("Not a WAV file", "Too long: at most 2 seconds", "The file contains invalid samples", "The file is silent", ...) and the Tock keeps what it had.
+- The sample is **saved inside the project** (name and audio; never the file path), like a user wavetable.
+- Choosing **User** with nothing loaded uses the first built-in sample (Click).
 
 ## 2. User interface
 
@@ -29,7 +39,7 @@ The generic panel gets a fourth column, **Tock**, with the eight controls. The r
 |---|---|---|---|---|---|---|---|
 | `tock.on` | Tock On | off / on | off | | | at note-on | yes |
 | `tock.mode` | Tock Mode | Synth / Sample | Synth | | | at note-on | yes |
-| `tock.sample` | Tock Sample | choice: Click, Knock, Snap, Tick | Click | | | at note-on | yes |
+| `tock.sample` | Tock Sample | choice: Click, Knock, Snap, Tick, User | Click | | | at note-on | yes |
 | `tock.level` | Tock Level | -48 to +12, step 0.1 (-48 is silence) | -12 | dB | linear | yes (10 ms) | yes |
 | `tock.tune` | Tock Tune | -24 to +24 (integer) | 0 | semitones | | at note-on | yes |
 | `tock.start` | Tock Start | 0 to 20, step 0.1 | 0 | ms | linear | at note-on | yes |
@@ -50,6 +60,12 @@ The Sample and Mode lists are append-only (the saved value is the entry number).
 - Parameters travel in `EngineParameters` (`TockParameters`) like the others; `EngineParameterReader` converts them and falls back to the defaults for any value that is not finite.
 - Real-time: nothing allocates, locks or waits; the noise generator and the filter are plain state.
 
+### 4.1 User sample
+
+- `core::importTockSample` turns WAV bytes into a `TockSample` or a message. Order of checks: size at most 32 MiB; JUCE's WAV reader opens it; 1 to 8 channels; declared length from 16 samples to 384000 and at most 2 seconds at the file's own rate; sample rate 8000 to 192000; only the first channel is read; every sample finite; then centred, scaled to peak 1, silent files refused, a 2 ms fade-out applied.
+- Loading runs on the same one-thread loader as wavetables, off the audio and message threads, and the result is published on the message thread by `TockSelector::loadUser`.
+- Saved as a node `UserTockSample` with `name`, `sampleRate` and `samples` (base64 float32). Restoring is untrusted input: at most 2,100,000 characters of text, whole floats, at most 384000 samples, finite, magnitude at most 4, sample rate 8000 to 192000; anything else leaves no user sample.
+
 ## 5. Tests
 
 Catch2:
@@ -61,11 +77,13 @@ Catch2:
 - `TockSelector`: initial sample published; parameter change publishes the new one; an unusable saved value picks a valid one; the list order is guarded.
 - Parameters: the new IDs are in the released-ID guard and have the documented defaults and ranges.
 
+- User sample: valid 16-bit and float files are accepted (sample rate and length kept), only the first channel is used, centring, peak 1 and the 2 ms fade; every refusal (not a WAV, truncated, huge declared length, too long, too short, bad sample rate, NaN or infinity, silent, over the byte limit); 3000 randomly damaged files never crash; the selector loads, plays, saves and restores bit for bit and refuses every bad node; the User entry with nothing loaded uses the first sample; the Sample parameter list now ends with User.
+
 Manual check (Standalone): turn Tock on and listen to the four samples and the Synth mode with auto-play running.
 
 ## 6. Out of scope
 
-- Loading your own tock sample (next part of Phase 4).
+- Several user samples at once, a folder browser, other formats than WAV.
 - A tock panel with a waveform display, a "choke" or envelope shape for the tock, stereo tocks.
 - Per-note variation (random pitch or start).
 

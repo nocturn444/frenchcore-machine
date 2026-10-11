@@ -149,6 +149,7 @@ void addTockParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layo
     juce::StringArray sampleNames;
     for (int i = 0; i < dsp::FactoryTocks::count(); ++i)
         sampleNames.add(dsp::FactoryTocks::name(i));
+    sampleNames.add("User"); // the sample the user loaded; see TockSelector::userEntry()
     layout.add(std::make_unique<juce::AudioParameterChoice>(id(ParameterIds::kTockSample), "Tock Sample",
                                                             sampleNames, 0));
 

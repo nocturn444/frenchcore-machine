@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Load your own Tock sample from a WAV (up to 2 seconds, any sample rate from 8 to 192 kHz), saved inside the project; unusable files are refused with a message.
 - The Tock, an optional click layer at the start of every kick: Synth mode (a generated click) or Sample mode with four built-in tock sounds (Click, Knock, Snap, Tick), with Level, Tune, Start, Decay and Tone. Off by default. See `docs/specs/tock.md`.
 - A wavetable display for each oscillator: the name, a faint stack of the waveforms and the waveform at the current Position, live. See `docs/specs/wavetable-display.md`.
 - Load your own wavetable from a WAV file (whole 2048-sample frames up to 256, or a single cycle) onto each oscillator, with clear refusal messages for unusable files. The wavetable is saved inside the project; only its name is kept, never the path. See `docs/specs/wavetable-user.md`.

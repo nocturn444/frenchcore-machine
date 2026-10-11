@@ -84,7 +84,17 @@ The Tock is a very short click or knock played at the start of every kick, on to
 | **Tock Decay** | How fast it fades out, 2 to 200 ms (the time to fall by 60 dB). |
 | **Tock Tone** | Dull to bright: at 0 the Tock is dark, at 1 it is wide open. |
 
-The Tock follows the velocity, the Punch/Tail balance and the amp envelope like the rest of the kick. Start, Tune, Decay, Tone, Mode and Sample are read when a note starts, so changing them affects the next kick; Level changes at once. If the Tock sounds too soft, raise Start a little or shorten the amp envelope's attack, because the amp envelope also shapes the Tock. Loading your own tock sample comes in a later version.
+The Tock follows the velocity, the Punch/Tail balance and the amp envelope like the rest of the kick. Start, Tune, Decay, Tone, Mode and Sample are read when a note starts, so changing them affects the next kick; Level changes at once. If the Tock sounds too soft, raise Start a little or shorten the amp envelope's attack, because the amp envelope also shapes the Tock. 
+
+### Your own tock sample
+
+The **Load Tock Sample...** button (at the bottom left of the wavetable area) opens a WAV file. If it is usable, **Tock Sample** switches to its **User** entry and the Tock plays it in Sample mode (remember to switch Tock Mode to Sample).
+
+- The file must be short: at most 2 seconds, at any sample rate from 8 kHz to 192 kHz. Only the first channel is used.
+- It is centred, scaled to full scale and given a 2 ms fade-out at the end, so it never ends with a click.
+- An unusable file is refused with a message in the line next to the button, and the Tock keeps what it had.
+- The sample is saved inside your project; only its name is kept, not the folder.
+- Choosing **User** with nothing loaded plays the first built-in sample (Click).
 
 ## Punch / Tail balance
 

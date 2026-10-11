@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "core/TockImport.h"
 #include "core/WavetableImport.h"
 
 #include <atomic>
@@ -12,9 +13,9 @@
 namespace fcm::core
 {
 
-// Reads and decodes a wavetable file on a background thread and hands the result to the message
-// thread (docs/specs/wavetable-user.md §4). A file bigger than the limit is never read. If the
-// loader is destroyed while a job is pending, the result is dropped instead of delivered.
+// Reads and decodes a wavetable (or Tock sample) file on a background thread and hands the result to the
+// message thread (docs/specs/wavetable-user.md §4). A file bigger than the limit is never read. If the loader
+// is destroyed while a job is pending, the result is dropped instead of delivered.
 class WavetableLoader
 {
   public:
@@ -25,6 +26,10 @@ class WavetableLoader
 
     // Message thread. `done` is called later on the message thread, once per call.
     void load(const juce::File& file, Callback done);
+
+    // The same for a Tock sample (docs/specs/tock.md §4.1), on the same background thread.
+    using TockCallback = std::function<void(TockImportResult result, juce::String fileName)>;
+    void loadTock(const juce::File& file, TockCallback done);
 
   private:
     juce::ThreadPool pool{1};

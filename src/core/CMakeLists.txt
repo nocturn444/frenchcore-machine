@@ -7,6 +7,7 @@ target_sources(fcm_core INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/ParameterLayout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/StateLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/StateMigrations.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/TockImport.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/TockSelector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/WavetableImport.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/WavetableLoader.cpp

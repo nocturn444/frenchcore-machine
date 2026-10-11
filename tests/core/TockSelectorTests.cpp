@@ -28,9 +28,11 @@ TEST_CASE("The Tock parameters are choices that list the factory samples in orde
     auto* sample = dynamic_cast<juce::AudioParameterChoice*>(
         processor.state.getParameter(fcm::core::ParameterIds::kTockSample));
     REQUIRE(sample != nullptr);
-    REQUIRE(sample->choices.size() == FactoryTocks::count());
+    // The factory samples in order, then the user sample entry.
+    REQUIRE(sample->choices.size() == FactoryTocks::count() + 1);
     for (int i = 0; i < FactoryTocks::count(); ++i)
         REQUIRE(sample->choices[i].toStdString() == FactoryTocks::name(i));
+    REQUIRE(sample->choices[FactoryTocks::count()].toStdString() == "User");
 
     auto* mode = dynamic_cast<juce::AudioParameterChoice*>(
         processor.state.getParameter(fcm::core::ParameterIds::kTockMode));
@@ -70,7 +72,7 @@ TEST_CASE("An unusable Tock sample value selects a valid sample", "[core][tock]"
         raw->store(bad);
         selector.update();
         REQUIRE(selector.currentEntry() >= 0);
-        REQUIRE(selector.currentEntry() < FactoryTocks::count());
+        REQUIRE(selector.currentEntry() <= TockSelector::userEntry());
         REQUIRE(selector.source().acquire() != nullptr);
     }
 }

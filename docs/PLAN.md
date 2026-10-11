@@ -77,7 +77,7 @@ Done when:
 - [x] User wavetable loading (background thread, validation, error messages; [spec](specs/wavetable-user.md))
 - [x] Wavetable embedded in plugin state
 - [x] Wavetable display with position indicator ([spec](specs/wavetable-display.md))
-- [~] Tock: synth mode and sample mode (factory samples done, [spec](specs/tock.md); user samples next)
+- [x] Tock: synth mode and sample mode (factory and user samples, [spec](specs/tock.md))
 
 ## Phase 5: FX system
 

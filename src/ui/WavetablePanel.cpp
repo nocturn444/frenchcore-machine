@@ -9,8 +9,10 @@ namespace fcm::ui
 WavetablePanel::WavetablePanel(juce::AudioProcessorValueTreeState& state, core::WavetableSelector& selector1,
                                core::WavetableSelector& selector2,
                                std::function<void(int, const juce::File&)> onLoad,
+                               std::function<void(const juce::File&)> onLoadTock,
                                juce::ChangeBroadcaster& changes, std::function<juce::String()> message)
-    : loadRequested(std::move(onLoad)), broadcaster(changes), currentMessage(std::move(message)),
+    : loadRequested(std::move(onLoad)), tockLoadRequested(std::move(onLoadTock)), broadcaster(changes),
+      currentMessage(std::move(message)),
       display1(selector1, *state.getParameter(
                               core::ParameterIds::oscillator(0, core::ParameterIds::Oscillator::kPosition))),
       display2(selector2, *state.getParameter(
@@ -20,6 +22,8 @@ WavetablePanel::WavetablePanel(juce::AudioProcessorValueTreeState& state, core::
     addAndMakeVisible(display2);
     osc1Button.onClick = [this] { choose(0); };
     osc2Button.onClick = [this] { choose(1); };
+    tockButton.onClick = [this] { chooseTock(); };
+    addAndMakeVisible(tockButton);
     addAndMakeVisible(osc1Button);
     addAndMakeVisible(osc2Button);
 
@@ -48,6 +52,18 @@ void WavetablePanel::choose(int oscillator)
                          });
 }
 
+void WavetablePanel::chooseTock()
+{
+    chooser = std::make_unique<juce::FileChooser>("Choose a Tock sample (WAV)", juce::File{}, "*.wav");
+    chooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                         [this](const juce::FileChooser& finished)
+                         {
+                             const auto file = finished.getResult();
+                             if (file != juce::File{})
+                                 tockLoadRequested(file);
+                         });
+}
+
 void WavetablePanel::changeListenerCallback(juce::ChangeBroadcaster*)
 {
     messageLabel.setText(currentMessage ? currentMessage() : juce::String(), juce::dontSendNotification);
@@ -61,7 +77,10 @@ void WavetablePanel::paint(juce::Graphics& g)
 void WavetablePanel::resized()
 {
     auto area = getLocalBounds().reduced(12, 6);
-    messageLabel.setBounds(area.removeFromBottom(22));
+    auto bottom = area.removeFromBottom(22);
+    tockButton.setBounds(bottom.removeFromLeft(std::min(190, bottom.getWidth() / 4)));
+    bottom.removeFromLeft(12);
+    messageLabel.setBounds(bottom);
     area.removeFromBottom(4);
 
     const int gap = 12;

@@ -159,6 +159,15 @@ void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
         }
     }
 
+    {
+        auto node = tockSelector.toValueTree();
+        if (node.isValid())
+        {
+            tree.removeChild(tree.getChildWithName(node.getType()), nullptr);
+            tree.appendChild(node, nullptr);
+        }
+    }
+
     if (auto xml = tree.createXml())
         copyXmlToBinary(*xml, destData);
 }
@@ -181,6 +190,7 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
         pitchEnvelope.restoreFrom(
             tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
 
+        tockSelector.restoreFrom(tree.getChildWithName("UserTockSample"));
         tockSelector.update();
 
         // User wavetables first, then the table of each current Wavetable value (the new parameter
@@ -216,6 +226,30 @@ void PluginProcessor::loadUserWavetable(int oscillator, const juce::File& file)
                     parameter->convertTo0to1(static_cast<float>(core::WavetableSelector::userEntry())));
                 selectorFor(oscillator).update();
                 lastWavetableMessage = label + "loaded " + selectorFor(oscillator).userName();
+            }
+            wavetableBroadcaster.sendChangeMessage();
+        });
+}
+
+void PluginProcessor::loadUserTockSample(const juce::File& file)
+{
+    wavetableLoader.loadTock(
+        file,
+        [this](core::TockImportResult result, juce::String name)
+        {
+            const juce::String label = "Tock: ";
+            if (!result.ok() || !tockSelector.loadUser(std::move(result.sample), name))
+            {
+                lastWavetableMessage =
+                    label + (result.error.isNotEmpty() ? result.error : "The file is not usable");
+            }
+            else
+            {
+                auto* parameter = state.getParameter(core::ParameterIds::kTockSample);
+                parameter->setValueNotifyingHost(
+                    parameter->convertTo0to1(static_cast<float>(core::TockSelector::userEntry())));
+                tockSelector.update();
+                lastWavetableMessage = label + "loaded " + tockSelector.userName();
             }
             wavetableBroadcaster.sendChangeMessage();
         });

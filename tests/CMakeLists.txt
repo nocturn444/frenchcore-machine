@@ -40,6 +40,7 @@ target_sources(fcm_core_tests PRIVATE
     core/BoundedMidiCopyTests.cpp
     core/StateLoaderTests.cpp
     core/TailLengthTests.cpp
+    core/TockImportTests.cpp
     core/TockSelectorTests.cpp
     core/WavetableImportTests.cpp
     core/WavetableSelectorTests.cpp
