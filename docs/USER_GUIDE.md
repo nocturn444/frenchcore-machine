@@ -187,6 +187,18 @@ The first effect. Switch it on with **Distortion On** (the Distortion column of 
 
 The clipping types are oversampled according to **Quality** to avoid harsh aliasing; Bitcrush is not, because its roughness is the point. Changing **Type** while a kick rings can click, so set it before you play. With effects in the plugin, your DAW is told about a small delay (a few samples at the default Quality) that it compensates; nothing shifts when you switch an effect on or off.
 
+### EQ
+
+A three-band equaliser to shape the kick after (or before) the distortion. Switch it on with **EQ On**.
+
+| Band | What it does |
+|---|---|
+| **Low** | A low shelf: boosts or cuts everything below its frequency (20 to 500 Hz). Adds or tames the sub weight. |
+| **Mid** | A bell: boosts or cuts a region around its frequency (60 Hz to 8 kHz). **Q** sets how narrow it is: a high Q is a thin notch, a low Q a wide sweep. |
+| **High** | A high shelf: boosts or cuts everything above its frequency (1 to 20 kHz). Adds click and air. |
+
+Each band has **Freq**, **Gain** (-18 to +18 dB; 0 does nothing) and **Q**. With every Gain at 0 the EQ changes nothing, and it adds no delay.
+
 - **Quality** (in the Global controls): how much the effects that make harmonics are oversampled (1x, 2x, 4x or 8x, default 2x). Higher is cleaner and uses more CPU. Changing it changes the small delay the plugin reports to your DAW.
 
 ## Presets

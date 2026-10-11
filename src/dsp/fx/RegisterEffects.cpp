@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "dsp/fx/EffectRegistry.h"
 #include "dsp/fx/distortion/DistortionEffect.h"
+#include "dsp/fx/eq/EqEffect.h"
 
 namespace fcm::dsp
 {
@@ -10,6 +11,7 @@ namespace fcm::dsp
 void registerEffects(EffectRegistry& registry)
 {
     registry.add<DistortionEffect>();
+    registry.add<EqEffect>();
 }
 
 } // namespace fcm::dsp

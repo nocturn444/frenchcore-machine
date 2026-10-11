@@ -9,6 +9,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/BreakpointEnvelopeTests.cpp
     dsp/EffectChainTests.cpp
     dsp/fx/DistortionTests.cpp
+    dsp/fx/EqTests.cpp
     dsp/fx/RegisteredEffectsTests.cpp
     dsp/EngineTests.cpp
     dsp/EnvelopeEngineTests.cpp

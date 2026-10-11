@@ -84,7 +84,7 @@ Done when:
 - [x] Spec + ADR: effect interface, registry, chain model ([spec](specs/fx-chain.md), ADR 0003 and 0009)
 - [x] `Effect` interface, `EffectRegistry`, `EffectChain` with lock-free reorder, with tests
 - [x] Distortion (5 types, oversampling; [spec](specs/fx-distortion.md))
-- [ ] 3-band EQ
+- [x] 3-band EQ ([spec](specs/fx-eq.md))
 - [ ] Multiband stereo
 - [ ] FX rack UI with drag-and-drop reordering, enable and mix per slot
 - [ ] `docs/ADDING_AN_EFFECT.md` validated by following it for one of the effects
