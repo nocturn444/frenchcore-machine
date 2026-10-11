@@ -35,6 +35,7 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
         "global.glideOn",
         "global.glideTime",
         "global.velocitySensitivity",
+        "global.quality",
         "ampEnv.timeScale",
         "pitchEnv.timeScale",
         "pitchEnv.amount",

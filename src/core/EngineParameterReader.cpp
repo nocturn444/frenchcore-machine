@@ -38,8 +38,9 @@ int toInt(const std::atomic<float>* value, int fallback) noexcept
 }
 } // namespace
 
-EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState& state)
-    : outputGain(lookup(state, ParameterIds::kOutputGain)),
+EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState& state,
+                                             const dsp::EffectRegistry& registry)
+    : quality(lookup(state, ParameterIds::kQuality)), outputGain(lookup(state, ParameterIds::kOutputGain)),
       limiterOn(lookup(state, ParameterIds::kLimiterOn)), keyTrack(lookup(state, ParameterIds::kKeyTrack)),
       rootNote(lookup(state, ParameterIds::kRootNote)), glideOn(lookup(state, ParameterIds::kGlideOn)),
       glideTime(lookup(state, ParameterIds::kGlideTime)),
@@ -55,6 +56,20 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
       punchSplit(lookup(state, ParameterIds::kPunchTailSplit)),
       punchLevel(lookup(state, ParameterIds::kPunchLevel)), tailLevel(lookup(state, ParameterIds::kTailLevel))
 {
+    for (int index = 0; index < registry.count(); ++index)
+    {
+        const auto& descriptor = *registry.descriptor(index);
+        EffectPointers pointers;
+        pointers.enabled = lookup(state, ParameterIds::effect(descriptor.id, ParameterIds::kEffectEnabled));
+        pointers.mix = lookup(state, ParameterIds::effect(descriptor.id, ParameterIds::kEffectMix));
+        for (const auto& spec : registry.parameters(index))
+        {
+            pointers.values.push_back(lookup(state, ParameterIds::effect(descriptor.id, spec.idSuffix)));
+            pointers.defaults.push_back(spec.defaultValue);
+        }
+        effects.push_back(std::move(pointers));
+    }
+
     namespace Osc = ParameterIds::Oscillator;
     for (int index = 0; index < dsp::kNumOscillators; ++index)
     {
@@ -99,6 +114,18 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.tock.startMs = finiteOr(tockStart, defaults.tock.startMs);
     result.tock.decayMs = finiteOr(tockDecay, defaults.tock.decayMs);
     result.tock.tone = finiteOr(tockTone, defaults.tock.tone);
+
+    // The FX chain: a value that is not a finite number becomes the effect's default.
+    for (size_t i = 0; i < effects.size() && i < result.effects.size(); ++i)
+    {
+        const auto& source = effects[i];
+        auto& target = result.effects[i];
+        target.enabled = toBool(source.enabled, false);
+        target.mix = juce::jlimit(0.0f, 1.0f, finiteOr(source.mix, 100.0f) * 0.01f);
+        for (size_t p = 0; p < source.values.size() && p < target.values.size(); ++p)
+            target.values[p] = finiteOr(source.values[p], source.defaults[p]);
+    }
+    result.oversamplingFactor = 1 << juce::jlimit(0, 3, toInt(quality, 1));
 
     for (size_t i = 0; i < oscillators.size(); ++i)
     {

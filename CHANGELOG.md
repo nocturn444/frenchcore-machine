@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- The FX chain machinery (no effect yet): the `Effect` interface, a registry where adding an effect is one line, and a reorderable chain that crossfades on/off, keeps timing constant and reports its latency to the host. Each effect will get an On switch (off by default) and a Mix control, there is a global **Quality** setting (oversampling 1x to 8x, default 2x) and the effect order is saved with the project. The plugin now processes two channels through the chain before the output gain and limiter; with no effect on the sound is unchanged. See `docs/specs/fx-chain.md` and ADR 0009.
 - Load your own Tock sample from a WAV (up to 2 seconds, any sample rate from 8 to 192 kHz), saved inside the project; unusable files are refused with a message.
 - The Tock, an optional click layer at the start of every kick: Synth mode (a generated click) or Sample mode with four built-in tock sounds (Click, Knock, Snap, Tick), with Level, Tune, Start, Decay and Tone. Off by default. See `docs/specs/tock.md`.
 - A wavetable display for each oscillator: the name, a faint stack of the waveforms and the waveform at the current Position, live. See `docs/specs/wavetable-display.md`.

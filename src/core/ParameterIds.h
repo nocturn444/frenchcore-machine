@@ -3,6 +3,7 @@
 
 #include <array>
 #include <string>
+#include <string_view>
 
 namespace fcm::core
 {
@@ -21,6 +22,12 @@ inline constexpr const char* kRootNote = "global.rootNote";
 inline constexpr const char* kGlideOn = "global.glideOn";
 inline constexpr const char* kGlideTime = "global.glideTime";
 inline constexpr const char* kVelocitySensitivity = "global.velocitySensitivity";
+inline constexpr const char* kQuality = "global.quality"; // oversampling: 1x, 2x, 4x, 8x
+
+// Every effect adds "<id>.enabled" and "<id>.mix"; its own parameters are "<id>.<suffix>"
+// (docs/specs/fx-chain.md). These are the suffixes of the two common ones.
+inline constexpr const char* kEffectEnabled = "enabled";
+inline constexpr const char* kEffectMix = "mix";
 
 // Envelope globals and Punch / Tail (docs/specs/envelope-breakpoint.md, voice-punch-tail.md).
 // The envelope shapes themselves are state, not parameters.
@@ -41,6 +48,12 @@ inline constexpr const char* kTockTune = "tock.tune";
 inline constexpr const char* kTockStart = "tock.start";
 inline constexpr const char* kTockDecay = "tock.decay";
 inline constexpr const char* kTockTone = "tock.tone";
+
+// "distortion.enabled" for ("distortion", kEffectEnabled).
+inline std::string effect(std::string_view effectId, std::string_view suffix)
+{
+    return std::string(effectId) + "." + std::string(suffix);
+}
 
 // The two oscillators are instances of the same class, so their parameters share these suffixes
 // behind the prefix "osc1." / "osc2." (docs/specs/oscillator-wavetable.md §3).

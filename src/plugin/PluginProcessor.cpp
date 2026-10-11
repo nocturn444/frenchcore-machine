@@ -6,6 +6,7 @@
 #include "core/ParameterLayout.h"
 #include "core/StateLoader.h"
 #include "core/TailLength.h"
+#include "dsp/fx/EffectRegistry.h"
 #include "plugin/PluginEditor.h"
 
 #include <cmath>
@@ -24,6 +25,7 @@ PluginProcessor::PluginProcessor()
       state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state)
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
+    state.addParameterListener(core::ParameterIds::kQuality, this);
     engine.setEnvelopeSources(&ampEnvelope.source(), &pitchEnvelope.source());
     engine.setWavetableSources(&wavetable1.source(), &wavetable2.source());
     engine.setTockSource(&tockSelector.source());
@@ -42,12 +44,35 @@ void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     engine.setParameters(readEngineParameters());
     engine.prepare({sampleRate, static_cast<juce::uint32>(samplesPerBlock),
                     static_cast<juce::uint32>(getTotalNumOutputChannels())});
+    reportLatency();
 
     if (isStandalone())
     {
         auditionSequencer.prepare(sampleRate);
         auditionMidi.ensureSize(core::kAuditionMidiBytes);
     }
+}
+
+PluginProcessor::~PluginProcessor()
+{
+    state.removeParameterListener(core::ParameterIds::kQuality, this);
+    cancelPendingUpdate();
+}
+
+void PluginProcessor::parameterChanged(const juce::String&, float)
+{
+    triggerAsyncUpdate();
+}
+
+void PluginProcessor::handleAsyncUpdate()
+{
+    reportLatency();
+}
+
+void PluginProcessor::reportLatency()
+{
+    // The latency of the chain depends only on Quality, never on what is switched on.
+    setLatencySamples(engine.latencySamples(parameterReader.read().oversamplingFactor));
 }
 
 void PluginProcessor::releaseResources() {}
@@ -159,6 +184,9 @@ void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
         }
     }
 
+    tree.removeChild(tree.getChildWithName(core::FxOrderState::nodeType()), nullptr);
+    tree.appendChild(fxOrder.toValueTree(), nullptr);
+
     {
         auto node = tockSelector.toValueTree();
         if (node.isValid())
@@ -190,6 +218,7 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
         pitchEnvelope.restoreFrom(
             tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
 
+        fxOrder.restoreFrom(tree.getChildWithName(core::FxOrderState::nodeType()));
         tockSelector.restoreFrom(tree.getChildWithName("UserTockSample"));
         tockSelector.update();
 

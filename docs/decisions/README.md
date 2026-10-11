@@ -12,5 +12,6 @@ Each file records one significant decision: the context, the decision and its co
 | [0006](0006-envelope-model-and-publishing.md) | Envelope model, and publishing shapes to the audio thread | Accepted |
 | [0007](0007-envelope-tempo-sync.md) | Envelope tempo sync stores times at a reference tempo | Accepted |
 | [0008](0008-wavetable-selection-and-publishing.md) | Wavetables are chosen by a parameter and published to each oscillator | Accepted |
+| [0009](0009-effect-parameters-and-chain-latency.md) | Effects describe their parameters as plain data, and the chain keeps a constant latency | Accepted |
 
 New ADRs copy [`_TEMPLATE.md`](_TEMPLATE.md) and take the next number.

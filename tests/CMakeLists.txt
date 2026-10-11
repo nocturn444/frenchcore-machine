@@ -6,6 +6,7 @@ juce_add_console_app(fcm_dsp_tests PRODUCT_NAME "fcm_dsp_tests")
 target_sources(fcm_dsp_tests PRIVATE
     dsp/AuditionTests.cpp
     dsp/BreakpointEnvelopeTests.cpp
+    dsp/EffectChainTests.cpp
     dsp/EngineTests.cpp
     dsp/EnvelopeEngineTests.cpp
     dsp/EnvelopeRendererTests.cpp
@@ -35,6 +36,7 @@ juce_add_console_app(fcm_core_tests PRODUCT_NAME "fcm_core_tests")
 target_sources(fcm_core_tests PRIVATE
     core/AuditionStateTests.cpp
     core/EnvelopeStateTests.cpp
+    core/FxCoreTests.cpp
     core/ParameterTests.cpp
     core/TempoStateTests.cpp
     core/BoundedMidiCopyTests.cpp

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "dsp/fx/Effect.h"
+
 #include <array>
 
 namespace fcm::dsp
@@ -57,6 +59,11 @@ struct EngineParameters
     float tailLevel = 1.0f;     // linear gain of the tail region, on top of the balance
 
     TockParameters tock;
+
+    // The FX chain (docs/specs/fx-chain.md): the state of every registered effect by index, and the
+    // oversampling factor (1, 2, 4 or 8) of the global Quality setting.
+    std::array<EffectSlotParameters, kMaxEffects> effects;
+    int oversamplingFactor = 2;
 
     // The tempo that tempo-synced envelopes follow (host tempo, or the Standalone's BPM).
     float bpm = 120.0f;

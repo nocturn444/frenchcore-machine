@@ -157,33 +157,33 @@ The effects system follows the "one slot per effect type" model used by Serum: e
 
 Why this model: every effect has a fixed set of parameters with fixed IDs, so host automation and presets stay valid no matter how the user reorders the chain. See [ADR 0003](decisions/0003-fx-chain-model.md).
 
-Building blocks:
+Building blocks (the code is in `src/dsp/fx/`; the full description is [fx-chain](specs/fx-chain.md), the decisions are [ADR 0003](decisions/0003-fx-chain-model.md) and [ADR 0009](decisions/0009-effect-parameters-and-chain-latency.md)):
 
 ```cpp
-// src/dsp/fx/Effect.h  (illustrative, not final code)
-struct EffectDescriptor {
-    std::string_view id;          // stable, never changes: "distortion", "eq", "stereo"
-    std::string_view displayName;
-    int version;                  // bumps when parameters change, for migrations
-};
+// src/dsp/fx/Effect.h (shortened)
+struct ParameterSpec { /* idSuffix, name, kind (toggle/choice/integer/number), range, step, default, skew, unit, choices */ };
+struct EffectDescriptor { std::string_view id; std::string_view displayName; int version; };
 
 class Effect {
 public:
-    virtual ~Effect() = default;
-    virtual const EffectDescriptor& descriptor() const = 0;
-    virtual void prepare(const juce::dsp::ProcessSpec&) = 0;   // may allocate
-    virtual void reset() = 0;                                  // no allocation
-    virtual void process(juce::dsp::ProcessContextReplacing<float>&) = 0; // real-time safe
-    virtual int latencySamples() const { return 0; }
+    virtual const EffectDescriptor& descriptor() const = 0;      // stable id: "distortion", "eq", "stereo"
+    virtual std::span<const ParameterSpec> parameters() const = 0; // plain data, no APVTS in fcm_dsp
+    virtual void prepare(const EffectSpec&) = 0;                  // may allocate
+    virtual void reset() noexcept = 0;
+    virtual void setParameters(std::span<const float> values) noexcept = 0; // once per block
+    virtual void setOversampling(int factor) noexcept;            // when Quality changes
+    virtual void process(juce::AudioBuffer<float>&) noexcept = 0; // real-time safe, in place
+    virtual int latencySamples(int oversamplingFactor) const noexcept;
 };
 ```
 
-- **`EffectRegistry`** holds one factory function per effect type plus its parameter-layout function. Each effect registers itself with a single line in `src/dsp/fx/RegisterEffects.cpp`. Nothing else in the codebase lists effects by name.
-- **Parameters** for an effect are declared by the effect's own `createParameters()` function and are prefixed with the effect ID (`distortion.drive`, `eq.low.gain`). `fcm_core` asks the registry for all parameter groups when building the layout.
-- **`EffectChain`** owns one instance of every registered effect and an order array. The order is stored as a lock-free packed value (e.g. up to 16 slot indices in an atomic) written by the message thread and read once per block by the audio thread. Reordering never allocates and never pauses audio.
-- **Per-slot common controls** are added automatically by the chain for every effect: `<id>.enabled`, `<id>.mix` (dry/wet), and the slot's position.
-- **Latency:** the chain reports the sum of enabled effects' latency to the host whenever it changes.
-- **Oversampling:** effects that create harmonics (distortion) run inside `juce::dsp::Oversampling`. The factor (1x/2x/4x/8x, 2x default) is one global `Quality` parameter in the Global panel; each effect owns its oversampler and reads that factor in `prepare()`.
+- **`EffectRegistry`** holds one factory function per effect type. Each effect registers itself with a single line in `src/dsp/fx/RegisterEffects.cpp`, whose order is the default chain order and the effect's index. Nothing else in the codebase lists effects by name.
+- **Parameters** for an effect are described by its `parameters()` (plain data) and prefixed with the effect ID (`distortion.drive`, `eq.low.gain`). `fcm_core` turns the specs of every registered effect into APVTS parameters when it builds the layout, and `EngineParameterReader` hands the values to the chain as a flat array in spec order.
+- **`EffectChain`** owns one instance of every registered effect and an order. The order is a packed value (4 bits per position, up to 16 effects) in one `std::atomic<uint64_t>`, written by the message thread (`core::FxOrderState`, also saved as the `FxChain` node) and read once per block by the audio thread. Reordering never allocates and never pauses audio.
+- **Per-slot common controls** are added by the layout code for every effect: `<id>.enabled` (default off) and `<id>.mix` (dry/wet, default 100 %). A slot that is off and faded out is skipped.
+- **Latency:** every slot delays its dry signal by the effect's latency for the current Quality whether it is on, bypassed or mixed, so timing never changes when something is toggled, mixed or reordered. The chain reports the sum over all registered effects to the host whenever Quality changes.
+- **Oversampling:** effects that create harmonics (distortion) run inside `juce::dsp::Oversampling`. The factor (1x/2x/4x/8x, 2x default) is one global `Quality` parameter in the Global panel (`global.quality`); the chain tells each effect through `setOversampling`.
+- **Where it runs:** the voice renders mono, which is copied to the output channels; the chain runs on the whole block; then the output gain and the safety limiter run per sample on every channel.
 
 Adding an effect is documented step by step in [ADDING_AN_EFFECT.md](ADDING_AN_EFFECT.md).
 

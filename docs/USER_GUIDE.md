@@ -163,6 +163,15 @@ The shapes are saved with your project, so the kick comes back exactly as you le
 
 ## Effects
 
+After the oscillators and the Tock, the kick goes through a row of effects. The first effects (distortion, EQ, multiband stereo) arrive in the next versions; this version has the row itself, which every effect will use the same way:
+
+- **On**: each effect has its own switch, **off by default**, so the sound does not change until you switch one on.
+- **Mix**: how much of the effect you hear against the untouched sound (0 to 100 %, default 100 %).
+- **Order**: the effects can be dragged into any order (a later version shows the rack). Each one exists once, and its controls keep working with automation wherever it sits.
+- Switching an effect on or off, changing its Mix or moving it never clicks and never shifts the timing of the kick.
+- The effects work on both channels. They sit before the output gain and the safety limiter, so the limiter always protects the final sound.
+- **Quality** (in the Global controls): how much the effects that make harmonics are oversampled (1x, 2x, 4x or 8x, default 2x). Higher is cleaner and uses more CPU. Changing it changes the small delay the plugin reports to your DAW.
+
 ## Presets
 
 ## Global: output, limiter, quality, glide
@@ -174,6 +183,7 @@ The shapes are saved with your project, so the kick comes back exactly as you le
 | **Key Track** | On: the MIDI note sets the pitch the kick settles on. Off: every note settles on the **Root Note**. |
 | **Root Note** | The pitch used when Key Track is off. Default C1 (about 65 Hz). |
 | **Glide** and **Glide Time** | With Glide on, the pitch the kick settles on slides from the previous note to the new one over Glide Time instead of jumping. The fast pitch drop at the start of each kick is not affected. |
+| **Quality** | How much the effects are oversampled to avoid harsh aliasing: 1x, 2x (default), 4x or 8x. Higher is cleaner and uses more CPU. |
 | **Velocity Sensitivity** | How much MIDI velocity changes the loudness: at 0 % (the default) every note is equally loud, at 100 % a soft note is much quieter than a hard one. |
 
 How notes behave:

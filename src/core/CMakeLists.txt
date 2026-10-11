@@ -4,6 +4,7 @@ target_sources(fcm_core INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/BoundedMidiCopy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EngineParameterReader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EnvelopeState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/FxOrderState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ParameterLayout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/StateLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/StateMigrations.cpp

@@ -7,10 +7,13 @@
 #include "dsp/engine/Voice.h"
 #include "dsp/envelope/EnvelopeShape.h"
 #include "dsp/envelope/PublishedPointer.h"
+#include "dsp/fx/EffectChain.h"
 #include "dsp/oscillator/WavetableData.h"
 #include "dsp/tock/TockSample.h"
 
 #include <array>
+#include <atomic>
+#include <cstdint>
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
 #include <memory>
@@ -24,6 +27,9 @@ namespace fcm::dsp
 class Engine
 {
   public:
+    // The effects of the plugin; tests may pass a registry of their own.
+    explicit Engine(const EffectRegistry& registry = defaultEffectRegistry()) : fx(registry) {}
+
     // May allocate. Called before playback starts and whenever the sample rate or block size changes.
     // Parameters set before this call take effect at once; later changes are smoothed.
     void prepare(const juce::dsp::ProcessSpec& spec);
@@ -61,6 +67,14 @@ class Engine
 
     double getSampleRate() const noexcept { return sampleRate; }
 
+    // The FX chain's order (any thread may store a packed order) and the latency it adds at the
+    // current Quality, for the host (docs/specs/fx-chain.md).
+    std::atomic<std::uint64_t>& fxOrder() noexcept { return fx.order(); }
+    int latencySamples(int oversamplingFactor) const noexcept
+    {
+        return fx.latencySamples(oversamplingFactor);
+    }
+
   private:
     void handleMidi(const juce::MidiMessageMetadata& event) noexcept;
     void noteOn(int note, int velocity) noexcept;
@@ -77,6 +91,7 @@ class Engine
 
     std::unique_ptr<const WavetableData> sineTable;
     NoteHandler notes;
+    EffectChain fx;
     PitchGlide glide;
     Voice voice;
     PublishedPointer<EnvelopeShape>* ampSource = nullptr;

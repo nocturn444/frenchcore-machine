@@ -4,6 +4,7 @@
 #include "core/AuditionState.h"
 #include "core/EngineParameterReader.h"
 #include "core/EnvelopeState.h"
+#include "core/FxOrderState.h"
 #include "core/TempoState.h"
 #include "core/TockSelector.h"
 #include "core/WavetableLoader.h"
@@ -16,11 +17,13 @@
 namespace fcm
 {
 
-class PluginProcessor : public juce::AudioProcessor
+class PluginProcessor : public juce::AudioProcessor,
+                        private juce::AudioProcessorValueTreeState::Listener,
+                        private juce::AsyncUpdater
 {
   public:
     PluginProcessor();
-    ~PluginProcessor() override = default;
+    ~PluginProcessor() override;
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -59,6 +62,7 @@ class PluginProcessor : public juce::AudioProcessor
     // In the Standalone it is the BPM control itself, so it is right even before audio runs.
     float currentTempo() const noexcept { return isStandalone() ? auditionState.getBpm() : tempoState.get(); }
     core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
+    core::FxOrderState& getFxOrder() noexcept { return fxOrder; }
 
     core::WavetableSelector& selectorFor(int oscillator) noexcept
     {
@@ -88,6 +92,8 @@ class PluginProcessor : public juce::AudioProcessor
     juce::String lastWavetableMessage;
     juce::ChangeBroadcaster wavetableBroadcaster;
     dsp::Engine engine;
+    // The order of the effects, which the engine's chain reads (docs/specs/fx-chain.md).
+    core::FxOrderState fxOrder{dsp::defaultEffectRegistry(), engine.fxOrder()};
 
     // Standalone only. The host's MIDI is copied here together with the audition events; the
     // capacity is reserved in prepareToPlay so processBlock does not allocate.
@@ -96,6 +102,11 @@ class PluginProcessor : public juce::AudioProcessor
     juce::MidiBuffer auditionMidi;
 
     void addAuditionEvents(int numSamples, const juce::MidiBuffer& hostMidi);
+
+    // The chain's latency changes with Quality; the host is told on the message thread.
+    void parameterChanged(const juce::String& parameterID, float newValue) override;
+    void handleAsyncUpdate() override;
+    void reportLatency();
     // The parameters for this block, with the tempo from the host (or the Standalone's BPM).
     dsp::EngineParameters readEngineParameters();
 

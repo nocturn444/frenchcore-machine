@@ -81,8 +81,8 @@ Done when:
 
 ## Phase 5: FX system
 
-- [ ] Spec + ADR: effect interface, registry, chain model (ADR 0003 already drafted)
-- [ ] `Effect` interface, `EffectRegistry`, `EffectChain` with lock-free reorder, with tests
+- [x] Spec + ADR: effect interface, registry, chain model ([spec](specs/fx-chain.md), ADR 0003 and 0009)
+- [x] `Effect` interface, `EffectRegistry`, `EffectChain` with lock-free reorder, with tests
 - [ ] Distortion (5 types, oversampling)
 - [ ] 3-band EQ
 - [ ] Multiband stereo
