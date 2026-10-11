@@ -19,9 +19,11 @@ namespace fcm::ui
 class EnvelopeEditor : public juce::Component, private juce::ChangeListener, private juce::Timer
 {
   public:
-    // `markerMs`, when set, gives the time in envelope milliseconds of a dashed vertical marker
-    // (the Punch / Tail split on the amp envelope), or nothing to hide it.
-    EnvelopeEditor(core::EnvelopeState& state, std::function<std::optional<float>()> markerMs = {});
+    // `tempo` gives the current tempo, for the tempo-synced mode. `markerMs`, when set, gives the
+    // time in envelope milliseconds of a dashed vertical marker (the Punch / Tail split on the amp
+    // envelope), or nothing to hide it.
+    EnvelopeEditor(core::EnvelopeState& state, std::function<float()> tempo,
+                   std::function<std::optional<float>()> markerMs = {});
     ~EnvelopeEditor() override;
 
     void paint(juce::Graphics& g) override;
@@ -37,7 +39,11 @@ class EnvelopeEditor : public juce::Component, private juce::ChangeListener, pri
   private:
     juce::Rectangle<float> plotArea() const;
     juce::Point<float> toScreen(float timeMs, float value) const;
+    // The time under a horizontal position; in sync mode snapped to 1/32 notes.
     float timeAt(float x) const;
+    // Edits the shape. A tempo-synced shape is first rewritten for the current tempo, so the grid
+    // and the snapping match what is heard.
+    void editShape(const std::function<void(dsp::BreakpointEnvelope&)>& change);
     float valueAt(float y) const;
 
     // Index of the point under the position, or -1.
@@ -49,6 +55,7 @@ class EnvelopeEditor : public juce::Component, private juce::ChangeListener, pri
     void timerCallback() override;
 
     core::EnvelopeState& state;
+    std::function<float()> tempo;
     std::function<std::optional<float>()> markerMs;
     std::optional<float> shownMarker;
 

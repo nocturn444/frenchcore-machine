@@ -11,16 +11,20 @@ namespace
 // Default size of the editor (docs/UI_LAYOUT.md). The Standalone adds the audition strip below it;
 // the aspect ratio is fixed for whichever total height applies.
 constexpr int kDefaultWidth = 1100;
-constexpr int kPanelHeight = 740;
-constexpr int kEnvelopeRowHeight = 420;
+constexpr int kPanelHeight = 860;
+constexpr int kEnvelopeRowHeight = 540;
 } // namespace
 
 PluginEditor::PluginEditor(PluginProcessor& owner)
     : AudioProcessorEditor(owner),
       // The envelope parameters are shown by the envelope panels, not by the generic list.
       parameterPanel(owner.getState(), {"ampEnv", "pitchEnv", "punchTail"}),
-      ampPanel(owner.getAmpEnvelope(), owner.getState(), ui::EnvelopePanel::ampConfig(owner.getState())),
-      pitchPanel(owner.getPitchEnvelope(), owner.getState(), ui::EnvelopePanel::pitchConfig())
+      ampPanel(
+          owner.getAmpEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
+          ui::EnvelopePanel::ampConfig(owner.getState())),
+      pitchPanel(
+          owner.getPitchEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
+          ui::EnvelopePanel::pitchConfig())
 {
     addAndMakeVisible(parameterPanel);
     addAndMakeVisible(ampPanel);

@@ -74,7 +74,7 @@ Knob ranges (editing the shape; every time is in milliseconds before time scale;
 
 | Envelope | Knob | Range | Default | Maps to |
 |---|---|---|---|---|
-| Amp | Attack | 0 to 500 ms | 1 | time of point 1 |
+| Amp | Attack | 1 to 500 ms | 1 | time of point 1 |
 | Amp | Hold | 0 to 1000 ms | 24 | point 2 minus point 1 |
 | Amp | Decay | 0 to 2000 ms | 115 | last point minus point 2 |
 | Amp | Sustain | 0 to 100 % | 70 | level of the last point |

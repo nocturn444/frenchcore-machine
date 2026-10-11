@@ -26,11 +26,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Editable envelopes for volume (amp) and pitch: a display where you drag points, double-click to add or delete extra points and drag a segment to bend it, five knobs per envelope that move the main points of the same line, and a shape menu (Kick + Bass, Short Punch, Long Tail for the amp; Classic Drop, Short Punch, Long Tail for the pitch). The default amp shape is now Kick + Bass: a punch, a dip and a bass body held while the key is down.
 - New automatable parameters: Amp Env Time Scale, Pitch Env Time Scale, Pitch Env Amount (default +48 semitones), Punch Tail Balance and Punch Tail Split (default 80 ms).
 - Punch / Tail balance: favours the hit or the bass tail with one control, with a marker for the split time on the amp display.
+- Tempo sync for each envelope: with the Sync switch on, the time knobs show musical figures (1/64 to 1 bar, with triplets and dotted values) instead of milliseconds, the display grid is labelled in fractions of a bar, points snap to 1/32 notes, and the envelope keeps its musical lengths when the tempo changes (host tempo in a DAW, the BPM control in the Standalone). The Sync state is saved with the shape. ADR 0007.
+- Punch Level and Tail Level knobs (-48 to +12 dB) under the Punch/Tail sliders, to set the volume of each part independently.
 - Envelope shapes are saved with the project and restored with it; a damaged shape falls back to the default.
 - ADR 0006 (envelope model and lock-free publishing), specs for breakpoint envelopes and for Punch / Tail.
 
 ### Changed
 
+- The amp Attack knob now goes from 1 ms (it was 0), so a kick cannot start with a click.
 - The editor shows the generic parameter panel instead of the layout placeholder grid; the layout itself stays documented in `docs/UI_LAYOUT.md`.
 - The plugin reports the kick's tail length to the host (the amp release time).
 - The kick now holds its body while the key is down (the default Kick + Bass shape has a sustain level) and fades out on release; the fixed Phase 2 shapes are gone.

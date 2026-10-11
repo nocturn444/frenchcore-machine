@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "ui/EnvelopeEditor.h"
 
+#include "dsp/envelope/MusicalTime.h"
+
 #include <cmath>
 
 namespace fcm::ui
@@ -15,6 +17,7 @@ constexpr float kHitRadius = 9.0f;
 constexpr float kSegmentHitDistance = 7.0f;
 constexpr float kPixelsForFullCurve = 80.0f;
 constexpr float kRepaintHz = 20.0f;
+constexpr double kSnapBeats = 0.125; // 1/32 note: where points snap while the envelope is tempo-synced
 
 // The display fits the shape in the first of these that holds it, so it does not rescale while a
 // point is dragged, only when a boundary is crossed.
@@ -29,9 +32,9 @@ const juce::Colour kExtraPoint(0xffe8ecf2);
 const juce::Colour kMarker(0xffe0556b);
 } // namespace
 
-EnvelopeEditor::EnvelopeEditor(core::EnvelopeState& envelopeState,
+EnvelopeEditor::EnvelopeEditor(core::EnvelopeState& envelopeState, std::function<float()> currentTempo,
                                std::function<std::optional<float>()> marker)
-    : state(envelopeState), markerMs(std::move(marker))
+    : state(envelopeState), tempo(std::move(currentTempo)), markerMs(std::move(marker))
 {
     state.addChangeListener(this);
     if (markerMs)
@@ -67,7 +70,27 @@ juce::Point<float> EnvelopeEditor::toScreen(float timeMs, float value) const
 float EnvelopeEditor::timeAt(float x) const
 {
     const auto area = plotArea();
-    return (x - area.getX()) / area.getWidth() * viewMs();
+    const float time = (x - area.getX()) / area.getWidth() * viewMs();
+
+    // Tempo-synced: points snap to 1/32 notes of the reference tempo.
+    if (state.get().isSynced())
+    {
+        const auto step =
+            static_cast<float>(dsp::beatsToMs(kSnapBeats, static_cast<double>(state.get().syncRefBpm())));
+        return std::round(time / step) * step;
+    }
+    return time;
+}
+
+void EnvelopeEditor::editShape(const std::function<void(dsp::BreakpointEnvelope&)>& change)
+{
+    const float bpm = tempo ? tempo() : 120.0f;
+    state.edit(
+        [&](dsp::BreakpointEnvelope& envelope)
+        {
+            envelope.rebaseTo(bpm); // does nothing unless synced
+            change(envelope);
+        });
 }
 
 float EnvelopeEditor::valueAt(float y) const
@@ -121,20 +144,44 @@ void EnvelopeEditor::paint(juce::Graphics& g)
     g.fillAll(kBackground);
     const auto area = plotArea();
 
-    // Time grid, in steps that suit the visible range.
+    // Time grid: milliseconds, or fractions of a bar when the envelope follows the tempo.
     const float range = viewMs();
-    const float gridStep =
-        range <= 250.0f ? 50.0f : (range <= 500.0f ? 100.0f : (range <= 1000.0f ? 250.0f : 500.0f));
     g.setFont(juce::FontOptions(11.0f));
-    for (float t = 0.0f; t <= range; t += gridStep)
+    const auto drawGridLine = [&](float timeMs, const juce::String& label)
     {
-        const float x = toScreen(t, 0.0f).x;
+        const float x = toScreen(timeMs, 0.0f).x;
         g.setColour(kGrid);
         g.drawVerticalLine(juce::roundToInt(x), area.getY(), area.getBottom());
         g.setColour(juce::Colours::grey);
-        g.drawText(juce::String(juce::roundToInt(t)) + " ms",
-                   juce::Rectangle<float>(x + 2.0f, area.getBottom() - 14.0f, 56.0f, 12.0f),
+        g.drawText(label, juce::Rectangle<float>(x + 2.0f, area.getBottom() - 14.0f, 56.0f, 12.0f),
                    juce::Justification::centredLeft);
+    };
+
+    if (state.get().isSynced())
+    {
+        const double reference = static_cast<double>(state.get().syncRefBpm());
+        const double pixelsPerBeat = static_cast<double>(area.getWidth()) / dsp::msToBeats(range, reference);
+
+        // The finest step that leaves at least 44 pixels between lines.
+        double stepBeats = 4.0;
+        for (double candidate : {0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0})
+            if (candidate * pixelsPerBeat >= 44.0)
+            {
+                stepBeats = candidate;
+                break;
+            }
+
+        for (double beats = 0.0; dsp::beatsToMs(beats, reference) <= static_cast<double>(range);
+             beats += stepBeats)
+            drawGridLine(static_cast<float>(dsp::beatsToMs(beats, reference)),
+                         juce::String(dsp::formatBarFraction(beats)));
+    }
+    else
+    {
+        const float gridStep =
+            range <= 250.0f ? 50.0f : (range <= 500.0f ? 100.0f : (range <= 1000.0f ? 250.0f : 500.0f));
+        for (float t = 0.0f; t <= range; t += gridStep)
+            drawGridLine(t, juce::String(juce::roundToInt(t)) + " ms");
     }
     for (float level : {0.25f, 0.5f, 0.75f, 1.0f})
     {
@@ -226,8 +273,8 @@ void EnvelopeEditor::mouseDrag(const juce::MouseEvent& event)
     if (drag == Drag::point)
     {
         const auto position = event.position;
-        state.edit([&](dsp::BreakpointEnvelope& envelope)
-                   { envelope.movePoint(dragIndex, timeAt(position.x), valueAt(position.y)); });
+        editShape([&](dsp::BreakpointEnvelope& envelope)
+                  { envelope.movePoint(dragIndex, timeAt(position.x), valueAt(position.y)); });
     }
     else if (drag == Drag::segment)
     {
@@ -238,7 +285,7 @@ void EnvelopeEditor::mouseDrag(const juce::MouseEvent& event)
         // (fast first) and a more positive one on a falling segment (slow first).
         const float sign = rising ? -1.0f : 1.0f;
         const float curve = dragStartCurve + sign * (dragStartY - event.position.y) / kPixelsForFullCurve;
-        state.edit([&](dsp::BreakpointEnvelope& envelope) { envelope.setCurve(dragIndex, curve); });
+        editShape([&](dsp::BreakpointEnvelope& envelope) { envelope.setCurve(dragIndex, curve); });
     }
 }
 
@@ -271,19 +318,23 @@ void EnvelopeEditor::mouseDoubleClick(const juce::MouseEvent& event)
     if (const int index = pointAt(position); index >= 0)
     {
         // Only extra points can be deleted; the knobs need the main ones.
-        state.edit([&](dsp::BreakpointEnvelope& envelope) { envelope.removePoint(index); });
+        editShape([&](dsp::BreakpointEnvelope& envelope) { envelope.removePoint(index); });
         hoverPoint = -1;
         return;
     }
 
     if (plotArea().expanded(2.0f).contains(position))
-        state.edit([&](dsp::BreakpointEnvelope& envelope)
-                   { envelope.addPoint(timeAt(position.x), valueAt(position.y)); });
+        editShape([&](dsp::BreakpointEnvelope& envelope)
+                  { envelope.addPoint(timeAt(position.x), valueAt(position.y)); });
 }
 
 void EnvelopeEditor::timerCallback()
 {
-    const auto marker = markerMs();
+    // The marker is a time in envelope time at the unscaled tempo; a synced shape plays at
+    // reference / tempo times that, so the same real time sits at tempo / reference in the display.
+    auto marker = markerMs();
+    if (marker.has_value() && state.get().isSynced() && tempo)
+        marker = *marker * tempo() / state.get().syncRefBpm();
     const bool changed = marker.has_value() != shownMarker.has_value() ||
                          (marker.has_value() && std::abs(*marker - *shownMarker) > 1.0e-3f);
     if (changed)

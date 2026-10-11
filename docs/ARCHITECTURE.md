@@ -139,6 +139,7 @@ Both envelopes use the same `BreakpointEnvelope` model:
 - The editable model is a plain value type (`BreakpointEnvelope`, owned by `core::EnvelopeState`). After every edit it builds an immutable, fixed-size `EnvelopeShape` and publishes it to the audio thread through `PublishedPointer` (hazard-pointer deferred release, ADR 0006). The engine acquires the current shapes once per block; `EnvelopeRenderer` plays them per sample.
 - Envelope shapes are part of the plugin state (child nodes `AmpEnvelope` and `PitchEnvelope`), not automatable parameters. Global controls (`Amp Env Time Scale`, `Pitch Env Amount`, `Pitch Env Time Scale`) are automatable; time scale is read at each note-on.
 - Shape presets (`EnvelopePresets`) are a data table per envelope kind; the first is the default.
+- **Tempo sync** ([ADR 0007](decisions/0007-envelope-tempo-sync.md)): a shape may remember the tempo its times were written at (`syncRefBpm`); at each note-on the voice plays it scaled by reference / current tempo. The current tempo is the host tempo in a plugin, the audition strip's BPM in the Standalone, 120 otherwise; it reaches the engine in `EngineParameters` and the editor through `core::TempoState`. Knobs show musical figures (`MusicalTime`) while synced.
 
 ### 4.5 Punch / Tail balance
 
@@ -147,7 +148,8 @@ Details and tests in [voice-punch-tail](specs/voice-punch-tail.md).
 - Splits the voice output in time into a **punch** region (from note-on to the split point) and a **tail** region (after it).
 - `Punch Tail Balance` (-100 to +100): negative favours the punch, positive the tail, 0 leaves both untouched. Implemented as two gains (`1 - |balance|` on the region that is cut) applied after the amp envelope.
 - `Punch Tail Split` (ms after note-on, default 80): where the punch ends and the tail begins, shown as a dashed vertical marker on the amp envelope display. The gain changes with a 4 ms smoothstep centred on the split, counted from each kick's own note-on.
-- Both are automatable parameters and are smoothed over 10 ms.
+- `Punch Level` and `Tail Level` (dB, default 0) multiply the two region gains on top of the balance.
+- All four are automatable parameters and are smoothed over 10 ms.
 
 ### 4.6 FX chain (main extension point)
 

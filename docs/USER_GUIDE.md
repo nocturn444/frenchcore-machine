@@ -48,6 +48,7 @@ A frenchcore kick has a **punch** (the hit at the start) and a **tail** (the bas
 
 - **Punch/Tail** goes from -100 to +100. At 0 nothing changes. Towards -100 the tail gets quieter, down to silence at -100 (the punch is favoured). Towards +100 the punch gets quieter, down to silence at +100 (the tail is favoured).
 - **Split** is the time, in milliseconds after the note starts, where the punch ends and the tail begins (default 80 ms). A dashed red line on the Amp Envelope display shows it.
+- **Punch Level** and **Tail Level** (two knobs under the Split slider) set the volume of each part on its own, from -48 dB (silence) to +12 dB, at 0 dB by default. They add to the Punch/Tail balance: for example, you can raise the tail 3 dB and still use the balance to trade between the two parts.
 - The change from one part to the other takes about 4 ms, so it never clicks, and the split is counted from the start of each kick, also when you retrigger.
 
 ## Envelopes
@@ -60,7 +61,7 @@ It is the volume of the kick over time. The default shape is **Kick + Bass**: it
 
 | Knob | What it does |
 |---|---|
-| **Attack** | Time to reach full level. |
+| **Attack** | Time to reach full level (1 ms at the least, so the kick never starts with a click). |
 | **Hold** | How long it stays at full level. |
 | **Decay** | Time from the end of the hold to the sustain level. |
 | **Sustain** | The level kept while the key is down (the last point of the line). At 0 the kick is a one-shot that ends by itself, whatever the note length. |
@@ -82,9 +83,22 @@ It is how far above the note's pitch the kick starts and how it falls onto the n
 
 The pitch envelope always finishes its fall, even if you let go of the key. It also has a **Time Scale**.
 
+### Tempo sync
+
+Each envelope has a **Sync** switch next to its **Load shape...** menu. With Sync on, the envelope follows the tempo and its milliseconds are replaced by musical figures:
+
+- The time knobs (Attack, Hold, Decay and Release on the amp; Attack and Decay on the pitch) step through note values instead of milliseconds: `1/64, 1/32, 1/16T, 1/16, 1/8T, 1/16D, 1/8, 1/4T, 1/8D, 1/4, 1/2T, 1/4D, 1/2, 1 bar` (**T** is a triplet, **D** is dotted). The first step is `0` where the knob can be zero, or `Min` (the shortest time, 1 ms) where it cannot. Only figures that fit the knob are offered.
+- The grid of the display is labelled with fractions of a bar (`1/16`, `1/8`, `1/4`...) instead of milliseconds, and the points you drag snap to 1/32 notes in time.
+- The envelope **keeps its musical lengths when the tempo changes**: a Hold of 1/16 is a sixteenth note at any tempo. The change applies from the next note.
+- The tempo is your DAW's tempo. In the Standalone it is the **BPM** control of the strip at the bottom. If the DAW does not give a tempo, 120 BPM is used.
+- Turning Sync on or off does not change how the kick sounds. The knobs show the closest figure at first; the first time you turn a time knob, that time becomes an exact figure.
+- Time Scale still works on top of Sync. The Punch / Tail **Split** stays in milliseconds.
+
+The Sync switch is saved with the shape, but a DAW cannot automate it.
+
 ### Drawing on the display
 
-- **Drag a point** to move it in time and level. A point cannot go past its neighbours. The first point stays at time 0 (and at level 0 on the amp envelope).
+- **Drag a point** to move it in time and level (in time it snaps to 1/32 notes when Sync is on). A point cannot go past its neighbours. The first point stays at time 0 (and at level 0 on the amp envelope).
 - **Double-click on empty space** to add a point on the line, between the first and the last point (up to 32 points).
 - **Double-click a small white point** to delete it. The big gold points are the ones the knobs move and cannot be deleted.
 - **Drag a segment up or down** to bend it: dragging up makes the line bulge upward.

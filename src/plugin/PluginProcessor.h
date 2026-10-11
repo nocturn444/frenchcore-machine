@@ -53,7 +53,8 @@ class PluginProcessor : public juce::AudioProcessor
     // The editable envelopes; the UI edits them through these (docs/specs/envelope-breakpoint.md).
     core::EnvelopeState& getAmpEnvelope() noexcept { return ampEnvelope; }
     // The tempo that synced envelopes follow, for the editor to show and convert with.
-    const core::TempoState& getTempoState() const noexcept { return tempoState; }
+    // In the Standalone it is the BPM control itself, so it is right even before audio runs.
+    float currentTempo() const noexcept { return isStandalone() ? auditionState.getBpm() : tempoState.get(); }
     core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
 
   private:
