@@ -1,6 +1,6 @@
 # Spec: Punch / Tail balance
 
-- Status: Draft (values in section 7 are first choices for the product owner to confirm)
+- Status: Implemented (values in section 7 are first choices for the product owner to confirm)
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [envelope-breakpoint](envelope-breakpoint.md), [voice-note-handling](voice-note-handling.md), [ARCHITECTURE §4.5](../ARCHITECTURE.md)
 

@@ -1,6 +1,6 @@
 # Spec: Breakpoint envelopes (amp and pitch)
 
-- Status: Draft (default amp shape and maximum length confirmed by the product owner on 2026-10-11; the other values are first choices listed in section 7)
+- Status: Implemented (default amp shape and maximum length confirmed by the product owner on 2026-10-11; the other values are first choices listed in section 7)
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [voice-note-handling](voice-note-handling.md), [voice-punch-tail](voice-punch-tail.md), [ARCHITECTURE §4.4, §5, §6](../ARCHITECTURE.md), [ADR 0006](../decisions/0006-envelope-model-and-publishing.md)
 
@@ -45,7 +45,7 @@ Shapes are part of the saved state (presets and projects) but are not automatabl
 
 ## 2. User interface
 
-Phase 3 adds an envelope row under the generic parameter panel in the editor: two `EnvelopePanel`s (amp left, pitch right). Each has the preset menu, the display, the five knobs and its global controls. The final layout comes with the visual pass ([UI_LAYOUT.md](../UI_LAYOUT.md)).
+Phase 3 adds an envelope row under the generic parameter panel in the editor: two `EnvelopePanel`s (amp left, pitch right). Each has the preset menu ("Load shape..."), the display, the five knobs and its global controls (small sliders under the knobs: Time Scale, and on the amp panel Punch/Tail balance and Split). The final layout comes with the visual pass ([UI_LAYOUT.md](../UI_LAYOUT.md)).
 
 ## 3. Parameters
 

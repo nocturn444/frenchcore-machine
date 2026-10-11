@@ -12,6 +12,7 @@ Plain-language explanations of the technical terms used in this project's docume
 | **Audio thread** | The part of the program that computes audio in real time. If it waits for anything, you hear clicks or dropouts. |
 | **Band-limited / mipmaps** | Pre-computed versions of a wavetable with high harmonics removed, one per pitch range, so high notes do not alias. |
 | **Breakpoint envelope** | An envelope drawn as points connected by curves, like Serum's or Vital's. |
+| **Attack / Hold / Decay / Sustain / Release** | The five stages of the volume envelope: how fast it rises, how long it stays at full level, how fast it falls, the level it keeps while the key is down, and how fast it fades after the key is let go. |
 | **CI** | Continuous Integration. GitHub automatically builds and tests the plugin on Windows, macOS and Linux every time code changes. |
 | **CMake / CPM** | The build tool that turns source code into the plugin, and the helper that downloads libraries automatically. |
 | **DSP** | Digital Signal Processing: the math that generates and transforms sound. |
@@ -23,7 +24,9 @@ Plain-language explanations of the technical terms used in this project's docume
 | **Oversampling** | Processing audio internally at a higher sample rate to reduce aliasing from distortion. |
 | **pluginval** | A tool that stress-tests a plugin the way DAWs use it, to catch crashes before users do. |
 | **PR (pull request)** | A proposed change to the code, reviewed before it is merged into the main branch. |
+| **Punch / Tail** | The first moments of a kick (the hit) and the bass that rings after it. The Punch/Tail control balances them. |
 | **Release (envelope)** | The part of a sound that happens after you let go of the key. Here it is a short fade-out, so the length of the MIDI note decides how long the kick's tail rings. |
+| **Semitone** | One step on a piano: 12 semitones make an octave. The pitch envelope's Amount is measured in semitones. |
 | **Spec** | A short document describing a feature before it is built. |
 | **Standalone** | The plugin running as its own application, without a DAW. |
 | **VST3** | Steinberg's plugin format, supported by almost every DAW on Windows, macOS and Linux. |
