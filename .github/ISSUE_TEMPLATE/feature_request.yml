@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest an idea for Frenchcore Machine
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What sound or workflow problem do you run into when making kicks?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How you imagine it working. References to other plugins help.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: How you do it today

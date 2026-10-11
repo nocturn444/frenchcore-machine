@@ -1,0 +1,22 @@
+# Build output
+/build*/
+/out/
+/cmake-build-*/
+
+# CPM cache when kept inside the repo
+/.cpm-cache/
+
+# IDEs
+.vs/
+.vscode/
+.idea/
+*.user
+*.xcworkspace
+xcuserdata/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local Claude settings
+.claude/settings.local.json

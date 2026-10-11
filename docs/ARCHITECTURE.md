@@ -1,0 +1,230 @@
+# Architecture
+
+This document describes how Frenchcore Machine is built: the modules, how audio flows through them, how state is stored, and the rules that keep the code modular and real-time safe. It is the reference every contributor (human or agent) reads before writing code.
+
+If code and this document disagree, one of them is wrong. Fix whichever is wrong in the same pull request.
+
+## 1. Goals that shape the design
+
+1. **Modular and scalable.** New effects, oscillator features and envelope targets must be addable without editing unrelated code. The effects section is the main extension point.
+2. **Real-time safe.** Nothing on the audio thread allocates memory, takes a lock, does file I/O or logs.
+3. **Testable without a DAW.** All DSP lives in a library that has no dependency on the plugin wrapper or the UI, so it can be unit-tested headless.
+4. **Stable automation and presets.** Reordering effects or adding new effects in later versions must never break saved projects or presets.
+
+## 2. Technology stack
+
+| Concern | Choice | Notes |
+|---|---|---|
+| Language | C++20 | Exceptions are allowed outside the audio thread only. See real-time rules. |
+| Framework | JUCE 9 | Plugin wrappers, UI, MIDI, `juce_dsp`. |
+| Build system | CMake ≥ 3.25 + [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) | CPM fetches JUCE and Catch2 at a pinned version. No git submodules. |
+| Plugin formats | VST3, AU (macOS only), Standalone | CLAP may be added later via `clap-juce-extensions`. |
+| Platforms | Windows (MSVC), macOS (Apple Clang, universal binary), Linux (GCC/Clang) | |
+| Unit tests | Catch2 v3 | Tests target the `fcm_dsp` and `fcm_core` libraries. |
+| Plugin validation | pluginval (strictness 10 in CI) | |
+| CI | GitHub Actions | Build + test on all three platforms for every PR. |
+| Formatting | clang-format (config in repo root) | Enforced in CI. |
+| License | AGPL-3.0-only | Required by the free JUCE 9 license. See [ADR 0002](decisions/0002-license-agplv3.md). |
+
+## 3. Repository layout
+
+```
+frenchcore-machine/
+├── CMakeLists.txt            Top-level build: options, CPM, subdirectories
+├── cmake/                    CPM.cmake and helper CMake modules
+├── src/
+│   ├── core/                 fcm_core: parameter IDs, state model, presets, wavetable I/O
+│   ├── dsp/                  fcm_dsp: all audio processing, no UI, no plugin wrapper
+│   │   ├── engine/           Voice, glide, click layer, engine orchestration
+│   │   ├── oscillator/       Wavetable data, mipmaps, oscillator
+│   │   ├── envelope/         Breakpoint envelope model and renderer
+│   │   └── fx/               Effect interface, registry, chain, one folder per effect
+│   ├── ui/                   fcm_ui: editor components (envelope editor, FX rack, ...)
+│   └── plugin/               JUCE AudioProcessor / AudioProcessorEditor glue
+├── resources/
+│   ├── wavetables/           Factory wavetables (WAV), embedded via BinaryData
+│   └── presets/              Factory presets (XML), embedded via BinaryData
+├── tests/                    Catch2 unit tests, mirrors src/ layout
+├── docs/                     All documentation (this file, plan, specs, ADRs)
+└── .github/                  CI workflows, PR and issue templates
+```
+
+Libraries and their allowed dependencies (arrows mean "may depend on"):
+
+```
+plugin ──► ui ──► core ──► dsp
+   │                 ▲
+   └─────────────────┘
+```
+
+- `fcm_dsp` depends only on the standard library and `juce_audio_basics` / `juce_dsp`. It knows nothing about parameters, presets or UI.
+- `fcm_core` owns the parameter layout, the state tree and serialization. It depends on `fcm_dsp` for type definitions (e.g. effect descriptors).
+- `fcm_ui` reads and writes state through `fcm_core`. It never touches DSP objects directly.
+- `plugin` wires everything together and is the only place that knows about the host.
+
+## 4. Signal flow
+
+```
+MIDI ──► NoteHandler (mono, last-note priority, optional glide)
+              │ pitch, gate, velocity
+              ▼
+        ┌──────────────────────────────┐
+        │ Voice                        │
+        │  Pitch envelope ─► pitch     │
+        │  Wavetable oscillator        │
+        │  + Click layer (optional)    │
+        │  × Amp envelope              │
+        └──────────────┬───────────────┘
+                       ▼
+        FX chain (user-ordered slots, each with bypass and mix)
+                       ▼
+        Output gain ─► Safety limiter (soft clip, always last, not reorderable)
+                       ▼
+                    Host output
+```
+
+### 4.1 Voice and note handling
+
+- Monophonic. A new note retriggers both envelopes from the start (kick behaviour). Retrigger can be made legato-optional later.
+- The MIDI note sets the pitch the pitch envelope settles on (the "bass" tail). A `Key Track` switch allows a fixed root pitch instead.
+- Glide (portamento) is optional: `Glide On`, `Glide Time` (ms). It slides the settling pitch only, not the pitch envelope's attack.
+- Velocity can scale output level (`Velocity Sensitivity`, 0 to 100%).
+
+### 4.2 Wavetable oscillator
+
+- A wavetable is a sequence of frames of 2048 samples each (Serum/Vital-compatible WAV). Up to 256 frames.
+- `Position` selects/interpolates between frames.
+- Anti-aliasing: on load, each frame is converted to a set of band-limited mipmaps (one per octave, built with FFT by zeroing harmonics above Nyquist). Playback picks the mipmap for the current frequency and interpolates linearly between samples and between adjacent frames.
+- Loading and mipmap generation happen on a background thread. The finished `WavetableData` is published to the audio thread with an atomic pointer swap; the old one is released on the message thread (see section 6).
+- The source of the user's wavetable (file path and an embedded copy of the audio) is stored in the plugin state so projects survive moving files.
+
+### 4.3 Click layer
+
+- Optional short transient mixed before the amp envelope: either a factory click sample or a short noise burst with its own decay and filter.
+- Parameters: `Click On`, `Click Type`, `Click Level`, `Click Decay`, `Click Tone`.
+
+### 4.4 Envelopes
+
+Both envelopes use the same `BreakpointEnvelope` model:
+
+- A list of points (time in ms, value 0..1) with a curvature value per segment (-1 concave, 0 linear, +1 convex).
+- The first point is fixed at time 0; the last point marks the end of the envelope.
+- **Amp envelope:** default shape is a "kick + bass" curve: instant attack, short punch hold, quick drop to a sustained body, then release. Optional sustain point holds while the note is held.
+- **Pitch envelope:** maps 0..1 to a pitch offset in semitones above the settling pitch (`Pitch Env Amount`, default +48 st). Default shape is a very fast exponential fall.
+- The UI edits a copy of the model. When the user changes it, the UI builds a new immutable `EnvelopeShape` and publishes it to the audio thread with an atomic pointer swap.
+- Envelope shapes are part of the plugin state, not automatable parameters. Global controls (`Amp Env Time Scale`, `Pitch Env Amount`, `Pitch Env Time Scale`) are automatable.
+
+### 4.5 FX chain (main extension point)
+
+The effects system follows the "one slot per effect type" model used by Serum: each effect type exists exactly once, the user can enable it, bypass it and drag it to any position in the chain.
+
+Why this model: every effect has a fixed set of parameters with fixed IDs, so host automation and presets stay valid no matter how the user reorders the chain. See [ADR 0003](decisions/0003-fx-chain-model.md).
+
+Building blocks:
+
+```cpp
+// src/dsp/fx/Effect.h  (illustrative, not final code)
+struct EffectDescriptor {
+    std::string_view id;          // stable, never changes: "distortion", "eq", "stereo"
+    std::string_view displayName;
+    int version;                  // bumps when parameters change, for migrations
+};
+
+class Effect {
+public:
+    virtual ~Effect() = default;
+    virtual const EffectDescriptor& descriptor() const = 0;
+    virtual void prepare(const juce::dsp::ProcessSpec&) = 0;   // may allocate
+    virtual void reset() = 0;                                  // no allocation
+    virtual void process(juce::dsp::ProcessContextReplacing<float>&) = 0; // real-time safe
+    virtual int latencySamples() const { return 0; }
+};
+```
+
+- **`EffectRegistry`** holds one factory function per effect type plus its parameter-layout function. Each effect registers itself with a single line in `src/dsp/fx/RegisterEffects.cpp`. Nothing else in the codebase lists effects by name.
+- **Parameters** for an effect are declared by the effect's own `createParameters()` function and are prefixed with the effect ID (`distortion.drive`, `eq.low.gain`). `fcm_core` asks the registry for all parameter groups when building the layout.
+- **`EffectChain`** owns one instance of every registered effect and an order array. The order is stored as a lock-free packed value (e.g. up to 16 slot indices in an atomic) written by the message thread and read once per block by the audio thread. Reordering never allocates and never pauses audio.
+- **Per-slot common controls** are added automatically by the chain for every effect: `<id>.enabled`, `<id>.mix` (dry/wet), and the slot's position.
+- **Latency:** the chain reports the sum of enabled effects' latency to the host whenever it changes.
+- **Oversampling:** effects that create harmonics (distortion) run inside `juce::dsp::Oversampling` (2x default, 4x/8x selectable). Oversampling is owned by the effect, not the chain.
+
+Adding an effect is documented step by step in [ADDING_AN_EFFECT.md](ADDING_AN_EFFECT.md).
+
+MVP effects:
+
+| ID | Effect | Key parameters |
+|---|---|---|
+| `distortion` | Distortion with selectable type: soft clip (tanh), hard clip, overdrive (asymmetric), foldback, bitcrush (bit depth + sample-rate reduction) | Type, Drive, Pre-gain, Post-gain, Tone, Oversampling |
+| `eq` | 3-band parametric EQ: low shelf, peak, high shelf | Freq, Gain, Q per band |
+| `stereo` | Multiband stereo: 3 bands split by Linkwitz-Riley crossovers, mid/side width per band | Crossover 1/2, Width per band, Mono-below toggle |
+
+### 4.6 Output stage
+
+- `Output Gain` followed by a fixed safety soft clipper/limiter that cannot be reordered or removed. It protects speakers from the very high gain distortion settings typical of frenchcore. It can be set to "off" by advanced users.
+
+## 5. State, parameters and presets
+
+- **Automatable parameters** live in a `juce::AudioProcessorValueTreeState` (APVTS). Parameter IDs are defined in one place (`src/core/ParameterIds.h` plus each effect's own parameter function) and are **never renamed or reused** once released.
+- **Non-parameter state** lives in child nodes of the same `ValueTree`:
+  - `Wavetable`: source name, embedded audio (base64 or binary blob).
+  - `AmpEnvelope`, `PitchEnvelope`: point lists.
+  - `FxChain`: order of effect IDs.
+- **Versioning:** the root state node carries `stateVersion`. Loading older state runs migrations in `src/core/StateMigrations.cpp`. Each effect also carries its descriptor `version`.
+- **Presets** are the same state serialized to an `.fcmpreset` XML file. Factory presets are embedded. User presets go to the platform's user documents folder (`Frenchcore Machine/Presets`).
+- Unknown effect IDs or parameters in a preset (e.g. a preset made with a newer version) are ignored with a warning, never a crash.
+
+## 6. Threading and real-time rules
+
+Three threads matter:
+
+| Thread | Does | Never does |
+|---|---|---|
+| Audio thread | `processBlock`: DSP only | allocate, free, lock, file I/O, log, call into UI |
+| Message thread | UI, parameter changes from UI, preset load, publishing new shapes | long blocking work |
+| Background worker | Decode WAV files, build wavetable mipmaps | touch the audio objects directly |
+
+Patterns used:
+
+- **Atomic pointer swap + deferred release** for large immutable data (wavetables, envelope shapes): the producer builds a new object, publishes it with an atomic store, and the old object is handed to a release pool that frees it on the message thread later.
+- **Atomic packed values** for small state (FX order).
+- **APVTS raw parameter pointers** (`std::atomic<float>*`) are read once per block, and parameters that cause clicks are smoothed (`juce::SmoothedValue`).
+- **Debug check:** in debug builds a scoped guard flags any allocation on the audio thread.
+
+## 7. User interface
+
+- Functional first; visual design will be done later and must not require structural changes. All drawing goes through a custom `LookAndFeel` so restyling is a separate task.
+- Resizable editor with a fixed aspect ratio, laid out with `juce::FlexBox`/`Grid` relative to the window size.
+- Main areas (subject to the layout sketch in [UI_LAYOUT.md](UI_LAYOUT.md)):
+  - Header: preset browser (prev/next/save/load), output gain.
+  - Oscillator: wavetable display, position, load button, click layer controls.
+  - Envelopes: tabbed or stacked breakpoint editors for amp and pitch, with shape presets.
+  - FX rack: list of effect slots that can be dragged to reorder, each with enable, mix and its panel.
+- The UI never calls DSP code. It changes parameters through APVTS attachments and non-parameter state through `fcm_core` APIs.
+- A JUCE 9 WebView-based UI is a possible future option for the visual redesign. It is not used in the MVP.
+
+## 8. Testing strategy
+
+- Unit tests (Catch2) for every DSP block: frequency and level checks, no NaN/Inf, silence in gives silence out where expected, reset is deterministic.
+- State tests: save then load reproduces identical state; old state versions migrate.
+- FX chain tests: every order permutation of MVP effects processes without allocation and produces finite output.
+- pluginval at strictness 10 on every CI build.
+- Manual test checklist per release in [TESTING.md](TESTING.md).
+
+## 9. Build and continuous integration
+
+- `cmake --preset <platform>` then `cmake --build`. Details in [BUILDING.md](BUILDING.md).
+- GitHub Actions runs on every push and PR: configure, build (Release), run unit tests, run pluginval, upload plugin binaries as artifacts. Tagged releases attach zipped binaries to a GitHub Release.
+- Code signing and notarization (macOS) are out of MVP scope; unsigned builds are documented.
+
+## 10. Extension points summary
+
+| You want to add | Where | Docs |
+|---|---|---|
+| A new effect | `src/dsp/fx/<name>/` + one line in `RegisterEffects.cpp` | [ADDING_AN_EFFECT.md](ADDING_AN_EFFECT.md) |
+| A new distortion type | `src/dsp/fx/distortion/` waveshaper table | spec in `docs/specs/` |
+| A new envelope target | `fcm_dsp` modulation target + state node | spec in `docs/specs/` |
+| A new factory wavetable or preset | `resources/` | [CONTRIBUTING.md](../CONTRIBUTING.md) |
+
+## 11. Decision records
+
+Significant decisions are written as Architecture Decision Records in [docs/decisions/](decisions/). Changing a decision means adding a new ADR that supersedes the old one, not editing history.
