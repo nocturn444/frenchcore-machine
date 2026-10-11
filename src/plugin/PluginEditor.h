@@ -4,6 +4,7 @@
 #include "ui/AuditionPanel.h"
 #include "ui/EnvelopePanel.h"
 #include "ui/GenericParameterPanel.h"
+#include "ui/WavetablePanel.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <memory>
@@ -22,6 +23,7 @@ class PluginEditor : public juce::AudioProcessorEditor
 
   private:
     ui::GenericParameterPanel parameterPanel;
+    ui::WavetablePanel wavetablePanel;
     ui::EnvelopePanel ampPanel;
     ui::EnvelopePanel pitchPanel;
     std::unique_ptr<ui::AuditionPanel> auditionPanel; // Standalone only

@@ -116,6 +116,7 @@ void addOscillatorParameters(juce::AudioProcessorValueTreeState::ParameterLayout
     juce::StringArray wavetableNames;
     for (int i = 0; i < dsp::FactoryWavetables::count(); ++i)
         wavetableNames.add(dsp::FactoryWavetables::name(i));
+    wavetableNames.add("User"); // the wavetable the user loaded; see WavetableSelector::userEntry()
     layout.add(std::make_unique<juce::AudioParameterChoice>(
         id(ParameterIds::oscillator(index, Osc::kWavetable)), name + "Wavetable", wavetableNames, 0));
     layout.add(std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::oscillator(index, Osc::kLevel)),

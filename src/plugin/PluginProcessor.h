@@ -5,6 +5,7 @@
 #include "core/EngineParameterReader.h"
 #include "core/EnvelopeState.h"
 #include "core/TempoState.h"
+#include "core/WavetableLoader.h"
 #include "core/WavetableSelector.h"
 #include "dsp/engine/AuditionSequencer.h"
 #include "dsp/engine/Engine.h"
@@ -58,6 +59,13 @@ class PluginProcessor : public juce::AudioProcessor
     float currentTempo() const noexcept { return isStandalone() ? auditionState.getBpm() : tempoState.get(); }
     core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
 
+    // User wavetables (docs/specs/wavetable-user.md). Message thread. The file is read and decoded
+    // in the background; on success the oscillator switches to the User entry, otherwise the
+    // reason is kept in wavetableMessage(). Both announce through wavetableChanged.
+    void loadUserWavetable(int oscillator, const juce::File& file);
+    const juce::String& wavetableMessage() const noexcept { return lastWavetableMessage; }
+    juce::ChangeBroadcaster& wavetableChanged() noexcept { return wavetableBroadcaster; }
+
   private:
     juce::AudioProcessorValueTreeState state;
     core::EngineParameterReader parameterReader;
@@ -67,6 +75,12 @@ class PluginProcessor : public juce::AudioProcessor
     // After `state`: they listen to its parameters and must go first on destruction.
     core::WavetableSelector wavetable1{state, 0};
     core::WavetableSelector wavetable2{state, 1};
+    core::WavetableSelector& selectorFor(int oscillator) noexcept
+    {
+        return oscillator == 0 ? wavetable1 : wavetable2;
+    }
+    juce::String lastWavetableMessage;
+    juce::ChangeBroadcaster wavetableBroadcaster;
     dsp::Engine engine;
 
     // Standalone only. The host's MIDI is copied here together with the audition events; the
@@ -78,6 +92,9 @@ class PluginProcessor : public juce::AudioProcessor
     void addAuditionEvents(int numSamples, const juce::MidiBuffer& hostMidi);
     // The parameters for this block, with the tempo from the host (or the Standalone's BPM).
     dsp::EngineParameters readEngineParameters();
+
+    // Last, so it is destroyed first: pending loads are then dropped instead of calling back.
+    core::WavetableLoader wavetableLoader;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginProcessor)
 };

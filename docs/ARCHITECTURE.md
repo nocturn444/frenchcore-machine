@@ -116,7 +116,7 @@ Details and tests in [voice-note-handling](specs/voice-note-handling.md).
 - `Position` selects/interpolates between frames.
 - Anti-aliasing: on load, each frame is converted to a set of band-limited mipmaps (one per octave, built with FFT by zeroing harmonics above Nyquist). Playback picks the mipmap for the current frequency and interpolates linearly between samples and between adjacent frames.
 - Loading and mipmap generation happen on a background thread. The finished `WavetableData` is published to the audio thread with an atomic pointer swap; the old one is released on the message thread (see section 6).
-- The source of the user's wavetable (file path and an embedded copy of the audio) is stored in the plugin state so projects survive moving files.
+- A user wavetable is embedded in the plugin state (a `UserWavetable1`/`UserWavetable2` node with the display name and the frames as base64 floats) so projects survive moving files. The file path is deliberately not stored ([wavetable-user](specs/wavetable-user.md), section 12).
 
 ### 4.3 Tock (click layer with optional samples)
 
@@ -208,7 +208,7 @@ MVP effects:
 
 - **Automatable parameters** live in a `juce::AudioProcessorValueTreeState` (APVTS). Parameter IDs are defined in one place (`src/core/ParameterIds.h` plus each effect's own parameter function) and are **never renamed or reused** once released.
 - **Non-parameter state** lives in child nodes of the same `ValueTree`:
-  - `Wavetable`: source name, embedded audio (base64 or binary blob).
+  - `UserWavetable1`, `UserWavetable2`: display name and embedded frames (base64), see [wavetable-user](specs/wavetable-user.md).
   - `AmpEnvelope`, `PitchEnvelope`: point lists.
   - `FxChain`: order of effect IDs.
 - **Versioning:** the root state node carries `stateVersion`, always written on save (`core::kStateVersion`, currently 1). A missing or damaged value counts as version 1. Loading older state runs the steps of `stateMigrations()` in `src/core/StateMigrations.cpp` in order (the list is empty while only version 1 exists); a state whose version is newer than this build is still loaded: the controls this build knows are applied and the rest is ignored. Each effect also carries its descriptor `version`.

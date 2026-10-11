@@ -147,6 +147,17 @@ void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
         tree.appendChild(envelope->toValueTree(), nullptr);
     }
 
+    // User wavetables travel as child nodes too, embedded so the project does not need the files.
+    for (int i = 0; i < dsp::kNumOscillators; ++i)
+    {
+        auto node = selectorFor(i).toValueTree();
+        if (node.isValid())
+        {
+            tree.removeChild(tree.getChildWithName(node.getType()), nullptr);
+            tree.appendChild(node, nullptr);
+        }
+    }
+
     if (auto xml = tree.createXml())
         copyXmlToBinary(*xml, destData);
 }
@@ -169,10 +180,42 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
         pitchEnvelope.restoreFrom(
             tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
 
-        // The new parameter values schedule this too; doing it now makes the load complete at once.
-        wavetable1.update();
-        wavetable2.update();
+        // User wavetables first, then the table of each current Wavetable value (the new parameter
+        // values schedule that too; doing it now makes the load complete at once).
+        for (int i = 0; i < dsp::kNumOscillators; ++i)
+        {
+            selectorFor(i).restoreFrom(tree.getChildWithName("UserWavetable" + juce::String(i + 1)));
+            selectorFor(i).update();
+        }
     }
+}
+
+void PluginProcessor::loadUserWavetable(int oscillator, const juce::File& file)
+{
+    if (oscillator < 0 || oscillator >= dsp::kNumOscillators)
+        return;
+
+    wavetableLoader.load(
+        file,
+        [this, oscillator](core::WavetableImportResult result, juce::String name)
+        {
+            const juce::String label = "Osc " + juce::String(oscillator + 1) + ": ";
+            if (!result.ok() || !selectorFor(oscillator).loadUser(std::move(result.frames), name))
+            {
+                lastWavetableMessage =
+                    label + (result.error.isNotEmpty() ? result.error : "The file is not usable");
+            }
+            else
+            {
+                auto* parameter = state.getParameter(
+                    core::ParameterIds::oscillator(oscillator, core::ParameterIds::Oscillator::kWavetable));
+                parameter->setValueNotifyingHost(
+                    parameter->convertTo0to1(static_cast<float>(core::WavetableSelector::userEntry())));
+                selectorFor(oscillator).update();
+                lastWavetableMessage = label + "loaded " + selectorFor(oscillator).userName();
+            }
+            wavetableBroadcaster.sendChangeMessage();
+        });
 }
 
 } // namespace fcm

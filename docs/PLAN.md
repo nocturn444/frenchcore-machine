@@ -74,8 +74,8 @@ Done when:
 ## Phase 4: Wavetables
 
 - [x] Factory wavetable set (nine generated tables and the Wavetable choice per oscillator, [spec](specs/wavetable-factory.md); the list was chosen by the agent and waits for the product owner's ears)
-- [ ] User wavetable loading (background thread, validation, error messages)
-- [ ] Wavetable embedded in plugin state
+- [x] User wavetable loading (background thread, validation, error messages; [spec](specs/wavetable-user.md))
+- [x] Wavetable embedded in plugin state
 - [ ] Wavetable display with position indicator
 - [ ] Tock: synth mode and sample mode (factory and user samples)
 

@@ -29,7 +29,10 @@ TEST_CASE("The wavetable parameters are choices that list the factory tables in 
         auto* choice = dynamic_cast<juce::AudioParameterChoice*>(
             processor.state.getParameter(fcm::core::ParameterIds::oscillator(oscillator, "wavetable")));
         REQUIRE(choice != nullptr);
-        REQUIRE(choice->choices.size() == FactoryWavetables::count());
+        // The factory tables in order, then the user wavetable entry.
+        REQUIRE(choice->choices.size() == FactoryWavetables::count() + 1);
+        REQUIRE(WavetableSelector::userEntry() == FactoryWavetables::count());
+        REQUIRE(choice->choices[FactoryWavetables::count()].toStdString() == "User");
         REQUIRE(choice->getIndex() == 0);
         for (int i = 0; i < FactoryWavetables::count(); ++i)
             REQUIRE(choice->choices[i].toStdString() == FactoryWavetables::name(i));
@@ -79,7 +82,7 @@ TEST_CASE("An unusable parameter value selects a valid table", "[core][wavetable
         raw->store(bad);
         selector.update();
         REQUIRE(selector.currentEntry() >= 0);
-        REQUIRE(selector.currentEntry() < FactoryWavetables::count());
+        REQUIRE(selector.currentEntry() <= WavetableSelector::userEntry());
         REQUIRE(selector.source().acquire() != nullptr);
     }
 }

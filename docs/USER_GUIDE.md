@@ -53,7 +53,17 @@ The built-in wavetables, in menu order:
 | **Hardcore Punch** | An asymmetric, heavily driven sine: the aggressive bite. |
 | **Rumble Core** | A biased, overdriven sine with a lot of even harmonics, for gritty body. |
 
-Harder waves carry more energy than the sine at the same Level, so they sound louder: lower **Level** if needed. Changing the Wavetable while a kick is sounding changes the sound from the next moment on and can click, so set it up before you play. Loading your own wavetable comes in a later version.
+Harder waves carry more energy than the sine at the same Level, so they sound louder: lower **Level** if needed. Changing the Wavetable while a kick is sounding changes the sound from the next moment on and can click, so set it up before you play. 
+
+### Your own wavetable
+
+Under the controls there are two buttons, **Load Osc 1 Wavetable...** and **Load Osc 2 Wavetable...**. Pick a WAV file and, if it is usable, that oscillator switches to the **User** entry of its Wavetable menu and plays it. A line of text next to the buttons says what was loaded, or why a file was refused.
+
+- A wavetable is a WAV whose length is a whole number of 2048-sample frames (1 to 256 frames, the Serum and Vital format), or a single cycle of 64 to 16384 samples, which is stretched to one frame. Only the first channel is used, and the sample rate does not matter.
+- The sound is centred and scaled so its loudest point is full scale, keeping the level differences between frames.
+- A file that cannot be used (not a WAV, too long, silent, damaged) is refused and the oscillator keeps what it had.
+- The wavetable is saved **inside your project**, so it still plays if you move or delete the file. Only the file name is kept, to show it; the folder is not.
+- Choosing **User** with nothing loaded plays the Sine. Each oscillator has its own.
 
 ## Tock
 

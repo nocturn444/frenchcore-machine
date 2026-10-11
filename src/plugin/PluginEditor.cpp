@@ -19,6 +19,9 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
     : AudioProcessorEditor(owner),
       // The envelope parameters are shown by the envelope panels, not by the generic list.
       parameterPanel(owner.getState(), {"ampEnv", "pitchEnv", "punchTail"}),
+      wavetablePanel([&owner](int oscillator, const juce::File& file)
+                     { owner.loadUserWavetable(oscillator, file); }, owner.wavetableChanged(),
+                     [&owner] { return owner.wavetableMessage(); }),
       ampPanel(
           owner.getAmpEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
           ui::EnvelopePanel::ampConfig(owner.getState())),
@@ -27,10 +30,11 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
           ui::EnvelopePanel::pitchConfig())
 {
     addAndMakeVisible(parameterPanel);
+    addAndMakeVisible(wavetablePanel);
     addAndMakeVisible(ampPanel);
     addAndMakeVisible(pitchPanel);
 
-    int totalHeight = kPanelHeight;
+    int totalHeight = kPanelHeight + ui::WavetablePanel::kHeight;
     if (owner.isStandalone())
     {
         auditionPanel = std::make_unique<ui::AuditionPanel>(owner.getAuditionState());
@@ -48,19 +52,19 @@ void PluginEditor::resized()
 {
     auto area = getLocalBounds();
 
-    if (auditionPanel != nullptr)
-    {
-        // The strip scales with the window like everything else.
-        const int stripHeight =
-            area.getHeight() * ui::AuditionPanel::kHeight / (kPanelHeight + ui::AuditionPanel::kHeight);
-        auditionPanel->setBounds(area.removeFromBottom(stripHeight));
-    }
+    // Every part keeps its share of the height as the window scales.
+    const int designHeight = kPanelHeight + ui::WavetablePanel::kHeight +
+                             (auditionPanel != nullptr ? ui::AuditionPanel::kHeight : 0);
+    const auto scaled = [&](int designPixels) { return area.getHeight() * designPixels / designHeight; };
 
-    // The envelope row keeps its share of the height as the window scales.
-    auto envelopes = area.removeFromBottom(area.getHeight() * kEnvelopeRowHeight / kPanelHeight);
+    if (auditionPanel != nullptr)
+        auditionPanel->setBounds(area.removeFromBottom(scaled(ui::AuditionPanel::kHeight)));
+
+    auto envelopes = area.removeFromBottom(scaled(kEnvelopeRowHeight));
     ampPanel.setBounds(envelopes.removeFromLeft(envelopes.getWidth() / 2));
     pitchPanel.setBounds(envelopes);
 
+    wavetablePanel.setBounds(area.removeFromBottom(scaled(ui::WavetablePanel::kHeight)));
     parameterPanel.setBounds(area);
 }
 

@@ -5,6 +5,7 @@
 #include "dsp/oscillator/WavetableData.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <vector>
 
 namespace fcm::core
 {
@@ -26,6 +27,24 @@ class WavetableSelector : private juce::AudioProcessorValueTreeState::Listener, 
     // The entry the published table was built from.
     int currentEntry() const noexcept { return entry; }
 
+    // The menu entry of the user wavetable: the entry after the last factory one.
+    static int userEntry() noexcept;
+
+    // Message thread. Takes the frames of a user wavetable (already checked by importWavetable, or
+    // checked again here) and publishes it if the User entry is selected. Returns false and changes
+    // nothing when the frames are not valid. The caller then selects the User entry.
+    bool loadUser(std::vector<float> frames, const juce::String& name);
+    void clearUser();
+    bool hasUser() const noexcept { return !userFrames.empty(); }
+    const juce::String& userName() const noexcept { return userDisplayName; }
+
+    // Saved form: a node "UserWavetable1" / "UserWavetable2" with the name and the frames as
+    // base64 float32; an invalid ValueTree when there is no user wavetable.
+    juce::ValueTree toValueTree() const;
+    // Restores from a saved node, which is untrusted input. A missing or unusable node leaves no
+    // user wavetable and returns false.
+    bool restoreFrom(const juce::ValueTree& node);
+
     // Message thread. Publishes the table of the parameter's current value if it changed. Called by
     // the scheduled update; tests and the state loader may call it directly.
     void update();
@@ -40,6 +59,10 @@ class WavetableSelector : private juce::AudioProcessorValueTreeState::Listener, 
     std::atomic<float>* raw = nullptr;
     dsp::PublishedPointer<dsp::WavetableData> published;
     int entry = -1;
+    bool dirty = false; // the user frames changed since the last build
+    int oscillator = 0;
+    std::vector<float> userFrames;
+    juce::String userDisplayName;
 };
 
 } // namespace fcm::core
