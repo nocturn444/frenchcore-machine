@@ -28,12 +28,12 @@ A pull request that adds behaviour without updating the relevant docs is not mer
 
 Goal: an empty plugin that loads in a DAW on all three platforms.
 
-- [ ] CMake project with CPM, pinned JUCE 9 and Catch2
-- [ ] Libraries `fcm_dsp`, `fcm_core`, `fcm_ui` and the plugin target (VST3, AU, Standalone)
-- [ ] Empty processor (silence) and empty resizable editor
-- [ ] CI: build + unit tests + pluginval on Windows, macOS, Linux; artifacts uploaded
-- [ ] clang-format check in CI
-- [ ] `docs/BUILDING.md` verified against a clean checkout
+- [x] CMake project with CPM, pinned JUCE 9 and Catch2
+- [x] Libraries `fcm_dsp`, `fcm_core`, `fcm_ui` and the plugin target (VST3, AU, Standalone)
+- [x] Empty processor (silence) and resizable editor showing the agreed layout grid
+- [x] CI: build + unit tests + pluginval on Windows, macOS, Linux; artifacts uploaded
+- [x] clang-format check in CI
+- [x] `docs/BUILDING.md` verified against a clean checkout
 
 ## Phase 2: First sound
 
