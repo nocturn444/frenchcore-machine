@@ -31,6 +31,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Envelope shapes are saved with the project and restored with it; a damaged shape falls back to the default.
 - ADR 0006 (envelope model and lock-free publishing), specs for breakpoint envelopes and for Punch / Tail.
 
+### Security
+
+- Phase 3 data is covered by the safe loading too: the new envelope and Punch/Tail parameters, a host tempo that is 0, negative or NaN, a NaN time scale and the tail length reported to the host can no longer silence the kick, keep a voice alive forever or hand the host a non-finite value.
+- Loading saved state is now safe against damaged or hostile data: values that are not finite numbers (`nan`, `inf`) become the parameter's default, out-of-range values are clamped, unknown entries are ignored, and oversized state is rejected. The oscillator and the parameter reader also guard their inputs, which fixes an out-of-bounds read on the audio thread reachable through a crafted `value="nan"`. See `docs/specs/state-safe-loading.md`.
+- `stateVersion` is now always written, a missing or newer version loads safely, and the migration hook (`StateMigrations`) exists.
+- `docs/ARCHITECTURE.md` has a new "Untrusted input" section with the rules for upcoming wavetable and preset files.
+- CI hardening: every GitHub Action is pinned to a full commit SHA, the workflow token is read-only, the pluginval download is verified against a SHA-256 before it runs, and the Windows build uses its own MSVC setup instead of a third-party action.
+- JUCE and Catch2 are pinned to the commit SHA of their release tags. The pinning policy is in `docs/ARCHITECTURE.md`.
+- Added `.github/dependabot.yml` (weekly GitHub Actions updates) and `SECURITY.md` (report vulnerabilities through GitHub private vulnerability reporting).
+- Standalone: copying the host's MIDI into the audition buffer is now capped to the memory reserved in `prepareToPlay` (excess events are dropped, but note-offs and All Notes Off / All Sound Off are kept first so no note gets stuck), so a huge burst of MIDI can no longer make the audio thread allocate.
+
 ### Changed
 
 - The amp Attack knob now goes from 1 ms (it was 0), so a kick cannot start with a click.

@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "plugin/PluginProcessor.h"
 
+#include "core/BoundedMidiCopy.h"
 #include "core/ParameterIds.h"
 #include "core/ParameterLayout.h"
+#include "core/StateLoader.h"
+#include "core/TailLength.h"
 #include "plugin/PluginEditor.h"
+
+#include <cmath>
 
 namespace fcm
 {
@@ -12,9 +17,6 @@ namespace
 {
 const juce::Identifier kStateType{"FrenchcoreMachineState"};
 const juce::Identifier kStateVersionProperty{"stateVersion"};
-
-// Room for the host's events plus the audition events of one block (about 11 bytes each).
-constexpr int kAuditionMidiBytes = 8192;
 } // namespace
 
 PluginProcessor::PluginProcessor()
@@ -28,8 +30,8 @@ PluginProcessor::PluginProcessor()
 double PluginProcessor::getTailLengthSeconds() const
 {
     // After the key goes up the amp envelope fades out over its release, stretched by the time scale.
-    const double timeScale = state.getRawParameterValue(core::ParameterIds::kAmpEnvTimeScale)->load();
-    return static_cast<double>(ampEnvelope.getReleaseSeconds()) * timeScale + 0.05;
+    return core::tailLengthSeconds(ampEnvelope.getReleaseSeconds(),
+                                   state.getRawParameterValue(core::ParameterIds::kAmpEnvTimeScale)->load());
 }
 
 void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
@@ -42,7 +44,7 @@ void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     if (isStandalone())
     {
         auditionSequencer.prepare(sampleRate);
-        auditionMidi.ensureSize(kAuditionMidiBytes);
+        auditionMidi.ensureSize(core::kAuditionMidiBytes);
     }
 }
 
@@ -83,6 +85,10 @@ dsp::EngineParameters PluginProcessor::readEngineParameters()
             if (const auto hostBpm = position->getBpm())
                 bpm = static_cast<float>(*hostBpm);
 
+    // A host (or a damaged value) can hand over 0, a negative number or a NaN: keep the last good tempo.
+    if (!std::isfinite(bpm) || bpm <= 0.0f)
+        bpm = tempoState.get();
+
     tempoState.set(bpm);
     parameters.bpm = bpm;
     return parameters;
@@ -91,7 +97,9 @@ dsp::EngineParameters PluginProcessor::readEngineParameters()
 void PluginProcessor::addAuditionEvents(int numSamples, const juce::MidiBuffer& hostMidi)
 {
     auditionMidi.clear();
-    auditionMidi.addEvents(hostMidi, 0, numSamples, 0);
+    // Bounded copy: a burst bigger than the reserved room would make the buffer grow (allocate).
+    core::copyMidiWithinBudget(hostMidi, auditionMidi, numSamples, core::kHostMidiBudgetBytes,
+                               core::kHostMidiPriorityBudgetBytes);
 
     const bool autoPlay = auditionState.isAutoPlay();
 
@@ -127,8 +135,11 @@ juce::AudioProcessorEditor* PluginProcessor::createEditor()
 
 void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    // The envelope shapes are state that is not a parameter: they travel as child nodes.
+    // The version is always written, whatever the tree held before (docs/specs/state-safe-loading.md).
     auto tree = state.copyState();
+    tree.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
+
+    // The envelope shapes are state that is not a parameter: they travel as child nodes.
     for (auto* envelope : {&ampEnvelope, &pitchEnvelope})
     {
         tree.removeChild(tree.getChildWithName(core::EnvelopeState::nodeType(envelope->kind())), nullptr);
@@ -141,10 +152,16 @@ void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
 
 void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
+    // The host's bytes are not trusted: too big or not our state means nothing changes, and
+    // everything else goes through the checks of core::loadState.
+    if (data == nullptr || sizeInBytes <= 0 || sizeInBytes > core::kMaxStateBytes)
+        return;
+
     if (auto xml = getXmlFromBinary(data, sizeInBytes); xml != nullptr && xml->hasTagName(kStateType))
     {
         const auto tree = juce::ValueTree::fromXml(*xml);
-        state.replaceState(tree);
+        if (core::loadState(state, tree, kStateType) == core::StateLoadResult::rejected)
+            return;
 
         // A missing or damaged node gives the default shape instead of failing the whole load.
         ampEnvelope.restoreFrom(tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::amp)));

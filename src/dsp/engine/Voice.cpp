@@ -134,9 +134,12 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
         startPhases[i] = osc.startPhase;
     }
 
-    bpm = std::clamp(parameters.bpm, static_cast<float>(kMinTempoBpm), static_cast<float>(kMaxTempoBpm));
-    ampTimeScale = parameters.ampTimeScale;
-    pitchTimeScale = parameters.pitchTimeScale;
+    // std::clamp does not stop a NaN, so a tempo or scale that is not a finite number is ignored
+    // (the last good value stays) instead of silencing the kick for good.
+    if (std::isfinite(parameters.bpm) && parameters.bpm > 0.0f)
+        bpm = std::clamp(parameters.bpm, static_cast<float>(kMinTempoBpm), static_cast<float>(kMaxTempoBpm));
+    ampTimeScale = std::isfinite(parameters.ampTimeScale) ? parameters.ampTimeScale : 1.0f;
+    pitchTimeScale = std::isfinite(parameters.pitchTimeScale) ? parameters.pitchTimeScale : 1.0f;
 
     if (snap)
     {

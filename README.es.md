@@ -41,6 +41,10 @@ Toda la documentación está en [docs/](docs/README.md), en inglés. Para empeza
 
 Las contribuciones son bienvenidas. Leé [CONTRIBUTING.md](CONTRIBUTING.md) antes: el proyecto sigue desarrollo guiado por documentación, así que cada función empieza con una especificación escrita.
 
+## Seguridad
+
+Para avisar de una vulnerabilidad, usá el reporte privado de GitHub como se explica en [SECURITY.md](SECURITY.md). Por favor no abras un issue público para eso.
+
 ## Licencia
 
 Frenchcore Machine es software libre bajo la [GNU Affero General Public License v3.0](LICENSE). Los sonidos que hagas con el plugin son tuyos, sin ninguna restricción.

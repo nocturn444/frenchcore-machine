@@ -4,6 +4,7 @@
 #include "dsp/envelope/EnvelopeShape.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace fcm::dsp
 {
@@ -46,7 +47,8 @@ class EnvelopeRenderer
     // Starts from time 0. `timeScale` multiplies every time of the shape, release included.
     void start(float timeScale) noexcept
     {
-        scale = std::max(timeScale, 0.01f);
+        // std::max would pass a NaN through, which would freeze the envelope and the voice with it.
+        scale = std::isfinite(timeScale) ? std::max(timeScale, 0.01f) : 1.0f;
         msPerSample = 1000.0 / (sampleRate * static_cast<double>(scale));
         positionMs = 0.0;
         segment = 0;
