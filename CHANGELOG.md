@@ -23,6 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Specs for voice and note handling and for the wavetable oscillator, and ADR 0005 (engine parameter hand-off).
 - `fcm_core_tests`: tests for the parameter layout (including a guard on released parameter IDs) and the parameter-to-engine mapping.
 
+### Security
+
+- CI hardening: every GitHub Action is pinned to a full commit SHA, the workflow token is read-only, the pluginval download is verified against a SHA-256 before it runs, and the Windows build uses its own MSVC setup instead of a third-party action.
+- JUCE and Catch2 are pinned to the commit SHA of their release tags. The pinning policy is in `docs/ARCHITECTURE.md`.
+- Added `.github/dependabot.yml` (weekly GitHub Actions updates) and `SECURITY.md` (report vulnerabilities through GitHub private vulnerability reporting).
+
 ### Changed
 
 - The editor shows the generic parameter panel instead of the layout placeholder grid; the layout itself stays documented in `docs/UI_LAYOUT.md`.

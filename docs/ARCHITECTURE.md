@@ -246,6 +246,13 @@ Patterns used:
 
 - `cmake --preset <platform>` then `cmake --build`. Details in [BUILDING.md](BUILDING.md).
 - GitHub Actions runs on every push and PR: configure, build (Release), run unit tests, run pluginval, upload plugin binaries as artifacts. Tagged releases attach zipped binaries to a GitHub Release.
+- **Supply-chain pinning policy.** Nothing that runs in CI or is built into the plugin is referenced by a movable name:
+  - Every GitHub Action in `.github/workflows/` is pinned to the full commit SHA of a release, with the version in a trailing comment. The workflow token is read-only (`permissions: contents: read`).
+  - `cmake/Dependencies.cmake` pins JUCE and Catch2 to the full commit SHA of their release tag (version in a comment), still fetched with `GIT_REPOSITORY` (archive URLs are blocked in the cloud environment). `GIT_SHALLOW` is off for them because shallow clones by SHA are not reliable everywhere.
+  - Downloaded tools are checked against a SHA-256 stored in the repository before they are extracted or run (pluginval, one hash per platform zip in the workflow matrix).
+  - The Windows build sets up MSVC with its own step (vswhere and `vcvarsall.bat`), not a third-party action.
+  - To update a pin, change the tag, look up the new commit SHA (`git ls-remote --tags <repo>`), recompute hashes, and update the version table above. Dependabot proposes weekly updates for the Actions.
+- Security reports go through GitHub private vulnerability reporting, see [SECURITY.md](../SECURITY.md).
 - Code signing and notarization (macOS) are out of MVP scope; unsigned builds are documented.
 
 ## 10. Extension points summary
