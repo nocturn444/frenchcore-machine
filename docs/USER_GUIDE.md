@@ -12,7 +12,7 @@ _Filled in when the MVP features land._
 
 ## Oscillator and wavetables
 
-## Click layer
+## Tock sampler
 
 ## Envelopes
 

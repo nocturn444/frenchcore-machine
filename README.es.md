@@ -12,7 +12,7 @@ Frenchcore Machine está a mitad de camino entre arrastrar un sample y construir
 
 - Oscilador wavetable con wavetables de fábrica para kicks, y carga de wavetables propias (WAV compatible con Serum/Vital).
 - Envolvente de amplitud editable (forma kick + bass por defecto) y envolvente de pitch.
-- Capa opcional de click/transiente.
+- Tock sampler: una capa opcional de transiente con tocks de fábrica o tus propios samples.
 - Monofónico con glide opcional; la nota MIDI afina la cola del kick.
 - Efectos que podés ordenar arrastrándolos: distorsión (soft clip, hard clip, overdrive, foldback, bitcrush), EQ de 3 bandas y stereo multibanda.
 - Presets.

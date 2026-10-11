@@ -35,7 +35,7 @@ frenchcore-machine/
 ├── src/
 │   ├── core/                 fcm_core: parameter IDs, state model, presets, wavetable I/O
 │   ├── dsp/                  fcm_dsp: all audio processing, no UI, no plugin wrapper
-│   │   ├── engine/           Voice, glide, click layer, engine orchestration
+│   │   ├── engine/           Voice, glide, tock sampler, engine orchestration
 │   │   ├── oscillator/       Wavetable data, mipmaps, oscillator
 │   │   ├── envelope/         Breakpoint envelope model and renderer
 │   │   └── fx/               Effect interface, registry, chain, one folder per effect
@@ -72,7 +72,7 @@ MIDI ──► NoteHandler (mono, last-note priority, optional glide)
         │ Voice                        │
         │  Pitch envelope ─► pitch     │
         │  Wavetable oscillator        │
-        │  + Click layer (optional)    │
+        │  + Tock sampler (optional)   │
         │  × Amp envelope              │
         └──────────────┬───────────────┘
                        ▼
@@ -98,10 +98,11 @@ MIDI ──► NoteHandler (mono, last-note priority, optional glide)
 - Loading and mipmap generation happen on a background thread. The finished `WavetableData` is published to the audio thread with an atomic pointer swap; the old one is released on the message thread (see section 6).
 - The source of the user's wavetable (file path and an embedded copy of the audio) is stored in the plugin state so projects survive moving files.
 
-### 4.3 Click layer
+### 4.3 Tock sampler (click layer)
 
-- Optional short transient mixed before the amp envelope: either a factory click sample or a short noise burst with its own decay and filter.
-- Parameters: `Click On`, `Click Type`, `Click Level`, `Click Decay`, `Click Tone`.
+- Optional short transient (the "tock") mixed before the amp envelope, played from a sample: factory tocks or a user-loaded WAV. User samples are embedded in the plugin state like wavetables.
+- Sample loading follows the same background-load and atomic-publish pattern as wavetables.
+- Parameters: `Tock On`, `Tock Sample`, `Tock Level`, `Tock Tune`, `Tock Start`, `Tock Decay`, `Tock Tone`.
 
 ### 4.4 Envelopes
 
@@ -195,9 +196,10 @@ Patterns used:
 - Functional first; visual design will be done later and must not require structural changes. All drawing goes through a custom `LookAndFeel` so restyling is a separate task.
 - Resizable editor with a fixed aspect ratio, laid out with `juce::FlexBox`/`Grid` relative to the window size.
 - Main areas (subject to the layout sketch in [UI_LAYOUT.md](UI_LAYOUT.md)):
-  - Header: preset browser (prev/next/save/load), output gain.
-  - Oscillator: wavetable display, position, load button, click layer controls.
-  - Envelopes: tabbed or stacked breakpoint editors for amp and pitch, with shape presets.
+  - Header: preset bar (save, save as, select, init).
+  - Oscillator: voice header, wavetable display, position, load button.
+  - Envelopes: side-by-side editors for amp and pitch, with shape presets.
+  - Tock sampler panel.
   - FX rack: list of effect slots that can be dragged to reorder, each with enable, mix and its panel.
 - The UI never calls DSP code. It changes parameters through APVTS attachments and non-parameter state through `fcm_core` APIs.
 - A JUCE 9 WebView-based UI is a possible future option for the visual redesign. It is not used in the MVP.

@@ -23,7 +23,7 @@ The MVP is done when all of the following are true:
 | Oscillator | Wavetable oscillator with position control | Band-limited mipmaps. |
 | Oscillator | 6 to 10 factory wavetables designed for kicks | Sine, triangle-ish, saturated sines, "hardcore" shapes. |
 | Oscillator | Load user wavetables (Serum/Vital-style WAV, 2048-sample frames) | Also accepts a single-cycle WAV. Embedded in the project state. |
-| Click layer | Optional transient: a few factory clicks + noise burst | Level, decay, tone. |
+| Tock sampler | Optional transient layer: factory tock/click samples + user-loaded samples | Level, tune, start, decay, filter. Mandatory in the UI sketch. |
 | Envelopes | Amp envelope, breakpoint editor, default "kick + bass" shape | Add/move/delete points, segment curvature. |
 | Envelopes | Pitch envelope, breakpoint editor, amount in semitones | |
 | Envelopes | Shape presets for both envelopes | e.g. "Kick + Bass", "Short Punch", "Long Tail". |
@@ -51,5 +51,5 @@ The MVP is done when all of the following are true:
 
 ## Open items to confirm with the product owner
 
-- The UI layout sketch (pending, will be captured in [UI_LAYOUT.md](UI_LAYOUT.md)).
+- The red (to-discuss) areas of the UI sketch in [UI_LAYOUT.md](UI_LAYOUT.md): panel B, LFOs, punch/tail balance, other, global.
 - The exact list and sound of the factory wavetables and presets.

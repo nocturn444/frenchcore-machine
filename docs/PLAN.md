@@ -22,7 +22,7 @@ A pull request that adds behaviour without updating the relevant docs is not mer
 - [x] Core documentation: plan, architecture, MVP scope, README (EN/ES), contributing, license, changelog
 - [x] Project system prompt for agents (`CLAUDE.md`)
 - [x] GitHub templates (PR, issues) and cloud session setup
-- [ ] UI layout spec from the product owner's sketch (`docs/UI_LAYOUT.md`)
+- [~] UI layout spec from the product owner's sketch (`docs/UI_LAYOUT.md`)
 
 ## Phase 1: Skeleton that builds everywhere
 
@@ -61,7 +61,7 @@ Goal: a MIDI note plays a pitched kick from a built-in sine table.
 - [ ] User wavetable loading (background thread, validation, error messages)
 - [ ] Wavetable embedded in plugin state
 - [ ] Wavetable display with position indicator
-- [ ] Click layer
+- [ ] Tock sampler (factory and user samples)
 
 ## Phase 5: FX system
 
