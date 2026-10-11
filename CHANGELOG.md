@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - CI hardening: every GitHub Action is pinned to a full commit SHA, the workflow token is read-only, the pluginval download is verified against a SHA-256 before it runs, and the Windows build uses its own MSVC setup instead of a third-party action.
 - JUCE and Catch2 are pinned to the commit SHA of their release tags. The pinning policy is in `docs/ARCHITECTURE.md`.
 - Added `.github/dependabot.yml` (weekly GitHub Actions updates) and `SECURITY.md` (report vulnerabilities through GitHub private vulnerability reporting).
+- Standalone: copying the host's MIDI into the audition buffer is now capped to the memory reserved in `prepareToPlay` (excess events are dropped, but note-offs and All Notes Off / All Sound Off are kept first so no note gets stuck), so a huge burst of MIDI can no longer make the audio thread allocate.
 
 ### Changed
 
