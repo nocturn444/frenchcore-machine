@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege: the jobs only read the repository. Pull requests from forks get a read-only token anyway.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -14,6 +18,7 @@ concurrency:
 env:
   BUILD_TYPE: Release
   CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
+  # The SHA-256 of each pluginval zip is in the matrix below; update both together.
   PLUGINVAL_VERSION: v1.0.4
 
 jobs:
@@ -21,7 +26,7 @@ jobs:
     name: Format check
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Check clang-format
         run: |
           files=$(git ls-files 'src/*.h' 'src/*.cpp' 'tests/*.h' 'tests/*.cpp')
@@ -38,20 +43,23 @@ jobs:
           - name: Linux
             os: ubuntu-24.04
             pluginval: pluginval_Linux.zip
+            pluginval-sha256: c01c49d8063965c4c2dea8324468336768f5c9139e0b1caebde14c2400b55352
             pluginval-bin: ./pluginval
           - name: macOS
             os: macos-14
             pluginval: pluginval_macOS.zip
+            pluginval-sha256: 3c4c533bda0c5059eea3ddaea752d757ee2025041f0f47e6bcb0e87f6082b29f
             pluginval-bin: ./pluginval.app/Contents/MacOS/pluginval
             extra-cmake-args: '"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13'
           - name: Windows
             os: windows-latest
             pluginval: pluginval_Windows.zip
+            pluginval-sha256: c08e61ce3b96db41636f8ec7e76f4c7e2c13ebdac7fa1b5a1f52b4f32ec715ab
             pluginval-bin: ./pluginval.exe
             extra-cmake-args: -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -66,12 +74,22 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install ninja
 
+      # Own setup instead of a third-party action: find Visual Studio with vswhere, run vcvarsall.bat
+      # for x64 and export the resulting environment to the following steps.
       - name: Set up MSVC environment
         if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $root = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $root) { throw 'Visual Studio with the C++ x64 tools was not found' }
+          $vcvars = Join-Path $root 'VC\Auxiliary\Build\vcvarsall.bat'
+          cmd /c "`"$vcvars`" x64 > nul && set" | ForEach-Object {
+            if ($_ -match '^([^=]+)=(.*)$') { Add-Content -Path $env:GITHUB_ENV -Value "$($Matches[1])=$($Matches[2])" }
+          }
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .cpm-cache
           key: cpm-${{ runner.os }}-${{ hashFiles('cmake/Dependencies.cmake') }}
@@ -90,8 +108,16 @@ jobs:
 
       - name: pluginval (VST3)
         shell: bash
+        env:
+          PLUGINVAL_SHA256: ${{ matrix.pluginval-sha256 }}
         run: |
           curl -sSfL -o pluginval.zip "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/${{ matrix.pluginval }}"
+          # Verify the download before it is extracted or run.
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            echo "${PLUGINVAL_SHA256}  pluginval.zip" | shasum -a 256 -c -
+          else
+            echo "${PLUGINVAL_SHA256}  pluginval.zip" | sha256sum -c -
+          fi
           unzip -q pluginval.zip
           plugin="build/src/plugin/FrenchcoreMachine_artefacts/${BUILD_TYPE}/VST3/Frenchcore Machine.vst3"
           if [ "$RUNNER_OS" = "Linux" ]; then
@@ -101,7 +127,7 @@ jobs:
           fi
 
       - name: Upload plugins
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: FrenchcoreMachine-${{ matrix.name }}
           path: |
