@@ -199,6 +199,19 @@ A three-band equaliser to shape the kick after (or before) the distortion. Switc
 
 Each band has **Freq**, **Gain** (-18 to +18 dB; 0 does nothing) and **Q**. With every Gain at 0 the EQ changes nothing, and it adds no delay.
 
+### Stereo
+
+A multiband stereo effect. It splits the sound into three bands (low, mid, high) and sets the stereo width of each. Switch it on with **Stereo On**.
+
+| Control | What it does |
+|---|---|
+| **Crossover 1** | Where the low band ends (40 to 400 Hz, default 120 Hz). |
+| **Crossover 2** | Where the high band starts (400 Hz to 8 kHz, default 2.5 kHz). The mid band is between the two. |
+| **Low Width**, **Mid Width**, **High Width** | The width of each band: 0 % is mono, 100 % leaves it as it comes in, up to 200 % very wide. |
+| **Mono Below** | On by default: forces the low band to mono, whatever Low Width says. The safe setting for a kick. |
+
+The kick is generated in mono, so there is nothing to spread in the ordinary sense. Above 100 % the effect adds a *decorrelated* copy of the band to the sides (same loudness and tone, shifted in time in a way that differs from one frequency to the next), which sounds like a different signal in each ear. At 100 % or less nothing is added, so a mono kick stays exactly mono. It adds no delay, and with a mono output it does nothing.
+
 - **Quality** (in the Global controls): how much the effects that make harmonics are oversampled (1x, 2x, 4x or 8x, default 2x). Higher is cleaner and uses more CPU. Changing it changes the small delay the plugin reports to your DAW.
 
 ## Presets

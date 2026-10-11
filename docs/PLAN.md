@@ -85,7 +85,7 @@ Done when:
 - [x] `Effect` interface, `EffectRegistry`, `EffectChain` with lock-free reorder, with tests
 - [x] Distortion (5 types, oversampling; [spec](specs/fx-distortion.md))
 - [x] 3-band EQ ([spec](specs/fx-eq.md))
-- [ ] Multiband stereo
+- [x] Multiband stereo ([spec](specs/fx-stereo.md))
 - [ ] FX rack UI with drag-and-drop reordering, enable and mix per slot
 - [ ] `docs/ADDING_AN_EFFECT.md` validated by following it for one of the effects
 

@@ -2,6 +2,7 @@
 #include "dsp/fx/EffectRegistry.h"
 #include "dsp/fx/distortion/DistortionEffect.h"
 #include "dsp/fx/eq/EqEffect.h"
+#include "dsp/fx/stereo/StereoEffect.h"
 
 namespace fcm::dsp
 {
@@ -12,6 +13,7 @@ void registerEffects(EffectRegistry& registry)
 {
     registry.add<DistortionEffect>();
     registry.add<EqEffect>();
+    registry.add<StereoEffect>();
 }
 
 } // namespace fcm::dsp
