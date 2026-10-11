@@ -8,6 +8,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/EngineTests.cpp
     dsp/EnvelopeTests.cpp
     dsp/NoteHandlingTests.cpp
+    dsp/OscillatorRobustnessTests.cpp
     dsp/VoiceTests.cpp
     dsp/WavetableTests.cpp
 )
@@ -26,6 +27,7 @@ juce_add_console_app(fcm_core_tests PRODUCT_NAME "fcm_core_tests")
 target_sources(fcm_core_tests PRIVATE
     core/AuditionStateTests.cpp
     core/ParameterTests.cpp
+    core/StateLoaderTests.cpp
 )
 target_link_libraries(fcm_core_tests PRIVATE
     fcm_core
