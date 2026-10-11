@@ -14,5 +14,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Build system (CMake + CPM, JUCE 9.0.3, Catch2) producing VST3, AU and Standalone targets.
 - Plugin skeleton: silent engine, output gain parameter, resizable editor showing the agreed layout grid.
 - CI on Linux, macOS and Windows: build, unit tests, pluginval at strictness 10, clang-format check, downloadable builds.
+- First sound: a MIDI note plays a monophonic kick. It starts with a fast pitch drop (+48 semitones in 90 ms) and settles on the note's pitch, with an exponential amplitude decay. Retriggering does not click.
+- Voice controls: Key Track with a fixed Root Note, optional Glide with Glide Time, Velocity Sensitivity.
+- Two wavetable oscillators (On, Level, Pitch, Octave, Fine, Position, Phase) using band-limited mipmapped wavetables; the only wavetable for now is a built-in sine.
+- Safety Limiter (soft clipper, on by default) after Output Gain; the output never goes above 0 dBFS while it is on.
+- Generic parameter panel in the editor (one control per parameter) until the real panels land.
+- Specs for voice and note handling and for the wavetable oscillator, and ADR 0005 (engine parameter hand-off).
+- `fcm_core_tests`: tests for the parameter layout (including a guard on released parameter IDs) and the parameter-to-engine mapping.
+
+### Changed
+
+- The editor shows the generic parameter panel instead of the layout placeholder grid; the layout itself stays documented in `docs/UI_LAYOUT.md`.
+- The plugin reports the kick's tail length to the host.
 
 [Unreleased]: https://github.com/nocturn444/frenchcore-machine/commits/main

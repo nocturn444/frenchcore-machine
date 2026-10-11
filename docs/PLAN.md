@@ -43,13 +43,13 @@ Goal: an empty plugin that loads in a DAW on all three platforms.
 
 Goal: a MIDI note plays a pitched kick from a built-in sine table.
 
-- [ ] Spec: voice and note handling (mono, retrigger, key track, glide, velocity)
-- [ ] Spec: wavetable oscillator (format, mipmaps, interpolation)
-- [ ] `WavetableData` + mipmap builder + oscillator, with tests (two instances: osc1, osc2)
-- [ ] Voice + note handler, with tests
-- [ ] Fixed amp and pitch envelopes (hard-coded default shapes)
-- [ ] Output gain + safety limiter
-- [ ] Parameters wired through APVTS; basic generic UI
+- [x] Spec: voice and note handling (mono, retrigger, key track, glide, velocity)
+- [x] Spec: wavetable oscillator (format, mipmaps, interpolation)
+- [x] `WavetableData` + mipmap builder + oscillator, with tests (two instances: osc1, osc2)
+- [x] Voice + note handler, with tests
+- [x] Fixed amp and pitch envelopes (hard-coded default shapes)
+- [x] Output gain + safety limiter
+- [x] Parameters wired through APVTS; basic generic UI
 
 Done when:
 
