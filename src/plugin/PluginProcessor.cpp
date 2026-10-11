@@ -63,7 +63,8 @@ void PluginProcessor::addAuditionEvents(int numSamples, const juce::MidiBuffer& 
 {
     auditionMidi.clear();
     // Bounded copy: a burst bigger than the reserved room would make the buffer grow (allocate).
-    core::copyMidiWithinBudget(hostMidi, auditionMidi, numSamples, core::kHostMidiBudgetBytes);
+    core::copyMidiWithinBudget(hostMidi, auditionMidi, numSamples, core::kHostMidiBudgetBytes,
+                               core::kHostMidiPriorityBudgetBytes);
 
     const bool autoPlay = auditionState.isAutoPlay();
 

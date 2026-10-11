@@ -4,11 +4,25 @@
 namespace fcm::core
 {
 
+bool isSoundEndingMessage(const juce::uint8* data, int numBytes) noexcept
+{
+    if (numBytes < 2)
+        return false;
+
+    const int status = data[0] & 0xF0;
+    if (status == 0x80)
+        return true;
+    if (status == 0x90)
+        return numBytes >= 3 && data[2] == 0;
+    return status == 0xB0 && (data[1] == 120 || data[1] == 123);
+}
+
 MidiCopyResult copyMidiWithinBudget(const juce::MidiBuffer& source, juce::MidiBuffer& destination,
-                                    int numSamples, int maxBytes) noexcept
+                                    int numSamples, int maxBytes, int priorityMaxBytes) noexcept
 {
     MidiCopyResult result;
     int usedBytes = 0;
+    bool overflowed = false;
 
     for (const auto metadata : source)
     {
@@ -16,12 +30,16 @@ MidiCopyResult copyMidiWithinBudget(const juce::MidiBuffer& source, juce::MidiBu
             continue;
 
         const int eventBytes = kMidiEventOverheadBytes + metadata.numBytes;
-        if (usedBytes + eventBytes > maxBytes)
+        const bool fitsNormally = !overflowed && usedBytes + eventBytes <= maxBytes;
+        // Once something was dropped, ordinary events stay dropped so a smaller later event does
+        // not jump ahead of a dropped one. Messages that end sound still get through: a lost
+        // note-off would leave a note held for as long as the envelope sustains.
+        const bool fitsAsPriority = !fitsNormally && usedBytes + eventBytes <= priorityMaxBytes &&
+                                    isSoundEndingMessage(metadata.data, metadata.numBytes);
+        if (!fitsNormally && !fitsAsPriority)
         {
-            // Keep counting so the caller can tell how much was lost, but stop copying: a smaller
-            // later event must not jump the queue ahead of a dropped one and reorder the stream.
+            overflowed = true;
             ++result.dropped;
-            usedBytes = maxBytes;
             continue;
         }
 

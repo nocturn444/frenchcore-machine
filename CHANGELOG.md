@@ -25,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Security
 
-- Standalone: copying the host's MIDI into the audition buffer is now capped to the memory reserved in `prepareToPlay` (excess events are dropped), so a huge burst of MIDI can no longer make the audio thread allocate.
+- Standalone: copying the host's MIDI into the audition buffer is now capped to the memory reserved in `prepareToPlay` (excess events are dropped, but note-offs and All Notes Off / All Sound Off are kept first so no note gets stuck), so a huge burst of MIDI can no longer make the audio thread allocate.
 
 ### Changed
 

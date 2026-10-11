@@ -14,6 +14,10 @@ namespace fcm::core
 // for the audition events of one block (at most a few dozen note events).
 constexpr int kAuditionMidiBytes = 8192;
 constexpr int kHostMidiBudgetBytes = 6144;
+// Messages that end sound (note-off, note-on with velocity 0, All Notes Off, All Sound Off) may keep
+// using the reserved room up to this total after the normal budget is spent, so a burst never
+// leaves a note stuck on. What remains (1024 bytes) is still enough for the audition events.
+constexpr int kHostMidiPriorityBudgetBytes = 7168;
 
 // What juce::MidiBuffer stores per event on top of its data bytes: a 4-byte sample position and a
 // 2-byte size (juce_MidiBuffer.cpp). Rounded up to 8 on purpose so the budget stays below the real
@@ -26,10 +30,15 @@ struct MidiCopyResult
     int dropped = 0;
 };
 
+// True for messages that end sound: note-off, note-on with velocity 0, CC 120 and CC 123.
+bool isSoundEndingMessage(const juce::uint8* data, int numBytes) noexcept;
+
 // Copies the events of `source` whose position is in [0, numSamples) into `destination`, which must
-// be empty and have its memory reserved, until `maxBytes` of storage are used. Later events are
-// dropped. Does not allocate if `maxBytes` is below the reserved size of `destination`.
+// be empty and have its memory reserved, until `maxBytes` of storage are used. After the first event
+// that does not fit, other events are dropped (so the stream is never reordered), except that
+// sound-ending messages keep being copied until `priorityMaxBytes` are used. Does not allocate if
+// `priorityMaxBytes` is below the reserved size of `destination`.
 MidiCopyResult copyMidiWithinBudget(const juce::MidiBuffer& source, juce::MidiBuffer& destination,
-                                    int numSamples, int maxBytes) noexcept;
+                                    int numSamples, int maxBytes, int priorityMaxBytes) noexcept;
 
 } // namespace fcm::core
