@@ -12,8 +12,9 @@ Last updated: 2026-10-11.
 | 3 Envelopes (editable amp/pitch, Punch/Tail, tempo sync, level knobs) | Done and merged |
 | Security hardening (safe state loading, CI and supply chain, Standalone MIDI) | Done and merged |
 | 4 Wavetables and Tock | Done in pull requests: factory wavetables (#12), load your own wavetable (#13), wavetable display (#15), Tock (#16), user tock sample (#17) |
-| 5 FX system | Machinery (#18), distortion (#19), EQ (#20) and multiband stereo (#21) are in pull requests. Next: the rack UI with drag and drop |
-| 6 State and presets, 7 Hardening and release | Not started |
+| 5 FX system | Done in pull requests: machinery (#18), distortion (#19), EQ (#20), multiband stereo (#21), rack UI with drag and drop and an Effects tab (#22) |
+| 6 State and presets | Part 1 in a pull request: one project state holding parameters, envelopes, effect order and your own wavetables and Tock sample (#23). Next: preset files, factory presets, preset browser |
+| 7 Hardening and release | Not started (mostly manual: DAW passes, CPU profiling, release tag) |
 
 ## 2. Open pull requests, in merge order
 
@@ -28,13 +29,15 @@ Nothing in this list is merged by the agent; the owner merges.
 | 5 | #15 | Phase 4 part 3: wavetable display (stacked on #13) | Green |
 | 6 | #16 | Phase 4 part 4: Tock with four factory samples (stacked on #15) | Green |
 | 7 | #17 | Phase 4 part 5: load your own Tock sample (stacked on #16) | Green |
-| 8 | #18 | Phase 5 part 1: the FX chain machinery (stacked on #17) | see PR |
+| 8 | #18 | Phase 5 part 1: the FX chain machinery (stacked on #17) | Green after the macOS test fix |
 | 9 | #19 | Phase 5 part 2: distortion (stacked on #18) | see PR |
 | 10 | #20 | Phase 5 part 3: EQ (stacked on #19) | see PR |
 | 11 | #21 | Phase 5 part 4: multiband stereo (stacked on #20) | see PR |
+| 12 | #22 | Phase 5 part 5: FX rack UI (stacked on #21) | see PR |
+| 13 | #23 | Phase 6 part 1: project state (stacked on #22) | see PR |
 | any | Dependabot #10, #9, #8 | Version bumps of the GitHub actions (independent) | Green |
 
-The stacked pull requests (#13, #15 to #21) point at the branch of the one before them: merge them in the order above, and GitHub retargets each to `main` when the previous one is merged.
+The stacked pull requests (#13, #15 to #23) point at the branch of the one before them: merge them in the order above, and GitHub retargets each to `main` when the previous one is merged.
 
 Notes on the Dependabot pull requests: they are independent of each other and of the code, they only touch `.github/workflows/build.yml`. They are major version jumps; CI passed with them on all three systems. Merge them one by one (Dependabot rebases the others), or close them if you prefer to stay on the older pinned versions.
 
@@ -58,6 +61,8 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-11 | Tock: off by default; Synth mode (tone burst plus noise) or four generated samples (Click, Knock, Snap, Tick); added before the amp envelope; most controls read at note-on. | `docs/specs/tock.md` |
 | 2026-10-11 | The wavetable display shows the name, a faint stack of frames and the waveform at the current Position. | `docs/specs/wavetable-display.md` |
 | 2026-10-11 | The random macOS failure of `PublishedPointer never shows a torn or freed object across threads` was a defect of the test (the reader thread could start too late), not of the code. Fixed in #14. | PR #14 |
+| 2026-10-11 | The macOS check failed on #18 and the PRs stacked on it because a test compared a stepped value with exact equality (1.9999999 vs 2 on arm64). The test now uses a tolerance; the code was right. | PR #18 |
+| 2026-10-11 | Project state: a saved project describes everything, so a control it does not mention takes its default instead of keeping the current value. | `docs/specs/project-state.md` |
 | 2026-10-11 | The Punch/Tail Split stays in milliseconds when tempo Sync is on (owner's answer). | `docs/specs/voice-punch-tail.md` |
 
 ## 4. What the owner needs to do or listen to
