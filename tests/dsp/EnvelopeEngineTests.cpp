@@ -6,6 +6,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <cmath>
 #include <juce_core/juce_core.h>
 #include <vector>
 
@@ -64,7 +65,11 @@ struct Rig
         return out;
     }
 
-    static int blocksFor(double seconds) { return static_cast<int>(seconds * kSampleRate / kBlock); }
+    // Rounded up, so a window that ends at `seconds` never reads past the rendered audio.
+    static int blocksFor(double seconds)
+    {
+        return static_cast<int>(std::ceil(seconds * kSampleRate / kBlock));
+    }
 
     PublishedPointer<EnvelopeShape> ampSource;
     PublishedPointer<EnvelopeShape> pitchSource;
@@ -73,6 +78,8 @@ struct Rig
 
 std::vector<float> slice(const std::vector<float>& v, double fromSeconds, double toSeconds)
 {
+    // A window outside the rendered audio is a mistake in the test, not something to read.
+    REQUIRE(static_cast<size_t>(std::ceil(toSeconds * kSampleRate)) <= v.size());
     return {v.begin() + static_cast<std::ptrdiff_t>(fromSeconds * kSampleRate),
             v.begin() + static_cast<std::ptrdiff_t>(toSeconds * kSampleRate)};
 }
