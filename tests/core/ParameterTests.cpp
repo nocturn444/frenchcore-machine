@@ -95,6 +95,10 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
 
 TEST_CASE("Default parameters map to the default EngineParameters", "[core][parameters]")
 {
+    // Values go through a 0..1 normalisation and back, which on some CPUs (arm64 fused multiply-add)
+    // leaves rounding noise of about 1e-6 on a range of 200 (the Fine control).
+    constexpr double kRoundingTolerance = 1.0e-4;
+
     juce::ScopedJuceInitialiser_GUI juceInitialiser;
     TestProcessor processor;
     fcm::core::EngineParameterReader reader(processor.state);
@@ -102,13 +106,14 @@ TEST_CASE("Default parameters map to the default EngineParameters", "[core][para
     const auto read = reader.read();
     const fcm::dsp::EngineParameters defaults;
 
-    REQUIRE_THAT(read.outputGain, Catch::Matchers::WithinAbs(defaults.outputGain, 1.0e-6));
+    REQUIRE_THAT(read.outputGain, Catch::Matchers::WithinAbs(defaults.outputGain, kRoundingTolerance));
     REQUIRE(read.limiterOn == defaults.limiterOn);
     REQUIRE(read.keyTrack == defaults.keyTrack);
     REQUIRE(read.rootNote == defaults.rootNote);
     REQUIRE(read.glideOn == defaults.glideOn);
     REQUIRE_THAT(read.glideMs, Catch::Matchers::WithinAbs(defaults.glideMs, 1.0e-3));
-    REQUIRE_THAT(read.velocitySensitivity, Catch::Matchers::WithinAbs(defaults.velocitySensitivity, 1.0e-6));
+    REQUIRE_THAT(read.velocitySensitivity,
+                 Catch::Matchers::WithinAbs(defaults.velocitySensitivity, kRoundingTolerance));
 
     for (size_t i = 0; i < read.oscillators.size(); ++i)
     {
@@ -116,12 +121,12 @@ TEST_CASE("Default parameters map to the default EngineParameters", "[core][para
         const auto& a = read.oscillators[i];
         const auto& b = defaults.oscillators[i];
         REQUIRE(a.on == b.on);
-        REQUIRE_THAT(a.level, Catch::Matchers::WithinAbs(b.level, 1.0e-6));
+        REQUIRE_THAT(a.level, Catch::Matchers::WithinAbs(b.level, kRoundingTolerance));
         REQUIRE(a.pitchSemitones == b.pitchSemitones);
         REQUIRE(a.octave == b.octave);
-        REQUIRE_THAT(a.fineCents, Catch::Matchers::WithinAbs(b.fineCents, 1.0e-6));
-        REQUIRE_THAT(a.position, Catch::Matchers::WithinAbs(b.position, 1.0e-6));
-        REQUIRE_THAT(a.startPhase, Catch::Matchers::WithinAbs(b.startPhase, 1.0e-6));
+        REQUIRE_THAT(a.fineCents, Catch::Matchers::WithinAbs(b.fineCents, kRoundingTolerance));
+        REQUIRE_THAT(a.position, Catch::Matchers::WithinAbs(b.position, kRoundingTolerance));
+        REQUIRE_THAT(a.startPhase, Catch::Matchers::WithinAbs(b.startPhase, kRoundingTolerance));
     }
 }
 
