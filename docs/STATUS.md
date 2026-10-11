@@ -35,7 +35,7 @@ Nothing in this list is merged by the agent; the owner merges.
 | 11 | #21 | Phase 5 part 4: multiband stereo (stacked on #20) | see PR |
 | 12 | #22 | Phase 5 part 5: FX rack UI (stacked on #21) | see PR |
 | 13 | #23 | Phase 6 part 1: project state (stacked on #22) | see PR |
-| 14 | #24 | Phase 6 parts 2 and 3: presets and preset bar (stacked on #23) | see PR |
+| 14 | #24 | Phase 6 parts 2 and 3: presets and preset bar (stacked on #23) | Green on all three systems (includes the macOS fix) |
 | any | Dependabot #10, #9, #8 | Version bumps of the GitHub actions (independent) | Green |
 
 The stacked pull requests (#13, #15 to #24) point at the branch of the one before them: merge them in the order above, and GitHub retargets each to `main` when the previous one is merged.
