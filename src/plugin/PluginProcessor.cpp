@@ -35,7 +35,7 @@ double PluginProcessor::getTailLengthSeconds() const
 void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     // Parameters given before prepare() apply immediately instead of ramping from the defaults.
-    engine.setParameters(parameterReader.read());
+    engine.setParameters(readEngineParameters());
     engine.prepare({sampleRate, static_cast<juce::uint32>(samplesPerBlock),
                     static_cast<juce::uint32>(getTotalNumOutputChannels())});
 
@@ -57,7 +57,7 @@ bool PluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
-    engine.setParameters(parameterReader.read()); // once per block
+    engine.setParameters(readEngineParameters()); // once per block
 
     if (isStandalone())
     {
@@ -67,6 +67,25 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiB
     }
 
     engine.process(buffer, midi);
+}
+
+dsp::EngineParameters PluginProcessor::readEngineParameters()
+{
+    auto parameters = parameterReader.read();
+
+    // The Standalone has its own BPM control; a plugin follows the host, and keeps the last tempo
+    // when the host gives none (or 120 before it ever did).
+    float bpm = tempoState.get();
+    if (isStandalone())
+        bpm = auditionState.getBpm();
+    else if (const auto* host = getPlayHead())
+        if (const auto position = host->getPosition())
+            if (const auto hostBpm = position->getBpm())
+                bpm = static_cast<float>(*hostBpm);
+
+    tempoState.set(bpm);
+    parameters.bpm = bpm;
+    return parameters;
 }
 
 void PluginProcessor::addAuditionEvents(int numSamples, const juce::MidiBuffer& hostMidi)

@@ -29,6 +29,8 @@ inline constexpr const char* kPitchEnvTimeScale = "pitchEnv.timeScale";
 inline constexpr const char* kPitchEnvAmount = "pitchEnv.amount";
 inline constexpr const char* kPunchTailBalance = "punchTail.balance";
 inline constexpr const char* kPunchTailSplit = "punchTail.split";
+inline constexpr const char* kPunchLevel = "punchTail.punchLevel";
+inline constexpr const char* kTailLevel = "punchTail.tailLevel";
 
 // The two oscillators are instances of the same class, so their parameters share these suffixes
 // behind the prefix "osc1." / "osc2." (docs/specs/oscillator-wavetable.md §3).

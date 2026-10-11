@@ -2,6 +2,7 @@
 #include "dsp/engine/Voice.h"
 
 #include "dsp/envelope/BreakpointEnvelope.h"
+#include "dsp/envelope/MusicalTime.h"
 
 #include <algorithm>
 #include <cmath>
@@ -54,6 +55,8 @@ void Voice::prepare(double newSampleRate, const WavetableData* wavetable)
     pitchAmount.reset(sampleRate, kPitchAmountSmoothSeconds);
     punchBalance.reset(sampleRate, kPunchTailSmoothSeconds);
     punchSplitMs.reset(sampleRate, kPunchTailSmoothSeconds);
+    punchLevel.reset(sampleRate, kPunchTailSmoothSeconds);
+    tailLevel.reset(sampleRate, kPunchTailSmoothSeconds);
 
     setShapes(nullptr, nullptr);
     reset();
@@ -89,6 +92,8 @@ void Voice::reset() noexcept
     pitchAmount.setCurrentAndTargetValue(pitchAmount.getTargetValue());
     punchBalance.setCurrentAndTargetValue(punchBalance.getTargetValue());
     punchSplitMs.setCurrentAndTargetValue(punchSplitMs.getTargetValue());
+    punchLevel.setCurrentAndTargetValue(punchLevel.getTargetValue());
+    tailLevel.setCurrentAndTargetValue(tailLevel.getTargetValue());
 }
 
 void Voice::setShapes(const EnvelopeShape* ampShape, const EnvelopeShape* pitchShape) noexcept
@@ -96,6 +101,8 @@ void Voice::setShapes(const EnvelopeShape* ampShape, const EnvelopeShape* pitchS
     const EnvelopeShape* amp = ampShape != nullptr ? ampShape : defaultAmpShape.get();
     const EnvelopeShape* pitch = pitchShape != nullptr ? pitchShape : defaultPitchShape.get();
 
+    ampShapeInUse = amp;
+    pitchShapeInUse = pitch;
     core.amp.setShape(amp);
     core.pitch.setShape(pitch);
     for (auto& ghost : ghosts)
@@ -127,6 +134,7 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
         startPhases[i] = osc.startPhase;
     }
 
+    bpm = std::clamp(parameters.bpm, static_cast<float>(kMinTempoBpm), static_cast<float>(kMaxTempoBpm));
     ampTimeScale = parameters.ampTimeScale;
     pitchTimeScale = parameters.pitchTimeScale;
 
@@ -135,12 +143,16 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
         pitchAmount.setCurrentAndTargetValue(parameters.pitchAmount);
         punchBalance.setCurrentAndTargetValue(parameters.punchBalance);
         punchSplitMs.setCurrentAndTargetValue(parameters.punchSplitMs);
+        punchLevel.setCurrentAndTargetValue(parameters.punchLevel);
+        tailLevel.setCurrentAndTargetValue(parameters.tailLevel);
     }
     else
     {
         pitchAmount.setTargetValue(parameters.pitchAmount);
         punchBalance.setTargetValue(parameters.punchBalance);
         punchSplitMs.setTargetValue(parameters.punchSplitMs);
+        punchLevel.setTargetValue(parameters.punchLevel);
+        tailLevel.setTargetValue(parameters.tailLevel);
     }
 }
 
@@ -162,8 +174,12 @@ void Voice::trigger(float velocityGain) noexcept
     for (size_t i = 0; i < kNumOscillators; ++i)
         core.oscillators[i].reset(static_cast<double>(startPhases[i]));
 
-    core.amp.start(ampTimeScale);
-    core.pitch.start(pitchTimeScale);
+    // A tempo-synced shape plays scaled by reference tempo / current tempo (docs/decisions/0007), on
+    // top of the time scale. Both are fixed for the whole kick.
+    const auto syncScale = [this](const EnvelopeShape* shape)
+    { return shape != nullptr && shape->syncRefBpm > 0.0f ? shape->syncRefBpm / bpm : 1.0f; };
+    core.amp.start(ampTimeScale * syncScale(ampShapeInUse));
+    core.pitch.start(pitchTimeScale * syncScale(pitchShapeInUse));
     core.samplesSinceNoteOn = 0.0;
     core.velocityGain = velocityGain;
     core.active = true;
@@ -214,8 +230,8 @@ float Voice::process(float settleNote) noexcept
     frame.pitchAmount = pitchAmount.getNextValue();
     const float balance = punchBalance.getNextValue();
     frame.punchSplitMs = punchSplitMs.getNextValue();
-    frame.punchGain = balance > 0.0f ? 1.0f - balance : 1.0f;
-    frame.tailGain = balance < 0.0f ? 1.0f + balance : 1.0f;
+    frame.punchGain = (balance > 0.0f ? 1.0f - balance : 1.0f) * punchLevel.getNextValue();
+    frame.tailGain = (balance < 0.0f ? 1.0f + balance : 1.0f) * tailLevel.getNextValue();
     for (size_t i = 0; i < kNumOscillators; ++i)
     {
         frame.level[i] = levels[i].getNextValue();

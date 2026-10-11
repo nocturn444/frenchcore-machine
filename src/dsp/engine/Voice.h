@@ -94,6 +94,11 @@ class Voice
     juce::SmoothedValue<float> pitchAmount;
     juce::SmoothedValue<float> punchBalance;
     juce::SmoothedValue<float> punchSplitMs;
+    juce::SmoothedValue<float> punchLevel;
+    juce::SmoothedValue<float> tailLevel;
+    float bpm = 120.0f;
+    const EnvelopeShape* ampShapeInUse = nullptr; // for the tempo sync scale at note-on
+    const EnvelopeShape* pitchShapeInUse = nullptr;
     float ampTimeScale = 1.0f; // read at every note-on
     float pitchTimeScale = 1.0f;
 

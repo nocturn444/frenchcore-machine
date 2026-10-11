@@ -179,3 +179,53 @@ TEST_CASE("The saved node has the documented shape", "[core][envelope][state]")
     for (const char* property : {"time", "value", "curve", "main"})
         REQUIRE(amp.getChild(0).hasProperty(property));
 }
+
+TEST_CASE("The sync tempo is saved with the shape and restored", "[core][envelope][state][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    EnvelopeState source(EnvelopeKind::amp);
+    source.edit(
+        [](BreakpointEnvelope& envelope)
+        {
+            envelope.enableSync(173.0f);
+            envelope.setKnob(AmpKnob::hold, 40.0f);
+        });
+
+    const auto node = source.toValueTree();
+    REQUIRE(node.hasProperty("syncBpm"));
+
+    EnvelopeState restored(EnvelopeKind::amp);
+    REQUIRE(restored.restoreFrom(juce::ValueTree::fromXml(node.createXml()->toString())));
+    REQUIRE(restored.get() == source.get());
+    REQUIRE(restored.get().isSynced());
+    REQUIRE_THAT(restored.get().syncRefBpm(), WithinAbs(173.0, 1.0e-4));
+    REQUIRE_THAT(restored.source().acquire()->syncRefBpm, WithinAbs(173.0, 1.0e-4)); // and published
+}
+
+TEST_CASE("An unsynced shape has no sync property, and an old node without it loads unsynced",
+          "[core][envelope][state][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    const auto node = EnvelopeState(EnvelopeKind::amp).toValueTree();
+    REQUIRE_FALSE(node.hasProperty("syncBpm"));
+
+    EnvelopeState state(EnvelopeKind::amp);
+    state.edit([](BreakpointEnvelope& envelope) { envelope.enableSync(150.0f); });
+    REQUIRE(state.restoreFrom(node)); // a node saved before sync existed
+    REQUIRE_FALSE(state.get().isSynced());
+}
+
+TEST_CASE("A damaged sync tempo gives the default shape", "[core][envelope][state][sync]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    for (double bad : {-5.0, 3.0, 1000.0, std::nan("")})
+    {
+        auto node = EnvelopeState(EnvelopeKind::amp).toValueTree();
+        node.setProperty("syncBpm", bad, nullptr);
+
+        EnvelopeState state(EnvelopeKind::amp);
+        state.edit([](BreakpointEnvelope& envelope) { envelope.setKnob(AmpKnob::sustain, 0.1f); });
+        REQUIRE_FALSE(state.restoreFrom(node));
+        REQUIRE(state.get() == BreakpointEnvelope(EnvelopeKind::amp));
+    }
+}

@@ -38,7 +38,8 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
       pitchTimeScale(lookup(state, ParameterIds::kPitchEnvTimeScale)),
       pitchAmount(lookup(state, ParameterIds::kPitchEnvAmount)),
       punchBalance(lookup(state, ParameterIds::kPunchTailBalance)),
-      punchSplit(lookup(state, ParameterIds::kPunchTailSplit))
+      punchSplit(lookup(state, ParameterIds::kPunchTailSplit)),
+      punchLevel(lookup(state, ParameterIds::kPunchLevel)), tailLevel(lookup(state, ParameterIds::kTailLevel))
 {
     namespace Osc = ParameterIds::Oscillator;
     for (int index = 0; index < dsp::kNumOscillators; ++index)
@@ -71,6 +72,8 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.pitchAmount = pitchAmount->load();
     result.punchBalance = punchBalance->load() * 0.01f;
     result.punchSplitMs = punchSplit->load();
+    result.punchLevel = juce::Decibels::decibelsToGain(punchLevel->load(), -48.0f);
+    result.tailLevel = juce::Decibels::decibelsToGain(tailLevel->load(), -48.0f);
 
     for (size_t i = 0; i < oscillators.size(); ++i)
     {

@@ -38,6 +38,9 @@ struct EnvelopeShape
     std::array<EnvelopePoint, kMaxEnvelopePoints> points{};
     int count = 0;
     float releaseMs = 30.0f;
+    // The tempo the times were written at when the envelope is tempo-synced, 0 otherwise. The voice
+    // plays a synced shape scaled by syncRefBpm / current tempo (docs/decisions/0007).
+    float syncRefBpm = 0.0f;
 
     float lastTimeMs() const noexcept
     {

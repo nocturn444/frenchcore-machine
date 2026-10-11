@@ -41,6 +41,11 @@ struct EngineParameters
     float pitchAmount = 48.0f;  // semitones above the settling pitch at envelope level 1
     float punchBalance = 0.0f;  // -1 (punch only) .. +1 (tail only)
     float punchSplitMs = 80.0f; // where the punch ends and the tail begins, after note-on
+    float punchLevel = 1.0f;    // linear gain of the punch region, on top of the balance
+    float tailLevel = 1.0f;     // linear gain of the tail region, on top of the balance
+
+    // The tempo that tempo-synced envelopes follow (host tempo, or the Standalone's BPM).
+    float bpm = 120.0f;
 };
 
 } // namespace fcm::dsp

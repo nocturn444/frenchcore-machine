@@ -31,9 +31,20 @@ Knobs: **Amount**, **Attack**, **Decay**, **Curve**, **End**.
 - *Amount*: how many semitones above the note the sweep starts (0 to 96). *Attack*: time to rise from 0 to the full amount (0 means it starts at the top). *Decay*: time to fall to the end value. *Curve*: how the fall bends (negative: fast first, then slow). *End*: where the fall lands, as a fraction of Amount (0 lands on the note; above 0 stays above the note).
 - The pitch envelope does not react to note-off: it always finishes its fall.
 
+### Tempo sync
+
+Each envelope has a **Sync** switch next to its shape menu. With Sync on, the envelope's times follow the tempo and the milliseconds are replaced by musical figures:
+
+- The time knobs (amp: Attack, Hold, Decay, Release; pitch: Attack, Decay) become steps through note values: `1/64, 1/32, 1/16T, 1/16, 1/8T, 1/16D, 1/8, 1/4T, 1/8D, 1/4, 1/2T, 1/4D, 1/2, 1 bar` (T is triplet, D is dotted), preceded by `0` where the knob can be zero and by `Min` (the shortest allowed time, 1 ms) where it cannot. Only figures that fit the knob's range are offered. The other knobs (Sustain, Curve, End, Amount) are unchanged.
+- The time grid of the display is labelled with fractions of a bar (`1/16`, `1/8`, `1/4`, ...) instead of milliseconds, and points snap to 1/32 notes in time while you drag them.
+- The envelope **keeps its musical lengths when the tempo changes**: a Hold of 1/16 is a sixteenth note at 120 BPM and at 200 BPM. The change applies from the next note.
+- The tempo is the host's tempo in a DAW, the **BPM** control of the strip in the Standalone, and 120 BPM when the host gives none.
+- Turning Sync on keeps the sound as it is (the times stay what they are at the current tempo; the knobs show the nearest figure). The first time you turn a time knob, that time becomes an exact figure. Turning Sync off keeps the sound too and goes back to milliseconds.
+- The Punch / Tail **Split** stays in milliseconds (see section 7).
+
 ### Editing the display
 
-- **Drag a point** to move it in time and level. Points cannot cross their neighbours in time. The first point stays at time 0 (and at level 0 on the amp envelope, so a kick never starts with a click).
+- **Drag a point** to move it in time and level (in time it snaps to 1/32 notes when Sync is on). Points cannot cross their neighbours in time. The first point stays at time 0 (and at level 0 on the amp envelope, so a kick never starts with a click).
 - **Double-click on empty space** to add a point on the line at that time (up to 32 points; nothing can be added after the last point).
 - **Double-click an extra point** to delete it. The main points (the ones the knobs move) cannot be deleted.
 - **Drag a segment up or down** to bend it. Dragging up makes the line bulge upward.
@@ -74,6 +85,8 @@ Knob ranges (editing the shape; every time is in milliseconds before time scale;
 | Pitch | Curve | -1 to +1 | -1 | curvature of the segment leaving point 1 |
 | Pitch | End | 0 to 100 % | 0 | level of the last point |
 
+Sync is part of the envelope state, not a parameter (it travels with the shape, like the points), so a DAW cannot automate it.
+
 ## 4. DSP / implementation approach
 
 ### 4.1 Model (`fcm::dsp::BreakpointEnvelope`)
@@ -85,6 +98,13 @@ A plain value type, edited on the message thread only.
 - Amp envelopes have at least 4 points and pitch envelopes at least 3. The **main points** are index 1, index 2 and the last point (amp), index 1 and the last point (pitch); the first point is fixed. All others are **extra points**.
 - Operations: `addPoint`, `movePoint` (clamped between the neighbours' times), `removePoint` (extras only), `setCurve`, `setReleaseMs`, and the knob accessors. A knob change recomputes the main points' times and moves each extra point to the same fraction of the segment between its surrounding main points.
 - `toShape()` builds the immutable audio-side copy.
+
+### 4.1b Tempo sync (see ADR 0007)
+
+- The model stores `syncRefBpm` (0 = off, otherwise 20 to 400): the tempo its times were written at. `enableSync(bpm)` records the tempo and changes no time. `rebaseTo(bpm)` multiplies every time and the release by `reference / bpm` (clamped to the 2000 ms limits) and makes `bpm` the reference. `disableSync(bpm)` rebases and clears the reference.
+- `EnvelopeShape` carries `syncRefBpm`. At each note-on the voice scales the envelope by `syncRefBpm / bpm` (times the time scale); the renderer is unchanged.
+- `MusicalTime` holds the table of figures (name and length in quarter-note beats) and builds the list of choices for a knob: label and milliseconds at a tempo, within the knob's range; `nearestChoice` finds the one closest to a given time.
+- The editor in sync mode labels the grid in fractions of a bar and snaps dragged points to 1/32 notes (computed from the reference tempo, which equals the current tempo after the first edit).
 
 ### 4.2 Shape and renderer
 
@@ -103,7 +123,7 @@ A plain value type, edited on the message thread only.
 
 ### 4.4 State
 
-The processor stores the two envelopes as child nodes `AmpEnvelope` and `PitchEnvelope` of the saved state, each with its `releaseMs` and a list of `Point` children (`time`, `value`, `curve`). A missing node means the default shape; an invalid node (too few or too many points, times out of order, non-finite numbers) is ignored with the default shape used instead. `stateVersion` stays 1: nothing has been released, and the nodes are optional.
+The processor stores the two envelopes as child nodes `AmpEnvelope` and `PitchEnvelope` of the saved state, each with its `releaseMs`, an optional `syncBpm` (absent means not synced) and a list of `Point` children (`time`, `value`, `curve`, `main`). A missing node means the default shape; an invalid node (too few or too many points, times out of order, non-finite numbers) is ignored with the default shape used instead. `stateVersion` stays 1: nothing has been released, and the nodes are optional.
 
 ### 4.5 Presets (data-driven)
 
@@ -122,6 +142,7 @@ Catch2, headless:
 - Renderer: attack/hold/decay/sustain levels at the right times at 44.1, 48 and 96 kHz (within 1 sample); sustain held until `release()`; release is linear from the current level and takes `releaseMs`; release during the attack; idle when the held level is 0; time scale stretches the times; pitch use holds the end level; deterministic after reset; a shape swap mid-note continues without a jump larger than the shapes differ by.
 - `PublishedPointer`: acquire returns the latest; a retired object in use is not freed; old objects are freed on later publishes; no leaks at destruction; two-thread stress (100000 acquires against 20000 publishes) never sees a torn or freed object.
 - State: round trip of every preset through `ValueTree` and through XML text; missing node gives the default; invalid nodes are rejected.
+- Sync: `MusicalTime` figures and choices (range filtering, nearest choice, names); enabling sync changes no time; rebasing preserves the musical length (a 1/8 stays a 1/8 and its milliseconds scale with the tempo) and clamps; disabling keeps the sound; invalid reference tempos are rejected on load; the voice plays a synced shape written at 120 BPM twice as fast at 240 BPM (attack, hold, decay, release) and an unsynced one unchanged; the sync scale multiplies the time scale; the sync reference survives the saved form.
 - Voice and engine: default Kick + Bass reaches the body level and holds it while the key is down, releases in 30 ms on note-off, and the pitch tail is still within 1 cent of the note; the default pitch drop is identical to the Phase 2 one; Short Punch ends by itself; amount and time scale parameters have the expected effect; editing the shape while sounding does not click.
 - Core: the parameter IDs are pinned in the existing ID test.
 
@@ -136,6 +157,8 @@ Manual check: draw and bend a shape in the Standalone with Auto-play on and hear
 - User-saved shape presets (they come with the preset system of Phase 6; the full state, including shapes, is already saved).
 
 ## 7. Open questions
+
+0. Sync applies to the envelope times only. The Punch / Tail Split stays in milliseconds, because it is an automatable parameter and cannot follow the tempo the way a stored shape can. It can get the same treatment if wanted.
 
 First choices of the agent for the product owner to confirm or change:
 

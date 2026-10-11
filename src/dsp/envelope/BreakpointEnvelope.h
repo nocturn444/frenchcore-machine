@@ -50,8 +50,9 @@ class BreakpointEnvelope
     explicit BreakpointEnvelope(EnvelopeKind kind);
 
     // Returns nothing when the points do not describe a valid envelope of this kind.
+    // `syncRefBpm` is 0 for an envelope that is not tempo-synced.
     static std::optional<BreakpointEnvelope> tryCreate(EnvelopeKind kind, std::vector<EnvelopePoint> points,
-                                                       float releaseMs);
+                                                       float releaseMs, float syncRefBpm = 0.0f);
 
     static int minPoints(EnvelopeKind kind) noexcept { return kind == EnvelopeKind::amp ? 4 : 3; }
     static int numMainPoints(EnvelopeKind kind) noexcept { return kind == EnvelopeKind::amp ? 4 : 3; }
@@ -61,6 +62,16 @@ class BreakpointEnvelope
     int size() const noexcept { return static_cast<int>(pointList.size()); }
     float releaseMs() const noexcept { return release; }
 
+    // Tempo sync (docs/decisions/0007): the tempo the times were written at, or 0 when not synced.
+    float syncRefBpm() const noexcept { return syncRef; }
+    bool isSynced() const noexcept { return syncRef > 0.0f; }
+    // Starts following the tempo. No time changes: the shape keeps sounding as it does at `bpm`.
+    void enableSync(float bpm);
+    // Rewrites the times for `bpm` keeping their musical lengths, and makes it the reference.
+    // Does nothing when not synced.
+    void rebaseTo(float bpm);
+    // Rebases to `bpm` and stops following the tempo, so the sound at that tempo is unchanged.
+    void disableSync(float bpm);
     // Editing. All of them keep the envelope valid: out-of-range requests are clamped.
     // Returns the index of the new point, or -1 when it cannot be added (32 points, or at or after
     // the last point's time).
@@ -82,9 +93,11 @@ class BreakpointEnvelope
     bool operator==(const BreakpointEnvelope& other) const;
 
   private:
-    BreakpointEnvelope(EnvelopeKind kind, std::vector<EnvelopePoint> points, float releaseMs);
+    BreakpointEnvelope(EnvelopeKind kind, std::vector<EnvelopePoint> points, float releaseMs,
+                       float syncRefBpm = 0.0f);
 
-    static bool isValid(EnvelopeKind kind, const std::vector<EnvelopePoint>& points, float releaseMs);
+    static bool isValid(EnvelopeKind kind, const std::vector<EnvelopePoint>& points, float releaseMs,
+                        float syncRefBpm);
     std::vector<int> mainIndices() const;
     // Gives the main points these times and moves each extra point to the same fraction of the
     // section it sits in.
@@ -93,6 +106,7 @@ class BreakpointEnvelope
     EnvelopeKind envelopeKind;
     std::vector<EnvelopePoint> pointList;
     float release = 30.0f;
+    float syncRef = 0.0f;
 
     friend class EnvelopePresets;
 };

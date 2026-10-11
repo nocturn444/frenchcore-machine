@@ -2,6 +2,7 @@
 #include "dsp/envelope/BreakpointEnvelope.h"
 
 #include "dsp/envelope/EnvelopePresets.h"
+#include "dsp/envelope/MusicalTime.h"
 
 #include <algorithm>
 #include <cmath>
@@ -23,13 +24,20 @@ BreakpointEnvelope::BreakpointEnvelope(EnvelopeKind kind)
 {
 }
 
-BreakpointEnvelope::BreakpointEnvelope(EnvelopeKind kind, std::vector<EnvelopePoint> points, float releaseMs)
-    : envelopeKind(kind), pointList(std::move(points)), release(releaseMs)
+BreakpointEnvelope::BreakpointEnvelope(EnvelopeKind kind, std::vector<EnvelopePoint> points, float releaseMs,
+                                       float syncRefBpm)
+    : envelopeKind(kind), pointList(std::move(points)), release(releaseMs), syncRef(syncRefBpm)
 {
 }
 
-bool BreakpointEnvelope::isValid(EnvelopeKind kind, const std::vector<EnvelopePoint>& points, float releaseMs)
+bool BreakpointEnvelope::isValid(EnvelopeKind kind, const std::vector<EnvelopePoint>& points, float releaseMs,
+                                 float syncRefBpm)
 {
+    // 0 means not synced; otherwise a tempo the editor can offer.
+    if (!std::isfinite(syncRefBpm) ||
+        (!juce::exactlyEqual(syncRefBpm, 0.0f) && (syncRefBpm < kMinTempoBpm || syncRefBpm > kMaxTempoBpm)))
+        return false;
+
     if (static_cast<int>(points.size()) < minPoints(kind) ||
         static_cast<int>(points.size()) > kMaxEnvelopePoints)
         return false;
@@ -56,12 +64,49 @@ bool BreakpointEnvelope::isValid(EnvelopeKind kind, const std::vector<EnvelopePo
            (kind != EnvelopeKind::amp || juce::exactlyEqual(points.front().value, 0.0f));
 }
 
-std::optional<BreakpointEnvelope>
-BreakpointEnvelope::tryCreate(EnvelopeKind kind, std::vector<EnvelopePoint> points, float releaseMs)
+std::optional<BreakpointEnvelope> BreakpointEnvelope::tryCreate(EnvelopeKind kind,
+                                                                std::vector<EnvelopePoint> points,
+                                                                float releaseMs, float syncRefBpm)
 {
-    if (!isValid(kind, points, releaseMs))
+    if (!isValid(kind, points, releaseMs, syncRefBpm))
         return std::nullopt;
-    return BreakpointEnvelope(kind, std::move(points), releaseMs);
+    return BreakpointEnvelope(kind, std::move(points), releaseMs, syncRefBpm);
+}
+
+namespace
+{
+float clampTempo(float bpm) noexcept
+{
+    return std::clamp(bpm, static_cast<float>(kMinTempoBpm), static_cast<float>(kMaxTempoBpm));
+}
+} // namespace
+
+void BreakpointEnvelope::enableSync(float bpm)
+{
+    if (std::isfinite(bpm))
+        syncRef = clampTempo(bpm);
+}
+
+void BreakpointEnvelope::rebaseTo(float bpm)
+{
+    if (!isSynced() || !std::isfinite(bpm))
+        return;
+
+    const float newReference = clampTempo(bpm);
+    const float factor = syncRef / newReference;
+
+    // Every time keeps its length in beats. Scaling all of them by the same factor keeps the
+    // order; the limits only bite when the tempo changed a lot.
+    for (auto& point : pointList)
+        point.timeMs = std::min(point.timeMs * factor, kMaxEnvelopeTimeMs);
+    release = std::clamp(release * factor, kMinReleaseMs, kMaxEnvelopeTimeMs);
+    syncRef = newReference;
+}
+
+void BreakpointEnvelope::disableSync(float bpm)
+{
+    rebaseTo(bpm);
+    syncRef = 0.0f;
 }
 
 std::vector<int> BreakpointEnvelope::mainIndices() const
@@ -276,6 +321,7 @@ std::unique_ptr<const EnvelopeShape> BreakpointEnvelope::toShape() const
     auto shape = std::make_unique<EnvelopeShape>();
     shape->count = size();
     shape->releaseMs = release;
+    shape->syncRefBpm = syncRef;
     std::copy(pointList.begin(), pointList.end(), shape->points.begin());
     return shape;
 }
@@ -283,7 +329,7 @@ std::unique_ptr<const EnvelopeShape> BreakpointEnvelope::toShape() const
 bool BreakpointEnvelope::operator==(const BreakpointEnvelope& other) const
 {
     if (envelopeKind != other.envelopeKind || pointList.size() != other.pointList.size() ||
-        !(std::abs(release - other.release) < 1.0e-6f))
+        !(std::abs(release - other.release) < 1.0e-6f) || !(std::abs(syncRef - other.syncRef) < 1.0e-6f))
         return false;
 
     for (size_t i = 0; i < pointList.size(); ++i)

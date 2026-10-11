@@ -8,6 +8,7 @@ namespace
 {
 const juce::Identifier kPointType{"Point"};
 const juce::Identifier kReleaseMs{"releaseMs"};
+const juce::Identifier kSyncBpm{"syncBpm"};
 const juce::Identifier kTime{"time"};
 const juce::Identifier kValue{"value"};
 const juce::Identifier kCurve{"curve"};
@@ -48,6 +49,8 @@ juce::ValueTree EnvelopeState::toValueTree() const
 {
     juce::ValueTree node(nodeType(envelope.kind()));
     node.setProperty(kReleaseMs, static_cast<double>(envelope.releaseMs()), nullptr);
+    if (envelope.isSynced())
+        node.setProperty(kSyncBpm, static_cast<double>(envelope.syncRefBpm()), nullptr);
 
     for (const auto& point : envelope.points())
     {
@@ -86,8 +89,12 @@ bool EnvelopeState::restoreFrom(const juce::ValueTree& node)
                           static_cast<bool>(child[kMain])});
     }
 
+    // The sync tempo is optional: absent means the envelope is not synced.
+    const auto syncBpm =
+        node.hasProperty(kSyncBpm) ? static_cast<float>(static_cast<double>(node[kSyncBpm])) : 0.0f;
     const auto restored = dsp::BreakpointEnvelope::tryCreate(
-        envelope.kind(), std::move(points), static_cast<float>(static_cast<double>(node[kReleaseMs])));
+        envelope.kind(), std::move(points), static_cast<float>(static_cast<double>(node[kReleaseMs])),
+        syncBpm);
     if (!restored.has_value())
         return fallBackToDefault();
 

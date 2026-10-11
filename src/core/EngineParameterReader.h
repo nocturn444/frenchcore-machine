@@ -42,6 +42,8 @@ class EngineParameterReader
     std::atomic<float>* pitchAmount;
     std::atomic<float>* punchBalance;
     std::atomic<float>* punchSplit;
+    std::atomic<float>* punchLevel;
+    std::atomic<float>* tailLevel;
     std::array<OscillatorPointers, dsp::kNumOscillators> oscillators;
 };
 

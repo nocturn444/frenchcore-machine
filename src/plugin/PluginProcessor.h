@@ -4,6 +4,7 @@
 #include "core/AuditionState.h"
 #include "core/EngineParameterReader.h"
 #include "core/EnvelopeState.h"
+#include "core/TempoState.h"
 #include "dsp/engine/AuditionSequencer.h"
 #include "dsp/engine/Engine.h"
 
@@ -51,11 +52,14 @@ class PluginProcessor : public juce::AudioProcessor
 
     // The editable envelopes; the UI edits them through these (docs/specs/envelope-breakpoint.md).
     core::EnvelopeState& getAmpEnvelope() noexcept { return ampEnvelope; }
+    // The tempo that synced envelopes follow, for the editor to show and convert with.
+    const core::TempoState& getTempoState() const noexcept { return tempoState; }
     core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
 
   private:
     juce::AudioProcessorValueTreeState state;
     core::EngineParameterReader parameterReader;
+    core::TempoState tempoState;
     core::EnvelopeState ampEnvelope{dsp::EnvelopeKind::amp};
     core::EnvelopeState pitchEnvelope{dsp::EnvelopeKind::pitch};
     dsp::Engine engine;
@@ -67,6 +71,8 @@ class PluginProcessor : public juce::AudioProcessor
     juce::MidiBuffer auditionMidi;
 
     void addAuditionEvents(int numSamples, const juce::MidiBuffer& hostMidi);
+    // The parameters for this block, with the tempo from the host (or the Standalone's BPM).
+    dsp::EngineParameters readEngineParameters();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginProcessor)
 };

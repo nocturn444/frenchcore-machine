@@ -93,6 +93,14 @@ void addEnvelopeParameters(juce::AudioProcessorValueTreeState::ParameterLayout& 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         id(ParameterIds::kPunchTailSplit), "Punch Tail Split", splitRange, 80.0f,
         juce::AudioParameterFloatAttributes{}.withLabel("ms")));
+
+    // The volume of each part on its own, in dB like the output gain (-48 is silence).
+    const juce::NormalisableRange<float> levelRange{-48.0f, 12.0f, 0.1f};
+    const auto db = juce::AudioParameterFloatAttributes{}.withLabel("dB");
+    layout.add(std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::kPunchLevel), "Punch Level",
+                                                           levelRange, 0.0f, db));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::kTailLevel), "Tail Level",
+                                                           levelRange, 0.0f, db));
 }
 
 void addOscillatorParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout, int index)

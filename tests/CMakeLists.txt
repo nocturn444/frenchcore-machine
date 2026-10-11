@@ -9,6 +9,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/EngineTests.cpp
     dsp/EnvelopeEngineTests.cpp
     dsp/EnvelopeRendererTests.cpp
+    dsp/MusicalTimeTests.cpp
     dsp/NoteHandlingTests.cpp
     dsp/PublishedPointerTests.cpp
     dsp/PunchTailTests.cpp
@@ -31,6 +32,7 @@ target_sources(fcm_core_tests PRIVATE
     core/AuditionStateTests.cpp
     core/EnvelopeStateTests.cpp
     core/ParameterTests.cpp
+    core/TempoStateTests.cpp
 )
 target_link_libraries(fcm_core_tests PRIVATE
     fcm_core

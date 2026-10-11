@@ -183,3 +183,81 @@ TEST_CASE("Moving the balance while sounding does not click", "[dsp][punchtail][
     REQUIRE(largestStep < 0.02f);
     REQUIRE(fcm::test::allFinite(out));
 }
+
+namespace
+{
+EngineParameters withLevels(float punchLevel, float tailLevel, float balance = 0.0f)
+{
+    EngineParameters parameters;
+    parameters.punchLevel = punchLevel;
+    parameters.tailLevel = tailLevel;
+    parameters.punchBalance = balance;
+    return parameters;
+}
+} // namespace
+
+TEST_CASE("Punch level scales the punch region and leaves the tail alone", "[dsp][punchtail][levels]")
+{
+    const auto reference = kick(withLevels(1.0f, 1.0f), ms(300));
+    const auto quieter = kick(withLevels(0.5f, 1.0f), ms(300));
+
+    for (int i = 0; i < ms(77.9); ++i)
+        REQUIRE_THAT(quieter[static_cast<size_t>(i)],
+                     WithinAbs(0.5f * reference[static_cast<size_t>(i)], 1.0e-6));
+    for (int i = ms(82.1); i < ms(300); ++i)
+        REQUIRE(juce::exactlyEqual(quieter[static_cast<size_t>(i)], reference[static_cast<size_t>(i)]));
+}
+
+TEST_CASE("Tail level scales the tail region and leaves the punch alone", "[dsp][punchtail][levels]")
+{
+    const auto reference = kick(withLevels(1.0f, 1.0f), ms(300));
+    const auto louder = kick(withLevels(1.0f, 2.0f), ms(300));
+
+    for (int i = 0; i < ms(77.9); ++i)
+        REQUIRE(juce::exactlyEqual(louder[static_cast<size_t>(i)], reference[static_cast<size_t>(i)]));
+    for (int i = ms(82.1); i < ms(300); ++i)
+        REQUIRE_THAT(louder[static_cast<size_t>(i)],
+                     WithinAbs(2.0f * reference[static_cast<size_t>(i)], 1.0e-6));
+}
+
+TEST_CASE("Levels multiply with the balance", "[dsp][punchtail][levels]")
+{
+    const auto reference = kick(withLevels(1.0f, 1.0f), ms(300));
+    // Balance -50 % halves the tail; a tail level of 0.5 halves it again.
+    const auto both = kick(withLevels(1.0f, 0.5f, -0.5f), ms(300));
+
+    for (int i = ms(82.1); i < ms(300); ++i)
+        REQUIRE_THAT(both[static_cast<size_t>(i)],
+                     WithinAbs(0.25f * reference[static_cast<size_t>(i)], 1.0e-6));
+    for (int i = 0; i < ms(77.9); ++i)
+        REQUIRE_THAT(both[static_cast<size_t>(i)], WithinAbs(reference[static_cast<size_t>(i)], 1.0e-6));
+}
+
+TEST_CASE("A level of zero silences its region", "[dsp][punchtail][levels]")
+{
+    const auto noPunch = kick(withLevels(0.0f, 1.0f), ms(300));
+    for (int i = 0; i < ms(77.9); ++i)
+        REQUIRE(juce::exactlyEqual(noPunch[static_cast<size_t>(i)], 0.0f));
+    REQUIRE(fcm::test::peak(std::vector<float>(noPunch.begin() + ms(100), noPunch.end())) > 0.3f);
+
+    const auto noTail = kick(withLevels(1.0f, 0.0f), ms(300));
+    for (int i = ms(82.1); i < ms(300); ++i)
+        REQUIRE(juce::exactlyEqual(noTail[static_cast<size_t>(i)], 0.0f));
+}
+
+TEST_CASE("Changing a level while sounding does not click", "[dsp][punchtail][levels][click]")
+{
+    Fixture fixture(withLevels(1.0f, 1.0f));
+    fixture.voice.trigger(1.0f);
+    fixture.render(ms(200));
+
+    fixture.voice.setParameters(withLevels(1.0f, 0.0f),
+                                false); // the tail drops to silence over the smoothing time
+    const auto out = fixture.render(ms(100));
+
+    float largestStep = 0.0f;
+    for (size_t i = 1; i < out.size(); ++i)
+        largestStep = std::max(largestStep, std::abs(out[i] - out[i - 1]));
+    REQUIRE(largestStep < 0.02f);
+    REQUIRE(juce::exactlyEqual(out.back(), 0.0f));
+}

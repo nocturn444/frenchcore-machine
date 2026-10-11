@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "dsp/envelope/BreakpointEnvelope.h"
 #include "dsp/envelope/EnvelopePresets.h"
+#include "dsp/envelope/MusicalTime.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -333,4 +334,100 @@ TEST_CASE("tryCreate rejects invalid envelopes", "[dsp][envelope][model]")
 
     // The pitch envelope needs 3 main points.
     REQUIRE_FALSE(BreakpointEnvelope::tryCreate(EnvelopeKind::pitch, good, 30.0f).has_value());
+}
+
+TEST_CASE("Enabling sync records the tempo and changes no time", "[dsp][envelope][sync]")
+{
+    BreakpointEnvelope amp(EnvelopeKind::amp);
+    REQUIRE_FALSE(amp.isSynced());
+    const auto before = amp.points();
+
+    amp.enableSync(150.0f);
+    REQUIRE(amp.isSynced());
+    REQUIRE_THAT(amp.syncRefBpm(), WithinAbs(150.0, 1.0e-6));
+    for (size_t i = 0; i < before.size(); ++i)
+        REQUIRE(juce::exactlyEqual(amp.points()[i].timeMs, before[i].timeMs));
+    REQUIRE_THAT(amp.toShape()->syncRefBpm, WithinAbs(150.0, 1.0e-6));
+
+    // Tempos outside the supported range are clamped, non-finite ones ignored.
+    amp.enableSync(5.0f);
+    REQUIRE_THAT(amp.syncRefBpm(), WithinAbs(fcm::dsp::kMinTempoBpm, 1.0e-6));
+    amp.enableSync(9999.0f);
+    REQUIRE_THAT(amp.syncRefBpm(), WithinAbs(fcm::dsp::kMaxTempoBpm, 1.0e-6));
+    amp.enableSync(std::nanf(""));
+    REQUIRE_THAT(amp.syncRefBpm(), WithinAbs(fcm::dsp::kMaxTempoBpm, 1.0e-6));
+}
+
+TEST_CASE("Rebasing keeps the musical length of every time", "[dsp][envelope][sync]")
+{
+    BreakpointEnvelope amp(EnvelopeKind::amp);
+    amp.enableSync(120.0f);
+    amp.setKnob(AmpKnob::hold, 250.0f); // an eighth note at 120 BPM (a beat is 500 ms)
+    amp.setKnob(AmpKnob::release, 125.0f);
+
+    // At 240 BPM the same musical lengths are half as many milliseconds.
+    const auto before = amp.points();
+    amp.rebaseTo(240.0f);
+    REQUIRE_THAT(amp.syncRefBpm(), WithinAbs(240.0, 1.0e-6));
+    for (size_t i = 0; i < before.size(); ++i)
+        REQUIRE_THAT(amp.points()[i].timeMs, WithinAbs(before[i].timeMs * 0.5, 1.0e-3));
+    REQUIRE_THAT(amp.knob(AmpKnob::hold), WithinAbs(125.0, 1.0e-3));
+    REQUIRE_THAT(amp.releaseMs(), WithinAbs(62.5, 1.0e-3));
+    // Levels and curves are untouched.
+    for (size_t i = 0; i < before.size(); ++i)
+    {
+        REQUIRE(juce::exactlyEqual(amp.points()[i].value, before[i].value));
+        REQUIRE(juce::exactlyEqual(amp.points()[i].curve, before[i].curve));
+    }
+
+    // And back again.
+    amp.rebaseTo(120.0f);
+    REQUIRE_THAT(amp.knob(AmpKnob::hold), WithinAbs(250.0, 1.0e-2));
+    REQUIRE(timesAreSorted(amp));
+}
+
+TEST_CASE("Rebasing to a much slower tempo stays within the limits", "[dsp][envelope][sync]")
+{
+    BreakpointEnvelope amp(EnvelopeKind::amp);
+    amp.enableSync(400.0f);
+    amp.rebaseTo(20.0f); // 20 times longer
+
+    REQUIRE(amp.points().back().timeMs <= fcm::dsp::kMaxEnvelopeTimeMs);
+    REQUIRE(amp.releaseMs() <= fcm::dsp::kMaxEnvelopeTimeMs);
+    REQUIRE(timesAreSorted(amp));
+    REQUIRE(BreakpointEnvelope::tryCreate(EnvelopeKind::amp, amp.points(), amp.releaseMs(), amp.syncRefBpm())
+                .has_value());
+}
+
+TEST_CASE("Disabling sync keeps the sound at the current tempo", "[dsp][envelope][sync]")
+{
+    BreakpointEnvelope amp(EnvelopeKind::amp);
+    amp.enableSync(120.0f);
+
+    // Written at 120 BPM, heard at 240: every time is halved, and stays halved when sync is dropped.
+    const auto at120 = amp.points();
+    amp.disableSync(240.0f);
+    REQUIRE_FALSE(amp.isSynced());
+    REQUIRE(juce::exactlyEqual(amp.syncRefBpm(), 0.0f));
+    for (size_t i = 0; i < at120.size(); ++i)
+        REQUIRE_THAT(amp.points()[i].timeMs, WithinAbs(at120[i].timeMs * 0.5, 1.0e-3));
+
+    // Without sync, rebasing does nothing.
+    const auto before = amp;
+    amp.rebaseTo(60.0f);
+    REQUIRE(amp == before);
+}
+
+TEST_CASE("The sync reference is validated when loading", "[dsp][envelope][sync]")
+{
+    const BreakpointEnvelope amp(EnvelopeKind::amp);
+    REQUIRE(BreakpointEnvelope::tryCreate(EnvelopeKind::amp, amp.points(), 30.0f, 0.0f).has_value());
+    REQUIRE(BreakpointEnvelope::tryCreate(EnvelopeKind::amp, amp.points(), 30.0f, 200.0f).has_value());
+    for (float bad : {-1.0f, 5.0f, 19.9f, 401.0f, 1.0e6f, std::nanf("")})
+        REQUIRE_FALSE(BreakpointEnvelope::tryCreate(EnvelopeKind::amp, amp.points(), 30.0f, bad).has_value());
+
+    // The equality used by the tests sees the reference.
+    BreakpointEnvelope synced(EnvelopeKind::amp);
+    synced.enableSync(120.0f);
+    REQUIRE_FALSE(synced == amp);
 }
