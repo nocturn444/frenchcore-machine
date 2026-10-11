@@ -209,6 +209,7 @@ MVP effects:
 - **Automatable parameters** live in a `juce::AudioProcessorValueTreeState` (APVTS). Parameter IDs are defined in one place (`src/core/ParameterIds.h` plus each effect's own parameter function) and are **never renamed or reused** once released.
 - **Non-parameter state** lives in child nodes of the same `ValueTree`:
   - `UserWavetable1`, `UserWavetable2`: display name and embedded frames (base64), see [wavetable-user](specs/wavetable-user.md).
+  - `UserTockSample`: display name, sample rate and the embedded sample (base64), see [tock](specs/tock.md).
   - `AmpEnvelope`, `PitchEnvelope`: point lists.
   - `FxChain`: order of effect IDs.
 - **Versioning:** the root state node carries `stateVersion`, always written on save (`core::kStateVersion`, currently 1). A missing or damaged value counts as version 1. Loading older state runs the steps of `stateMigrations()` in `src/core/StateMigrations.cpp` in order (the list is empty while only version 1 exists); a state whose version is newer than this build is still loaded: the controls this build knows are applied and the rest is ignored. Each effect also carries its descriptor `version`.
