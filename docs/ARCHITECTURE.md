@@ -43,7 +43,6 @@ frenchcore-machine/
 │   └── plugin/               JUCE AudioProcessor / AudioProcessorEditor glue
 ├── resources/
 │   ├── wavetables/           Factory wavetables (WAV), embedded via BinaryData
-│   └── presets/              Factory presets (XML), embedded via BinaryData
 ├── tests/                    Catch2 unit tests, mirrors src/ layout
 ├── docs/                     All documentation (this file, plan, specs, ADRs)
 └── .github/                  CI workflows, PR and issue templates
@@ -215,7 +214,7 @@ MVP effects:
 - **Versioning:** the root state node carries `stateVersion`, always written on save (`core::kStateVersion`, currently 1). A missing or damaged value counts as version 1. Loading older state runs the steps of `stateMigrations()` in `src/core/StateMigrations.cpp` in order (the list is empty while only version 1 exists); a state whose version is newer than this build is still loaded: the controls this build knows are applied and the rest is ignored. Each effect also carries its descriptor `version`.
 - **One load path** (`core::ProjectState`, [project-state](specs/project-state.md)): it gathers the parameter tree, both envelopes, the effect order and the user wavetable and Tock nodes, and offers `capture()` and `restore()` (and the XML form). The processor, the presets and the tests all use it. A saved state describes everything: a parameter it does not mention becomes its default.
 - **Loading is always sanitized** (`core::loadState` in `src/core/StateLoader.cpp`, spec [state-safe-loading](specs/state-safe-loading.md)): the root type must match; unknown or value-less `PARAM` entries are dropped; every parameter value that is not a plain finite number becomes the parameter's default, and every other value is clamped to the parameter's range and snapped to its step. `EngineParameterReader` and the oscillator repeat these guards as a second layer, so a bad value can never index outside memory on the audio thread. State blobs above `core::kMaxStateBytes` (32 MiB) are rejected before parsing.
-- **Presets** are the same state serialized to an `.fcmpreset` XML file. Factory presets are embedded. User presets go to the platform's user documents folder (`Frenchcore Machine/Presets`).
+- **Presets** ([presets](specs/presets.md)) are the same state wrapped in a small XML file with a name and a `presetFormat` version (`.fcmpreset`, `core::PresetFile`). Factory presets are a table in code (`core::FactoryPresets`: parameter overrides plus envelope shape names) applied over the defaults, so they follow new controls and need no embedded files. User presets go to the platform's user documents folder (`Frenchcore Machine/Presets`) through `core::PresetLibrary`; `core::PresetManager` presents factory then user presets as one list with next/previous and save. Preset files are untrusted input (§12): size cap, nesting-depth scan before XML parsing, strict file-name whitelist.
 - Unknown effect IDs or parameters in a preset (e.g. a preset made with a newer version) are ignored with a warning, never a crash.
 
 ## 6. Threading and real-time rules

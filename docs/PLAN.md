@@ -93,8 +93,8 @@ Done when:
 
 - [x] Full state save/load including non-parameter state ([spec](specs/project-state.md))
 - [x] State versioning and migration framework (hook, safe loading and untrusted-input rules: [spec](specs/state-safe-loading.md); migrations are added when the state format changes)
-- [ ] Preset format, factory presets, user preset save/load, browser
-- [ ] Round-trip tests for state and presets
+- [x] Preset format, factory presets, user preset save/load, browser ([presets](specs/presets.md), [preset-browser](specs/preset-browser.md)); the final list of factory presets is for nocturn4 to decide by ear
+- [x] Round-trip tests for state and presets
 
 ## Phase 7: MVP hardening and release
 

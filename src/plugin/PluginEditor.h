@@ -5,6 +5,7 @@
 #include "ui/EnvelopePanel.h"
 #include "ui/FxRackPanel.h"
 #include "ui/GenericParameterPanel.h"
+#include "ui/PresetBar.h"
 #include "ui/WavetablePanel.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -35,6 +36,7 @@ class PluginEditor : public juce::AudioProcessorEditor
     void resized() override;
 
   private:
+    ui::PresetBar presetBar;
     ui::GenericParameterPanel parameterPanel;
     ui::WavetablePanel wavetablePanel;
     EnvelopeRow envelopeRow;

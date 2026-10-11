@@ -47,7 +47,7 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
     : AudioProcessorEditor(owner),
       // The envelope parameters are shown by the envelope panels and the effects by the FX rack, not by
       // the generic list.
-      parameterPanel(owner.getState(), groupsShownElsewhere()),
+      presetBar(owner.getPresets()), parameterPanel(owner.getState(), groupsShownElsewhere()),
       wavetablePanel(
           owner.getState(), owner.selectorFor(0), owner.selectorFor(1),
           [&owner](int oscillator, const juce::File& file) { owner.loadUserWavetable(oscillator, file); },
@@ -55,6 +55,7 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
           [&owner] { return owner.wavetableMessage(); }),
       envelopeRow(owner), fxRack(owner.getState(), owner.getFxOrder(), dsp::defaultEffectRegistry())
 {
+    addAndMakeVisible(presetBar);
     addAndMakeVisible(parameterPanel);
     addAndMakeVisible(wavetablePanel);
     lowerTabs.setTabBarDepth(28);
@@ -63,7 +64,7 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
     lowerTabs.addTab("Effects", juce::Colour(0xff15161a), &fxRack, false);
     addAndMakeVisible(lowerTabs);
 
-    int totalHeight = kPanelHeight + ui::WavetablePanel::kHeight;
+    int totalHeight = kPanelHeight + ui::WavetablePanel::kHeight + ui::PresetBar::kHeight;
     if (owner.isStandalone())
     {
         auditionPanel = std::make_unique<ui::AuditionPanel>(owner.getAuditionState());
@@ -82,7 +83,7 @@ void PluginEditor::resized()
     auto area = getLocalBounds();
 
     // Every part keeps its share of the height as the window scales.
-    const int designHeight = kPanelHeight + ui::WavetablePanel::kHeight +
+    const int designHeight = kPanelHeight + ui::WavetablePanel::kHeight + ui::PresetBar::kHeight +
                              (auditionPanel != nullptr ? ui::AuditionPanel::kHeight : 0);
     // The full height, taken before any strip is cut off: `area` shrinks as the strips are removed.
     const int fullHeight = area.getHeight();
@@ -91,6 +92,7 @@ void PluginEditor::resized()
     if (auditionPanel != nullptr)
         auditionPanel->setBounds(area.removeFromBottom(scaled(ui::AuditionPanel::kHeight)));
 
+    presetBar.setBounds(area.removeFromTop(scaled(ui::PresetBar::kHeight)));
     lowerTabs.setBounds(area.removeFromBottom(scaled(kEnvelopeRowHeight)));
 
     wavetablePanel.setBounds(area.removeFromBottom(scaled(ui::WavetablePanel::kHeight)));

@@ -5,6 +5,7 @@
 #include "core/EngineParameterReader.h"
 #include "core/EnvelopeState.h"
 #include "core/FxOrderState.h"
+#include "core/PresetManager.h"
 #include "core/ProjectState.h"
 #include "core/TempoState.h"
 #include "core/TockSelector.h"
@@ -64,6 +65,7 @@ class PluginProcessor : public juce::AudioProcessor,
     float currentTempo() const noexcept { return isStandalone() ? auditionState.getBpm() : tempoState.get(); }
     core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
     core::FxOrderState& getFxOrder() noexcept { return fxOrder; }
+    core::PresetManager& getPresets() noexcept { return presetManager; }
 
     core::WavetableSelector& selectorFor(int oscillator) noexcept
     {
@@ -91,6 +93,8 @@ class PluginProcessor : public juce::AudioProcessor,
     core::TockSelector tockSelector{state};
     // Everything that is saved with the project, gathered (docs/specs/project-state.md).
     core::ProjectState project;
+    // The preset list and the current preset (docs/specs/presets.md).
+    core::PresetManager presetManager;
 
     juce::String lastWavetableMessage;
     juce::ChangeBroadcaster wavetableBroadcaster;

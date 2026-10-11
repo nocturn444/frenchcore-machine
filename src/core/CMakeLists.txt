@@ -5,7 +5,11 @@ target_sources(fcm_core INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/EngineParameterReader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EnvelopeState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FxOrderState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/FactoryPresets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ParameterLayout.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/PresetFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/PresetLibrary.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/PresetManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ProjectState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/StateLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/StateMigrations.cpp

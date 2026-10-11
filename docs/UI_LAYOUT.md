@@ -39,7 +39,7 @@ In the original sketch, black areas were mandatory and red areas were to be disc
 
 | Area | Contents | MVP | Maps to |
 |---|---|---|---|
-| **Preset bar** | `SAVE` (overwrite current user preset), `SAVE AS`, `SELECT` (browser), `INIT` (reset to the default patch), current preset name with prev/next | Yes | Presets (ARCHITECTURE §5) |
+| **Preset bar** | Preset menu (factory, then yours) with the current name, prev/next, a name field with `SAVE` (asks before replacing). `INIT` is the first factory preset. See [preset-browser](specs/preset-browser.md) | Yes | Presets (ARCHITECTURE §5) |
 | **Oscillator 1 and 2** | Two identical panels. Header: on/off, Pitch, Octave, Fine tune. Wavetable display (click to load, frame name). 6 knobs: Position, Level, Phase, plus three reserved for later oscillator features | Yes | Oscillators (§4.2) |
 | **Amp envelope** | Editable display (drag, add, delete points) + 5 knobs: Attack, Hold, Decay, Sustain, Release. Knobs move the main points of the same curve. Shows the punch/tail split marker. Default shape: kick + bass | Yes | Envelopes (§4.4) |
 | **Pitch envelope** | Editable display + 5 knobs: Amount (st), Attack, Decay, Curve, End | Yes | Envelopes (§4.4) |

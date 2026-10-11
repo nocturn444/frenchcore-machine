@@ -216,6 +216,20 @@ The kick is generated in mono, so there is nothing to spread in the ordinary sen
 
 ## Presets
 
+A preset is a complete sound: all the knobs, both envelope shapes, the order of the effects, and any wavetable or Tock sample you loaded yourself.
+
+The **preset bar** is the strip at the top of the window:
+
+- Click the preset name to open the list: the **Factory** presets first, then **Yours**. Pick one to load it. Loading a preset replaces the whole sound; anything the preset does not set goes back to its default.
+- The **<** and **>** buttons go to the previous and next preset in the list and wrap around.
+- To keep your own sound, type a name in the field and press **Save** (or Enter). If a preset with that name already exists you are asked before it is replaced. Names can use letters, numbers, spaces and `- _ . ( )`; anything else is dropped.
+- **Init** (the first factory preset) is the plain default sound.
+- A message appears in the bar when a preset cannot be loaded or saved. A damaged or unknown file is refused and your current sound stays as it was.
+
+Your presets are files in your Documents folder, `Frenchcore Machine/Presets`, named `<name>.fcmpreset`. You can copy them to another computer or send them to someone; to delete one, delete the file.
+
+The name shown in the bar is the last preset you loaded or saved in this session of the plugin. It is not stored in the DAW project (the project stores the sound itself).
+
 ## Global: output, limiter, quality, glide
 
 | Control | What it does |
