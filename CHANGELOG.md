@@ -23,6 +23,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Specs for voice and note handling and for the wavetable oscillator, and ADR 0005 (engine parameter hand-off).
 - `fcm_core_tests`: tests for the parameter layout (including a guard on released parameter IDs) and the parameter-to-engine mapping.
 
+### Security
+
+- Standalone: copying the host's MIDI into the audition buffer is now capped to the memory reserved in `prepareToPlay` (excess events are dropped), so a huge burst of MIDI can no longer make the audio thread allocate.
+
 ### Changed
 
 - The editor shows the generic parameter panel instead of the layout placeholder grid; the layout itself stays documented in `docs/UI_LAYOUT.md`.

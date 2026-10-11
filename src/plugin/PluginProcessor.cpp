@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "plugin/PluginProcessor.h"
 
+#include "core/BoundedMidiCopy.h"
 #include "core/ParameterIds.h"
 #include "core/ParameterLayout.h"
 #include "plugin/PluginEditor.h"
@@ -12,9 +13,6 @@ namespace
 {
 const juce::Identifier kStateType{"FrenchcoreMachineState"};
 const juce::Identifier kStateVersionProperty{"stateVersion"};
-
-// Room for the host's events plus the audition events of one block (about 11 bytes each).
-constexpr int kAuditionMidiBytes = 8192;
 } // namespace
 
 PluginProcessor::PluginProcessor()
@@ -34,7 +32,7 @@ void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     if (isStandalone())
     {
         auditionSequencer.prepare(sampleRate);
-        auditionMidi.ensureSize(kAuditionMidiBytes);
+        auditionMidi.ensureSize(core::kAuditionMidiBytes);
     }
 }
 
@@ -64,7 +62,8 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiB
 void PluginProcessor::addAuditionEvents(int numSamples, const juce::MidiBuffer& hostMidi)
 {
     auditionMidi.clear();
-    auditionMidi.addEvents(hostMidi, 0, numSamples, 0);
+    // Bounded copy: a burst bigger than the reserved room would make the buffer grow (allocate).
+    core::copyMidiWithinBudget(hostMidi, auditionMidi, numSamples, core::kHostMidiBudgetBytes);
 
     const bool autoPlay = auditionState.isAutoPlay();
 
