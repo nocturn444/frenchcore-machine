@@ -170,6 +170,23 @@ After the oscillators and the Tock, the kick goes through a row of effects. The 
 - **Order**: the effects can be dragged into any order (a later version shows the rack). Each one exists once, and its controls keep working with automation wherever it sits.
 - Switching an effect on or off, changing its Mix or moving it never clicks and never shifts the timing of the kick.
 - The effects work on both channels. They sit before the output gain and the safety limiter, so the limiter always protects the final sound.
+### Distortion
+
+The first effect. Switch it on with **Distortion On** (the Distortion column of the controls).
+
+| Control | What it does |
+|---|---|
+| **Type** | **Soft Clip**: smooth, warm saturation. **Hard Clip**: slices the wave flat, bright and aggressive. **Overdrive**: lopsided saturation that adds even harmonics, thicker and tube-like. **Foldback**: the wave folds back when it goes too far, metallic and buzzing. **Bitcrush**: fewer levels and fewer samples per second, gritty and digital. |
+| **Drive** | How hard the sound is pushed into the distortion, 0 to 100 % (up to 48 dB of gain). Default 25 %. |
+| **Pre-gain** | Extra gain before the distortion, -24 to +24 dB. |
+| **Post-gain** | Volume after the distortion, -48 to +12 dB (default -6 dB): distortion makes things louder. |
+| **Tone** | How bright the result is. 100 % (default) filters nothing; lower values take off the high end, down to a low-pass at 1 kHz. |
+| **Bits** | Bitcrush only: bit depth, 2 to 16. |
+| **Rate** | Bitcrush only: rate reduction, 1x (none) to 32x. |
+| **Mix** | How much distorted sound you hear against the clean kick. |
+
+The clipping types are oversampled according to **Quality** to avoid harsh aliasing; Bitcrush is not, because its roughness is the point. Changing **Type** while a kick rings can click, so set it before you play. With effects in the plugin, your DAW is told about a small delay (a few samples at the default Quality) that it compensates; nothing shifts when you switch an effect on or off.
+
 - **Quality** (in the Global controls): how much the effects that make harmonics are oversampled (1x, 2x, 4x or 8x, default 2x). Higher is cleaner and uses more CPU. Changing it changes the small delay the plugin reports to your DAW.
 
 ## Presets
