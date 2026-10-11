@@ -66,7 +66,7 @@ ctest --test-dir build --output-on-failure
 
 ## Git and pull requests
 
-- Never commit directly to `main`. Branch names: `feat/…`, `fix/…`, `docs/…`, `chore/…`.
+- Never commit directly to `main`. Branch names: `feat/…`, `fix/…`, `docs/…`, `chore/…`. Cloud sessions work on the `claude/…` branch the session assigns them; that is accepted as is, no renaming needed.
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `build:`, `ci:`, `chore:`).
 - One feature or fix per PR. Fill in `.github/pull_request_template.md` completely. CI must be green before asking for review.
 - Never skip, disable or weaken a test to make CI pass.

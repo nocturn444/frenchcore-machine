@@ -13,7 +13,7 @@ Thanks for helping. This project is documentation-driven: shared written underst
 
 1. **Find or open an issue** describing the change.
 2. **Spec first.** For any new feature, add a spec in `docs/specs/` from the [template](docs/specs/_TEMPLATE.md). For architectural changes, update [ARCHITECTURE.md](docs/ARCHITECTURE.md) and add an ADR in `docs/decisions/`.
-3. **Branch** from `main`: `feat/<short-name>`, `fix/<short-name>`, `docs/<short-name>` or `chore/<short-name>`.
+3. **Branch** from `main`: `feat/<short-name>`, `fix/<short-name>`, `docs/<short-name>` or `chore/<short-name>` (Claude Code cloud sessions use the `claude/…` branch they are assigned).
 4. **Tests, then code.** Write the tests the spec lists, then implement.
 5. **Update docs** in the same PR: user guide, `CHANGELOG.md` (under `Unreleased`) and `docs/PLAN.md` status.
 6. **Open a pull request** with the template and make sure CI is green.
