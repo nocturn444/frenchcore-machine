@@ -1,6 +1,6 @@
 # Spec: Voice and note handling
 
-- Status: Implemented (behaviour taken from `docs/PLAN.md` Phase 2 and `docs/ARCHITECTURE.md` §4.1; the sound defaults in section 7 are still waiting for the product owner's review)
+- Status: Implemented (behaviour from `docs/PLAN.md` Phase 2 and `docs/ARCHITECTURE.md` §4.1; sound defaults confirmed by the product owner on 2026-10-11, see section 7)
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [oscillator-wavetable](oscillator-wavetable.md), [ARCHITECTURE §4.1, §4.4, §4.7](../ARCHITECTURE.md), [ADR 0005](../decisions/0005-engine-parameter-handoff.md)
 
@@ -10,9 +10,9 @@ A MIDI note plays a kick. The kick starts with a very fast pitch drop (from four
 
 - **One voice (monophonic).** A new note always restarts the kick from the beginning, like retriggering a drum. Two notes at once never play two kicks on top of each other.
 - **The MIDI note tunes the tail.** Play a different note and the kick settles on a different pitch. With **Key Track** off, the tail always settles on the **Root Note**, whatever key you play, so you can put the kick in any pattern without changing its tuning.
-- **The kick always plays out.** Releasing the key does not cut the kick: it decays on its own, so a short MIDI note (for example a 1/16 note at a fast tempo) still gives the whole kick. Phase 3 revisits this when the amp envelope gets a sustain and a release.
+- **The length of the note sets the length of the tail.** The kick decays on its own, but when you let go of the last held key it fades out over a short release (30 ms). A long note in the piano roll gives a long tail, a short note a short one. Phase 3 revisits this when the amp envelope becomes editable.
 - **Glide (optional).** With **Glide** on, the tail pitch slides from the previous note's pitch to the new one over **Glide Time**, instead of jumping. The pitch drop at the start of each kick is not affected: only the pitch it lands on slides.
-- **Velocity.** **Velocity Sensitivity** sets how much the MIDI velocity changes the loudness: at 0 % every note is equally loud, at 100 % velocity 1 is silent-ish and velocity 127 is full level.
+- **Velocity.** **Velocity Sensitivity** sets how much the MIDI velocity changes the loudness: at 0 % (the default) every note is equally loud, at 100 % velocity 1 is nearly silent and velocity 127 is full level.
 - **No clicks.** Retriggering while the previous kick is still sounding does not click: the old kick is faded out over about 1.5 ms while the new one starts at the exact sample the note arrives.
 - **Safe output.** An output gain knob and a safety limiter that never lets the signal go above 0 dBFS, so a very loud kick cannot hurt speakers or ears.
 
@@ -34,7 +34,7 @@ The fixed amp and pitch envelopes have no parameters in Phase 2 (hard-coded shap
 | `global.rootNote` | Root Note | 12 to 84 (integer) | 36 (shown as C1) | MIDI note | | no | yes |
 | `global.glideOn` | Glide | off / on | off | | | no | yes |
 | `global.glideTime` | Glide Time | 1 to 1000 | 100 | ms | skewed, midpoint 100 ms | no | yes |
-| `global.velocitySensitivity` | Velocity Sensitivity | 0 to 100 | 100 | % | linear | no | yes |
+| `global.velocitySensitivity` | Velocity Sensitivity | 0 to 100 | 0 | % | linear | no | yes |
 
 Note names follow the JUCE convention (MIDI note 60 is C3, so note 36 is C1).
 
@@ -44,6 +44,7 @@ Note names follow the JUCE convention (MIDI note 60 is C3, so note 36 is C1).
 
 - Fixed-size stack of held notes (16 entries, no allocation). `noteOn` pushes (or moves to the top if the note is already held) and reports "retrigger"; `noteOff` removes the note and reports the note that is now on top, if any. Older entries are dropped when the stack is full. Note-off for a note that is not held is ignored. `allNotesOff` clears the stack.
 - Velocity is stored with the note that triggered the kick; going back to an older held note does not change the level of a kick already playing.
+- **Release rule (in the engine):** a note-off releases the voice only when it removes a note that was actually held and no other note is still held. Releasing the top note while an older one is held moves the pitch back to the older note and keeps the kick sounding. A note-off for a note that is not held does nothing. All Notes Off (CC 123) clears the stack and releases; All Sound Off (CC 120) silences at once.
 
 ### 4.2 Pitch glide (`fcm::dsp::PitchGlide`)
 
@@ -69,10 +70,10 @@ output   = sample * ampEnvelope * velocityGain
 
 ### 4.4 Fixed envelopes (Phase 2 placeholders for Phase 3's `BreakpointEnvelope`)
 
-Both envelopes restart on every note-on and ignore note-off.
+Both envelopes restart on every note-on. Only the amp envelope has a release.
 
-- **Amp:** linear attack from 0 to 1 in `kAttackMs` = 1 ms, then an exponential decay of -60 dB in `kDecaySeconds` = 0.5 s. When the level falls below -80 dB the envelope snaps to 0 and the voice goes idle.
-- **Pitch:** offset in semitones = `kAmountSemitones` (+48) times a normalized exponential fall that reaches exactly 0 after `kDropMs` = 90 ms. Shape: `(e^(-t/tau) - e^(-T/tau)) / (1 - e^(-T/tau))` with `T` = 90 ms and `tau` = `T / 5`. After `T` the voice runs at exactly the settling pitch.
+- **Amp:** linear attack from 0 to 1 in `kAttackMs` = 1 ms, then an exponential decay of -60 dB in `kDecaySeconds` = 0.5 s. When the level falls below -80 dB the envelope snaps to 0 and the voice goes idle. **Release:** when the last held key is let go (or on All Notes Off), the level falls linearly from wherever it is to 0 in `kReleaseMs` = 30 ms and the voice goes idle. Releasing a second time does nothing.
+- **Pitch** (keeps running through the release): offset in semitones = `kAmountSemitones` (+48) times a normalized exponential fall that reaches exactly 0 after `kDropMs` = 90 ms. Shape: `(e^(-t/tau) - e^(-T/tau)) / (1 - e^(-T/tau))` with `T` = 90 ms and `tau` = `T / 5`. After `T` the voice runs at exactly the settling pitch.
 - Both are computed with a per-sample running multiplication (no `exp` per sample).
 
 ### 4.5 Engine (`fcm::dsp::Engine`)
@@ -92,28 +93,29 @@ Catch2, in `tests/dsp/` (headless, `fcm_dsp_tests`):
 
 - `NoteHandler`: last-note priority, release returns to the previous held note, release of an unheld note ignored, stack overflow drops the oldest, `allNotesOff`.
 - `PitchGlide`: jump when glide is off or before the first note; ramp reaches the target after exactly `glideMs`; ramp length is independent of the interval; retarget mid-slide; linear in semitones.
-- Envelopes: amp falls 60 dB in 0.5 s (within 0.2 dB), then snaps to idle within its stated maximum length; the attack is monotonic and starts near 0; pitch envelope starts at +48, is monotonic, and is exactly 0 after 90 ms; deterministic after reset.
+- Envelopes: amp falls 60 dB in 0.5 s (within 0.2 dB), then snaps to idle within its stated maximum length; release is linear from the current level (during the attack too) and ends in 30 ms; a second release does not restart it; the attack is monotonic and starts near 0; pitch envelope starts at +48, is monotonic, and is exactly 0 after 90 ms; deterministic after reset.
 - `Voice`: output is finite for all supported sample rates (44.1, 48, 96 kHz); a note-on produces non-zero output; **tail pitch within 1 cent** of the MIDI note frequency, measured after the pitch drop for notes C1, A1, C2 at 48 kHz; key track off uses the root note whatever note is played; velocity sensitivity scales the level (0 % equal, 100 % proportional); retrigger step size stays small (no click), and a control in the same test shows that a hard restart at the same instant would be a large step; a chord of notes at the same sample and notes a few samples apart also stay click-free (Engine); `reset` makes two runs bit-identical.
-- `Engine`: MIDI timing is sample-accurate (silent before the note-on offset, sound from it); glide moves the tail pitch gradually between two consecutive notes and with glide off jumps; output never exceeds 0 dBFS with the limiter on, even for output gain +12 dB and two oscillators at full level; silence when no note has been played; a note-off does not cut the kick; allocation-free `process` is checked in Phase 7 with the debug guard (not available yet).
+- `Engine`: MIDI timing is sample-accurate (silent before the note-on offset, sound from it); glide moves the tail pitch gradually between two consecutive notes and with glide off jumps; output never exceeds 0 dBFS with the limiter on, even for output gain +12 dB and two oscillators at full level; silence when no note has been played; releasing the last key fades the kick out in 30 ms without a click, from several moments; the note length sets the tail length; releasing a note while an older one is held does not release; a stray note-off does nothing; All Notes Off releases; allocation-free `process` is checked in Phase 7 with the debug guard (not available yet).
 - Core (`fcm_core_tests`): every parameter ID is unique and prefixed `global.`, `osc1.` or `osc2.`; defaults of the layout map to the expected `EngineParameters`; ranges map correctly.
 
 Manual check (Standalone or a DAW): play a MIDI note, hear the kick; play fast repeated notes without clicks; toggle Key Track and Glide.
 
 ## 6. Out of scope
 
-- Editable envelopes, sustain and release (Phase 3).
+- Editable envelopes, sustain and an adjustable release (Phase 3).
 - Polyphony or legato options.
 - Tock, Punch/Tail balance, FX chain, oversampling (later phases).
 - An on-screen keyboard or "audition" button in the plugin window: the Standalone needs a MIDI keyboard or a virtual MIDI source for now.
 - A look-ahead limiter. The safety limiter is a soft clipper.
 
-## 7. Open questions
+## 7. Decisions and open questions
 
-Defaults the agent chose from the plan; the product owner can change any of them:
+Confirmed by the product owner on 2026-10-11:
 
-1. Pitch drop: +48 semitones in 90 ms with an exponential shape. Is this the right punch, or should it be faster/slower?
-2. Amp decay: -60 dB in 0.5 s with no sustain. (Phase 3's "kick + bass" shape will replace this.)
-3. Should the kick always play out when the key is released (current), or stop on note-off?
-4. Default Root Note C1 (about 65 Hz) when Key Track is off.
-5. Default Velocity Sensitivity 100 %. A fixed 0 % might suit kick programming better.
-6. Default Glide Time 100 ms.
+1. Pitch drop (+48 semitones in 90 ms, exponential) and amp decay (-60 dB in 0.5 s, no sustain) stay as they are. They are placeholders until the editable envelopes of Phase 3, so they are not tuned now.
+2. Releasing the key ends the kick with a short release (30 ms), so the note length in the piano roll controls the tail. The release time itself is a first choice and moves into the envelope editor in Phase 3.
+3. Default Root Note C1 (about 65 Hz) is fine; the tail is tuned to the song's key with Key Track.
+4. Default Velocity Sensitivity is 0 %, so every kick is equally loud.
+5. Default Glide Time 100 ms is fine.
+
+No open questions remain for this spec.

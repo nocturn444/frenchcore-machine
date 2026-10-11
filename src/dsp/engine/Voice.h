@@ -35,6 +35,9 @@ class Voice
     // Starts a kick. `velocityGain` is the final level factor (already scaled by sensitivity).
     void trigger(float velocityGain) noexcept;
 
+    // The last held key was released: fades the current kick out with the envelope's short release.
+    void release() noexcept { core.amp.release(); }
+
     // Renders one sample. `settleNote` is the pitch the kick settles on, in MIDI note numbers.
     float process(float settleNote) noexcept;
 

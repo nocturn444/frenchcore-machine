@@ -84,6 +84,74 @@ TEST_CASE("FixedAmpEnvelope restarts from zero and is deterministic after reset"
     REQUIRE(first.front() < 0.05f); // starts near zero, no jump
 }
 
+TEST_CASE("FixedAmpEnvelope release fades linearly from the current level in 30 ms", "[dsp][envelope]")
+{
+    for (double sampleRate : {44100.0, 48000.0, 96000.0})
+    {
+        // Released early in the decay, and released while still in the attack.
+        for (int samplesBeforeRelease :
+             {static_cast<int>(0.05 * sampleRate), static_cast<int>(0.0004 * sampleRate)})
+        {
+            FixedAmpEnvelope envelope;
+            envelope.prepare(sampleRate);
+            envelope.start();
+
+            float level = 0.0f;
+            for (int i = 0; i < samplesBeforeRelease; ++i)
+                level = envelope.next();
+            REQUIRE(level > 0.0f);
+
+            envelope.release();
+            REQUIRE(envelope.isActive());
+
+            const int releaseSamples =
+                static_cast<int>(std::lround(FixedAmpEnvelope::kReleaseMs * 0.001 * sampleRate));
+            float previous = level;
+            float firstStep = 0.0f;
+            int samples = 0;
+            while (envelope.isActive())
+            {
+                const float value = envelope.next();
+                INFO("sampleRate " << sampleRate << " released after " << samplesBeforeRelease);
+                REQUIRE(value <= previous); // never rises again
+                if (samples == 0)
+                    firstStep = previous - value;
+                previous = value;
+                ++samples;
+                REQUIRE(samples <= releaseSamples + 2);
+            }
+
+            // Linear: the first step is the whole level over the release length.
+            REQUIRE_THAT(firstStep, Catch::Matchers::WithinAbs(level / releaseSamples, level * 0.01f));
+            REQUIRE(samples >= releaseSamples - 2);
+            REQUIRE(juce::exactlyEqual(previous, 0.0f));
+        }
+    }
+}
+
+TEST_CASE("FixedAmpEnvelope release does nothing when idle and cannot be restarted", "[dsp][envelope]")
+{
+    FixedAmpEnvelope envelope;
+    envelope.prepare(48000.0);
+
+    envelope.release();
+    REQUIRE_FALSE(envelope.isActive());
+
+    envelope.start();
+    for (int i = 0; i < 500; ++i)
+        envelope.next();
+    envelope.release();
+    const float afterFirstStep = envelope.next();
+    envelope.release(); // a second release must not restart the ramp from the lower level
+    const float afterSecondStep = envelope.next();
+    const float step = afterFirstStep - afterSecondStep;
+    REQUIRE(step > 0.0f);
+
+    // Constant step: the ramp did not change slope.
+    const float third = envelope.next();
+    REQUIRE_THAT(afterSecondStep - third, Catch::Matchers::WithinAbs(step, 1.0e-6));
+}
+
 TEST_CASE("FixedPitchEnvelope falls from +48 semitones to exactly 0 in 90 ms", "[dsp][envelope]")
 {
     for (double sampleRate : {44100.0, 48000.0, 96000.0})

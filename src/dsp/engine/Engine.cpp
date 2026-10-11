@@ -87,13 +87,20 @@ void Engine::noteOn(int note, int velocity) noexcept
 
 void Engine::noteOff(int note) noexcept
 {
-    // The kick plays out on its own, so releasing the sounding note only matters when an older
-    // note is still held: the tail pitch goes back to it without retriggering.
+    const int heldBefore = notes.heldCount();
+
+    // Releasing the sounding note while an older one is held sends the tail pitch back to it
+    // without retriggering.
     if (const auto previous = notes.noteOff(note))
     {
         lastNote = *previous;
         updatePitchTarget();
     }
+
+    // Letting go of the last held key ends the kick with a short release, so the length of the
+    // note sets the length of the tail. A stray note-off for a note that was not held does nothing.
+    if (heldBefore > 0 && !notes.hasHeldNotes())
+        voice.release();
 }
 
 void Engine::handleMidi(const juce::MidiMessageMetadata& event) noexcept
@@ -116,6 +123,8 @@ void Engine::handleMidi(const juce::MidiMessageMetadata& event) noexcept
         notes.allNotesOff();
         if (data1 == kControllerAllSoundOff)
             voice.reset();
+        else
+            voice.release();
     }
 }
 

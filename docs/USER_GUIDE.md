@@ -13,6 +13,7 @@ _The full quick start is written when the MVP features land. What works today:_
 1. Load Frenchcore Machine as an instrument on a MIDI track (or open the Standalone; it needs a MIDI keyboard or a virtual MIDI source, there is no on-screen keyboard yet).
 2. Play a MIDI note. You hear a kick: a pure sine that starts four octaves higher and falls to the pitch of your note in a fraction of a second, then fades out. That fast fall is what gives the kick its punch.
 3. Play a lower or higher note to retune the kick, or turn **Key Track** off to make every note play the same pitch (the **Root Note**).
+4. Make the note longer or shorter in the piano roll to control how long the tail rings.
 
 The controls are a plain list for now; the real layout comes later.
 
@@ -49,10 +50,10 @@ The only wavetable for now is a pure sine. Factory wavetables and loading your o
 | **Key Track** | On: the MIDI note sets the pitch the kick settles on. Off: every note settles on the **Root Note**. |
 | **Root Note** | The pitch used when Key Track is off. Default C1 (about 65 Hz). |
 | **Glide** and **Glide Time** | With Glide on, the pitch the kick settles on slides from the previous note to the new one over Glide Time instead of jumping. The fast pitch drop at the start of each kick is not affected. |
-| **Velocity Sensitivity** | How much MIDI velocity changes the loudness: at 0 % every note is equally loud, at 100 % a soft note is much quieter than a hard one. |
+| **Velocity Sensitivity** | How much MIDI velocity changes the loudness: at 0 % (the default) every note is equally loud, at 100 % a soft note is much quieter than a hard one. |
 
 How notes behave:
 
 - The plugin plays one note at a time. A new note restarts the kick, and it does so without clicks even if the previous kick is still sounding.
-- Releasing a key does not cut the kick; it always plays out. A short MIDI note still gives you the whole kick.
+- The length of the note sets the length of the tail. When you let go of the last key the kick fades out quickly (about 30 ms), so a long note in the piano roll gives a long tail and a short note a short one.
 - If you hold one note, press another and release the second, the pitch goes back to the first note without restarting the kick.

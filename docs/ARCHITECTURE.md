@@ -101,10 +101,10 @@ MIDI ──► NoteHandler (mono, last-note priority, optional glide)
 Details and tests in [voice-note-handling](specs/voice-note-handling.md).
 
 - Monophonic. A new note retriggers both envelopes from the start (kick behaviour). Retrigger can be made legato-optional later.
-- `NoteHandler` keeps a fixed-size stack of held notes (last-note priority). Releasing the sounding note while another is held moves the pitch back to the older note without retriggering. Note-off does not cut the kick in Phase 2: the envelopes run to silence on their own.
+- `NoteHandler` keeps a fixed-size stack of held notes (last-note priority). Releasing the sounding note while another is held moves the pitch back to the older note without retriggering. Releasing the last held key fades the amp envelope out with a short release (30 ms), so the note length sets the tail length.
 - The MIDI note sets the pitch the pitch envelope settles on (the "bass" tail). A `Key Track` switch allows a fixed `Root Note` instead.
 - Glide (portamento) is optional: `Glide On`, `Glide Time` (ms). `PitchGlide` slides the settling pitch only, not the pitch envelope's attack, with a linear ramp in semitones.
-- Velocity can scale output level (`Velocity Sensitivity`, 0 to 100%).
+- Velocity can scale output level (`Velocity Sensitivity`, 0 to 100%, default 0% so every kick is equally loud).
 - Click-free retrigger: when a note arrives while the voice is sounding, a copy of the previous voice state keeps rendering for 1.5 ms with a fade-out and is added to the new kick. The new kick starts at the exact sample of the note-on, so there is no added latency.
 - Until the envelope editor (Phase 3), the amp and pitch envelopes are hard-coded shapes with constants in `src/dsp/envelope/`.
 

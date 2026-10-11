@@ -31,7 +31,7 @@ struct EngineParameters
     int rootNote = 36;
     bool glideOn = false;
     float glideMs = 100.0f;
-    float velocitySensitivity = 1.0f; // 0..1
+    float velocitySensitivity = 0.0f; // 0..1: every kick equally loud by default
     float outputGain = 1.0f;          // linear
     bool limiterOn = true;
 };

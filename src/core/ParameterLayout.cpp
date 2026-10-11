@@ -59,7 +59,7 @@ void addGlobalParameters(juce::AudioProcessorValueTreeState::ParameterLayout& la
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         id(ParameterIds::kVelocitySensitivity), "Velocity Sensitivity",
-        juce::NormalisableRange<float>{0.0f, 100.0f, 1.0f}, 100.0f,
+        juce::NormalisableRange<float>{0.0f, 100.0f, 1.0f}, 0.0f,
         juce::AudioParameterFloatAttributes{}.withLabel("%")));
 }
 

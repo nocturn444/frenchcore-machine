@@ -8,13 +8,15 @@ namespace fcm::dsp
 
 // Phase 2 placeholder for the amp envelope: a fixed kick shape that Phase 3 replaces with the
 // editable BreakpointEnvelope (docs/specs/voice-note-handling.md §4.4). Linear attack to 1, then an
-// exponential decay (constant dB per second). It runs to silence on its own and ignores note-off,
-// so a short MIDI note still plays the whole kick.
+// exponential decay (constant dB per second). Releasing the last held key fades the sound out with
+// a short linear release from wherever the envelope is, so the length of the MIDI note sets the
+// length of the tail.
 class FixedAmpEnvelope
 {
   public:
     static constexpr double kAttackMs = 1.0;
     static constexpr double kDecaySeconds = 0.5;    // time for -60 dB, measured from the end of the attack
+    static constexpr double kReleaseMs = 30.0;      // linear fade to 0 from the level at note-off
     static constexpr float kSilenceLevel = 1.0e-4f; // -80 dB: below this the envelope snaps to 0
     // Upper bound on the time from note-on until the envelope goes idle, for the host's tail length.
     static constexpr double kMaxLengthSeconds = kAttackMs / 1000.0 + kDecaySeconds * 80.0 / 60.0;
@@ -24,6 +26,7 @@ class FixedAmpEnvelope
         attackStep = static_cast<float>(1.0 / (kAttackMs * 0.001 * sampleRate));
         // 10^(-60/20) = 10^-3 over kDecaySeconds.
         decayCoefficient = static_cast<float>(std::pow(10.0, -3.0 / (kDecaySeconds * sampleRate)));
+        releaseSamples = static_cast<float>(kReleaseMs * 0.001 * sampleRate);
         reset();
     }
 
@@ -40,6 +43,16 @@ class FixedAmpEnvelope
     }
 
     bool isActive() const noexcept { return stage != Stage::idle; }
+
+    // Starts the release from the current level. Does nothing when idle or already releasing.
+    void release() noexcept
+    {
+        if (stage == Stage::idle || stage == Stage::release)
+            return;
+
+        releaseStep = level / releaseSamples;
+        stage = Stage::release;
+    }
 
     float next() noexcept
     {
@@ -61,6 +74,14 @@ class FixedAmpEnvelope
                 stage = Stage::idle;
             }
             break;
+        case Stage::release:
+            level -= releaseStep;
+            if (level <= 0.0f)
+            {
+                level = 0.0f;
+                stage = Stage::idle;
+            }
+            break;
         case Stage::idle:
             break;
         }
@@ -72,13 +93,16 @@ class FixedAmpEnvelope
     {
         idle,
         attack,
-        decay
+        decay,
+        release
     };
 
     Stage stage = Stage::idle;
     float level = 0.0f;
     float attackStep = 1.0f;
     float decayCoefficient = 0.999f;
+    float releaseSamples = 1.0f;
+    float releaseStep = 0.0f;
 };
 
 } // namespace fcm::dsp

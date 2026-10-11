@@ -14,8 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Build system (CMake + CPM, JUCE 9.0.3, Catch2) producing VST3, AU and Standalone targets.
 - Plugin skeleton: silent engine, output gain parameter, resizable editor showing the agreed layout grid.
 - CI on Linux, macOS and Windows: build, unit tests, pluginval at strictness 10, clang-format check, downloadable builds.
-- First sound: a MIDI note plays a monophonic kick. It starts with a fast pitch drop (+48 semitones in 90 ms) and settles on the note's pitch, with an exponential amplitude decay. Retriggering does not click.
-- Voice controls: Key Track with a fixed Root Note, optional Glide with Glide Time, Velocity Sensitivity.
+- First sound: a MIDI note plays a monophonic kick. It starts with a fast pitch drop (+48 semitones in 90 ms) and settles on the note's pitch, with an exponential amplitude decay. Letting go of the last key fades the kick out in 30 ms, so the note length sets the tail length. Retriggering and releasing do not click.
+- Voice controls: Key Track with a fixed Root Note, optional Glide with Glide Time, Velocity Sensitivity (0 % by default, so every kick is equally loud).
 - Two wavetable oscillators (On, Level, Pitch, Octave, Fine, Position, Phase) using band-limited mipmapped wavetables; the only wavetable for now is a built-in sine.
 - Safety Limiter (soft clipper, on by default) after Output Gain; the output never goes above 0 dBFS while it is on.
 - Generic parameter panel in the editor (one control per parameter) until the real panels land.

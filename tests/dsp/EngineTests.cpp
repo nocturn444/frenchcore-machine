@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "TestUtils.h"
 #include "dsp/engine/Engine.h"
+#include "dsp/envelope/FixedAmpEnvelope.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -207,15 +208,81 @@ TEST_CASE("Engine returns to an older held note without retriggering", "[dsp][en
     REQUIRE(envelope(0.46) < envelope(0.44));
 }
 
-TEST_CASE("Engine lets the kick play out after note-off", "[dsp][engine]")
+TEST_CASE("Engine releases the kick when the last key is let go", "[dsp][engine]")
 {
+    const int releaseSamples = static_cast<int>(fcm::dsp::FixedAmpEnvelope::kReleaseMs * 0.001 * 48000.0);
+
     EngineFixture held;
     const auto whileHeld = held.render(held.samples(0.5), {noteOn(0, 36)});
 
     EngineFixture released;
-    const auto afterRelease = released.render(released.samples(0.5), {noteOn(0, 36), noteOff(100, 36)});
+    const auto afterRelease = released.render(released.samples(0.5), {noteOn(0, 36), noteOff(6000, 36)});
 
-    REQUIRE(whileHeld.left == afterRelease.left);
+    // Until the note-off both are the same kick.
+    for (size_t i = 0; i < 6000; ++i)
+        REQUIRE(juce::exactlyEqual(whileHeld.left[i], afterRelease.left[i]));
+
+    // Then it fades out within the release time, and stays silent.
+    REQUIRE(fcm::test::peak(std::vector<float>(whileHeld.left.begin() + 6000 + releaseSamples + 2,
+                                               whileHeld.left.end())) > 0.01f);
+    for (size_t i = static_cast<size_t>(6000 + releaseSamples + 2); i < afterRelease.left.size(); ++i)
+        REQUIRE(juce::exactlyEqual(afterRelease.left[i], 0.0f));
+}
+
+TEST_CASE("Engine note length sets the length of the tail", "[dsp][engine]")
+{
+    auto lastAudibleSample = [](int noteLengthSamples)
+    {
+        EngineFixture fixture;
+        const auto out =
+            fixture.render(fixture.samples(1.0), {noteOn(0, 36), noteOff(noteLengthSamples, 36)});
+        int last = 0;
+        for (size_t i = 0; i < out.left.size(); ++i)
+            if (std::abs(out.left[i]) > 1.0e-4f)
+                last = static_cast<int>(i);
+        return last;
+    };
+
+    const int shortNote = lastAudibleSample(4800);
+    const int longNote = lastAudibleSample(14400);
+    REQUIRE(shortNote < 4800 + 2000); // release is 30 ms (1440 samples)
+    REQUIRE(longNote > 14400);
+    REQUIRE(longNote < 14400 + 2000);
+    REQUIRE(longNote > shortNote + 9000);
+}
+
+TEST_CASE("Engine release does not click", "[dsp][engine][click]")
+{
+    // Release where the kick is loud, from a few different moments.
+    for (int releaseAt : {300, 1000, 2500, 6000})
+    {
+        EngineFixture fixture(quietParameters());
+        const auto out = fixture.render(fixture.samples(0.3), {noteOn(0, 36), noteOff(releaseAt, 36)});
+
+        float largestStep = 0.0f;
+        for (size_t i = 1; i < out.left.size(); ++i)
+            largestStep = std::max(largestStep, std::abs(out.left[i] - out.left[i - 1]));
+        INFO("released at " << releaseAt);
+        REQUIRE(largestStep < 0.15f);
+    }
+}
+
+TEST_CASE("Engine only releases when no key is held and the note was held", "[dsp][engine]")
+{
+    // A held, B pressed, B let go: A is still down, so the kick keeps sounding. Letting go of A ends it.
+    EngineFixture fixture;
+    const auto out = fixture.render(fixture.samples(0.6),
+                                    {noteOn(0, 36), noteOn(4800, 40), noteOff(9600, 40), noteOff(14400, 36)});
+    const auto peakBetween = [&](int from, int to)
+    { return fcm::test::peak(std::vector<float>(out.left.begin() + from, out.left.begin() + to)); };
+    REQUIRE(peakBetween(9700, 14400) > 0.05f);                           // still sounding after B is released
+    REQUIRE(juce::exactlyEqual(peakBetween(14400 + 1600, 28000), 0.0f)); // silent after A is released
+
+    // A note-off for a note that was never pressed does not cut a kick that is sounding.
+    EngineFixture stray;
+    const auto strayOut = stray.render(stray.samples(0.3), {noteOn(0, 36), noteOff(4800, 99)});
+    EngineFixture plain;
+    REQUIRE(plain.render(plain.samples(0.3), {noteOn(0, 36)}).left == strayOut.left);
 }
 
 TEST_CASE("Engine retrigger restarts the kick without a click", "[dsp][engine][click]")
@@ -252,7 +319,8 @@ TEST_CASE("Engine chords at one instant do not click", "[dsp][engine][click]")
     float largestStep = 0.0f;
     for (size_t i = 1; i < out.left.size(); ++i)
         largestStep = std::max(largestStep, std::abs(out.left[i] - out.left[i - 1]));
-    REQUIRE(largestStep < 0.15f);
+    // A kick cut off at this point would jump by 0.3 or more; the signal's own slope is about 0.15.
+    REQUIRE(largestStep < 0.2f);
 }
 
 TEST_CASE("Engine velocity sensitivity scales the level", "[dsp][engine]")
@@ -380,10 +448,13 @@ TEST_CASE("Engine handles all-sound-off and all-notes-off", "[dsp][engine]")
     REQUIRE(juce::exactlyEqual(fcm::test::peak(std::vector<float>(out.left.begin() + 2401, out.left.end())),
                                0.0f));
 
-    // All notes off clears held notes but the kick that is sounding plays out.
+    // All notes off releases the kick (fade over 30 ms) instead of cutting it hard.
     EngineFixture second;
-    const auto notCut = second.render(4800, {noteOn(0, 36), {2400, juce::MidiMessage::allNotesOff(1)}});
-    REQUIRE(fcm::test::peak(std::vector<float>(notCut.left.begin() + 2401, notCut.left.end())) > 0.1f);
+    const auto released = second.render(9600, {noteOn(0, 36), {2400, juce::MidiMessage::allNotesOff(1)}});
+    REQUIRE(fcm::test::peak(std::vector<float>(released.left.begin() + 2401, released.left.begin() + 2600)) >
+            0.1f);
+    REQUIRE(juce::exactlyEqual(
+        fcm::test::peak(std::vector<float>(released.left.begin() + 2400 + 1600, released.left.end())), 0.0f));
 }
 
 TEST_CASE("Engine survives odd buffers and unusual MIDI", "[dsp][engine]")
