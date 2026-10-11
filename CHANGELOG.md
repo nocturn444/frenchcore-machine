@@ -31,6 +31,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Envelope shapes are saved with the project and restored with it; a damaged shape falls back to the default.
 - ADR 0006 (envelope model and lock-free publishing), specs for breakpoint envelopes and for Punch / Tail.
 
+### Fixed
+
+- A test of the lock-free pointer hand-off (`PublishedPointer never shows a torn or freed object across threads`) failed at random on busy machines: its reader thread could start after the writer had finished, so nothing was tested. The writer now waits for the reader. The test still fails 10 of 10 times if the hand-off protection is removed.
+
 ### Security
 
 - Phase 3 data is covered by the safe loading too: the new envelope and Punch/Tail parameters, a host tempo that is 0, negative or NaN, a NaN time scale and the tail length reported to the host can no longer silence the kick, keep a voice alive forever or hand the host a non-finite value.
