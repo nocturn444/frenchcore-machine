@@ -304,7 +304,7 @@ std::vector<float> playEngine(const EngineParameters& parameters, int blocks = 4
     PublishedPointer<TockSample> source;
     source.publish(FactoryTocks::build(0));
 
-    Engine engine;
+    Engine engine{fcm::test::noEffects()};
     engine.setTockSource(&source);
     engine.setParameters(parameters);
     engine.prepare({kSampleRate, kBlock, 2});
@@ -368,7 +368,7 @@ TEST_CASE("Tock settings are read when the note starts", "[dsp][tock][engine]")
     parameters.tock.level = 1.0f;
     parameters.tock.decayMs = 100.0f;
 
-    Engine engine;
+    Engine engine{fcm::test::noEffects()};
     engine.setParameters(parameters);
     engine.prepare({kSampleRate, kBlock, 2});
 

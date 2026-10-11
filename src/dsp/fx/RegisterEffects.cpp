@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "dsp/fx/EffectRegistry.h"
+#include "dsp/fx/distortion/DistortionEffect.h"
 
 namespace fcm::dsp
 {
@@ -8,7 +9,7 @@ namespace fcm::dsp
 // default chain order and the index of the effect; never reshuffle it (docs/ADDING_AN_EFFECT.md).
 void registerEffects(EffectRegistry& registry)
 {
-    juce::ignoreUnused(registry);
+    registry.add<DistortionEffect>();
 }
 
 } // namespace fcm::dsp

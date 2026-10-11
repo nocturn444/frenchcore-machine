@@ -8,6 +8,7 @@ target_sources(fcm_dsp INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/envelope/BreakpointEnvelope.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/envelope/EnvelopePresets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/envelope/MusicalTime.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/fx/distortion/DistortionEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/EffectChain.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/EffectRegistry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/RegisterEffects.cpp

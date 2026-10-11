@@ -291,7 +291,7 @@ TEST_CASE("AuditionSequencer through the engine gives one kick per beat", "[dsp]
     constexpr double sampleRate = 48000.0;
     constexpr int kBlock = 480;
 
-    fcm::dsp::Engine engine;
+    fcm::dsp::Engine engine{fcm::test::noEffects()};
     fcm::dsp::EngineParameters parameters;
     parameters.outputGain = 0.5f;
     engine.setParameters(parameters);

@@ -61,6 +61,7 @@ class EffectChain
         std::array<float, kMaxEffectParameters> values{};
     };
 
+    void processChunk(juce::AudioBuffer<float>& buffer) noexcept;
     void decodeOrder(std::array<int, kMaxEffects>& positions) const noexcept;
     void setDelayLength(Slot& slot, int length) noexcept;
 

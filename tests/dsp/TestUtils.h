@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "dsp/fx/EffectRegistry.h"
+
 #include <algorithm>
 #include <cmath>
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -8,6 +10,14 @@
 
 namespace fcm::test
 {
+
+// A registry with no effects: engine tests that measure note timing and levels run without the FX
+// chain, whose constant latency (docs/decisions/0009) would shift everything by a few samples.
+inline const fcm::dsp::EffectRegistry& noEffects()
+{
+    static const fcm::dsp::EffectRegistry registry;
+    return registry;
+}
 
 inline double centsBetween(double measuredHz, double expectedHz)
 {

@@ -42,6 +42,7 @@ void Engine::prepare(const juce::dsp::ProcessSpec& spec)
 
 void Engine::reset() noexcept
 {
+    fx.reset();
     notes.allNotesOff();
     glide.reset();
     voice.reset();
@@ -172,6 +173,11 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
     // The effects see the whole block, on every channel.
     fx.setParameters(parameters.effects, parameters.oversamplingFactor);
     fx.process(buffer);
+
+    // The chain handles two channels; any further channel (not offered by the plugin's layouts, but
+    // harmless to cover) repeats the first.
+    for (int channel = 2; channel < channels; ++channel)
+        buffer.copyFrom(channel, 0, buffer, 0, 0, numSamples);
 
     // Last of all, on every channel: the output gain and the safety limiter, so the limiter always
     // protects what leaves the plugin.

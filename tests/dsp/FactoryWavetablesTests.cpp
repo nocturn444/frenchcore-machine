@@ -233,7 +233,7 @@ TEST_CASE("The engine plays a published factory table and switches it at the nex
 
     PublishedPointer<WavetableData> osc1;
     PublishedPointer<WavetableData> osc2;
-    Engine engine;
+    Engine engine{fcm::test::noEffects()};
     engine.setWavetableSources(&osc1, &osc2);
     engine.setParameters(EngineParameters{});
     engine.prepare({kSampleRate, kBlock, 2});
@@ -275,7 +275,7 @@ TEST_CASE("Swapping tables during playback with fast retriggers stays finite", "
 
     PublishedPointer<WavetableData> osc1;
     PublishedPointer<WavetableData> osc2;
-    Engine engine;
+    Engine engine{fcm::test::noEffects()};
     engine.setWavetableSources(&osc1, &osc2);
     EngineParameters parameters;
     parameters.oscillators[1].on = true;

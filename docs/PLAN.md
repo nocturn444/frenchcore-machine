@@ -83,7 +83,7 @@ Done when:
 
 - [x] Spec + ADR: effect interface, registry, chain model ([spec](specs/fx-chain.md), ADR 0003 and 0009)
 - [x] `Effect` interface, `EffectRegistry`, `EffectChain` with lock-free reorder, with tests
-- [ ] Distortion (5 types, oversampling)
+- [x] Distortion (5 types, oversampling; [spec](specs/fx-distortion.md))
 - [ ] 3-band EQ
 - [ ] Multiband stereo
 - [ ] FX rack UI with drag-and-drop reordering, enable and mix per slot

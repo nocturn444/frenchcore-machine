@@ -22,7 +22,8 @@ juce::String GenericParameterPanel::headingFor(const juce::String& prefix)
         return "Tock";
     if (prefix.startsWith("osc"))
         return "Oscillator " + prefix.fromFirstOccurrenceOf("osc", false, false);
-    return prefix;
+    // An effect's controls: its ID with a capital letter.
+    return prefix.substring(0, 1).toUpperCase() + prefix.substring(1);
 }
 
 GenericParameterPanel::GenericParameterPanel(juce::AudioProcessorValueTreeState& state,

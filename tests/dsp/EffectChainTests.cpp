@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#include "AllocationCounter.h"
 #include "TestEffects.h"
 #include "TestUtils.h"
 #include "dsp/engine/Engine.h"
 #include "dsp/fx/EffectChain.h"
 #include "dsp/fx/EffectRegistry.h"
 
-#include <atomic>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <cmath>
-#include <cstdlib>
 #include <juce_dsp/juce_dsp.h>
-#include <new>
 #include <numbers>
 #include <utility>
 #include <vector>
@@ -26,57 +24,6 @@ using fcm::dsp::kMaxEffects;
 using fcm::test::ClipEffect;
 using fcm::test::DelayEffect;
 using fcm::test::GainEffect;
-
-// Counts heap allocations made through operator new while armed, to show process() makes none.
-// Under the address sanitizer replacing operator new clashes with its own, so the count is only
-// available in ordinary builds (the sanitizer run checks memory safety instead).
-#if defined(__SANITIZE_ADDRESS__)
-#define FCM_COUNT_ALLOCATIONS 0
-#elif defined(__has_feature)
-#if __has_feature(address_sanitizer)
-#define FCM_COUNT_ALLOCATIONS 0
-#endif
-#endif
-#ifndef FCM_COUNT_ALLOCATIONS
-#define FCM_COUNT_ALLOCATIONS 1
-#endif
-
-namespace
-{
-std::atomic<bool> gCounting{false};
-std::atomic<int> gAllocations{0};
-} // namespace
-
-#if FCM_COUNT_ALLOCATIONS
-void* operator new(std::size_t size)
-{
-    if (gCounting)
-        ++gAllocations;
-    if (void* pointer = std::malloc(size > 0 ? size : 1))
-        return pointer;
-    throw std::bad_alloc();
-}
-void* operator new[](std::size_t size)
-{
-    return operator new(size);
-}
-void operator delete(void* pointer) noexcept
-{
-    std::free(pointer);
-}
-void operator delete(void* pointer, std::size_t) noexcept
-{
-    std::free(pointer);
-}
-void operator delete[](void* pointer) noexcept
-{
-    std::free(pointer);
-}
-void operator delete[](void* pointer, std::size_t) noexcept
-{
-    std::free(pointer);
-}
-#endif
 
 namespace
 {
@@ -419,8 +366,7 @@ TEST_CASE("Processing allocates nothing", "[dsp][fx][chain][realtime]")
     const auto input = noiseSignal(kBlock * 4, 0.5f);
     juce::AudioBuffer<float> buffer(2, kBlock);
 
-    gAllocations = 0;
-    gCounting = true;
+    fcm::test::AllocationCounter counter;
     for (int block = 0; block < 4; ++block)
     {
         for (int c = 0; c < 2; ++c)
@@ -429,11 +375,8 @@ TEST_CASE("Processing allocates nothing", "[dsp][fx][chain][realtime]")
         rig.chain.setParameters(rig.slots, block % 2 == 0 ? 2 : 4);
         rig.chain.process(buffer);
     }
-    gCounting = false;
 
-#if FCM_COUNT_ALLOCATIONS
-    REQUIRE(gAllocations.load() == 0);
-#endif
+    REQUIRE(counter.count() == 0);
 }
 
 TEST_CASE("The engine runs the chain on both channels, before the gain and the limiter", "[dsp][fx][engine]")
@@ -464,7 +407,8 @@ TEST_CASE("The engine runs the chain on both channels, before the gain and the l
 
 TEST_CASE("With no effects the engine output is the same on both channels and unchanged", "[dsp][fx][engine]")
 {
-    Engine engine; // the default registry has no effect yet
+    const EffectRegistry none;
+    Engine engine(none);
     engine.setParameters(EngineParameters{});
     engine.prepare({kSampleRate, kBlock, 2});
 
@@ -485,4 +429,41 @@ TEST_CASE("With no effects the engine output is the same on both channels and un
     }
     REQUIRE(peak > 0.1f);
     REQUIRE(engine.latencySamples(2) == 0);
+}
+
+TEST_CASE("With the real effects registered but off, the engine is the same sound delayed by the latency",
+          "[dsp][fx][engine]")
+{
+    const EffectRegistry none;
+    const auto renderWith =
+        [&](const EffectRegistry& registry, std::vector<float>& left, std::vector<float>& right)
+    {
+        Engine engine(registry);
+        engine.setParameters(EngineParameters{});
+        engine.prepare({kSampleRate, kBlock, 2});
+
+        juce::AudioBuffer<float> buffer(2, kBlock);
+        for (int block = 0; block < 40; ++block)
+        {
+            juce::MidiBuffer midi;
+            if (block == 0)
+                midi.addEvent(juce::MidiMessage::noteOn(1, 36, (juce::uint8)100), 0);
+            buffer.clear();
+            engine.process(buffer, midi);
+            left.insert(left.end(), buffer.getReadPointer(0), buffer.getReadPointer(0) + kBlock);
+            right.insert(right.end(), buffer.getReadPointer(1), buffer.getReadPointer(1) + kBlock);
+        }
+        return engine.latencySamples(2);
+    };
+
+    std::vector<float> plainLeft, plainRight, fxLeft, fxRight;
+    REQUIRE(renderWith(none, plainLeft, plainRight) == 0);
+    const int latency = renderWith(fcm::dsp::defaultEffectRegistry(), fxLeft, fxRight);
+    REQUIRE(latency >= 0);
+
+    for (size_t i = static_cast<size_t>(latency); i < plainLeft.size(); ++i)
+    {
+        REQUIRE(fxLeft[i] == plainLeft[i - static_cast<size_t>(latency)]);
+        REQUIRE(fxRight[i] == plainRight[i - static_cast<size_t>(latency)]);
+    }
 }

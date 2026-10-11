@@ -4,9 +4,12 @@ include(Catch)
 # DSP tests link only juce_dsp, which enforces that fcm_dsp never depends on UI or plugin code.
 juce_add_console_app(fcm_dsp_tests PRODUCT_NAME "fcm_dsp_tests")
 target_sources(fcm_dsp_tests PRIVATE
+    dsp/AllocationCounter.cpp
     dsp/AuditionTests.cpp
     dsp/BreakpointEnvelopeTests.cpp
     dsp/EffectChainTests.cpp
+    dsp/fx/DistortionTests.cpp
+    dsp/fx/RegisteredEffectsTests.cpp
     dsp/EngineTests.cpp
     dsp/EnvelopeEngineTests.cpp
     dsp/EnvelopeRendererTests.cpp

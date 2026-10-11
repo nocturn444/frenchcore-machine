@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#include "TestUtils.h"
 // A tempo or time scale that is not a finite number (a damaged project, a broken host) must not
 // silence the kick or keep the voice alive forever (docs/specs/state-safe-loading.md).
 #include "dsp/engine/Engine.h"
@@ -51,7 +52,7 @@ Outcome playKick(const EngineParameters& parameters)
     ampSource.publish(amp.toShape());
     pitchSource.publish(pitch.toShape());
 
-    Engine engine;
+    Engine engine{fcm::test::noEffects()};
     engine.setEnvelopeSources(&ampSource, &pitchSource);
     engine.setParameters(parameters);
     engine.prepare({kSampleRate, kBlock, 2});

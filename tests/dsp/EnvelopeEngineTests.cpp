@@ -73,7 +73,7 @@ struct Rig
 
     PublishedPointer<EnvelopeShape> ampSource;
     PublishedPointer<EnvelopeShape> pitchSource;
-    Engine engine;
+    Engine engine{fcm::test::noEffects()};
 };
 
 std::vector<float> slice(const std::vector<float>& v, double fromSeconds, double toSeconds)

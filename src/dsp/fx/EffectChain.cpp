@@ -164,11 +164,29 @@ void EffectChain::decodeOrder(std::array<int, kMaxEffects>& positions) const noe
 
 void EffectChain::process(juce::AudioBuffer<float>& buffer) noexcept
 {
-    const int numSamples = std::min(buffer.getNumSamples(), wet.getNumSamples());
+    const int total = buffer.getNumSamples();
     const int channels = std::min(buffer.getNumChannels(), wet.getNumChannels());
-    if (numSamples <= 0 || channels <= 0 || slots.empty())
+    const int chunkSize = wet.getNumSamples();
+    if (total <= 0 || channels <= 0 || chunkSize <= 0 || slots.empty())
         return;
 
+    // A host may hand over more samples than it announced; they are processed in pieces.
+    for (int start = 0; start < total; start += chunkSize)
+    {
+        std::array<float*, 2> pointers{};
+        const int used = std::min<int>(channels, static_cast<int>(pointers.size()));
+        for (int c = 0; c < used; ++c)
+            pointers[static_cast<size_t>(c)] = buffer.getWritePointer(c) + start;
+
+        juce::AudioBuffer<float> chunk(pointers.data(), used, std::min(chunkSize, total - start));
+        processChunk(chunk);
+    }
+}
+
+void EffectChain::processChunk(juce::AudioBuffer<float>& buffer) noexcept
+{
+    const int numSamples = std::min(buffer.getNumSamples(), wet.getNumSamples());
+    const int channels = std::min(buffer.getNumChannels(), wet.getNumChannels());
     std::array<int, kMaxEffects> positions{};
     decodeOrder(positions);
 
