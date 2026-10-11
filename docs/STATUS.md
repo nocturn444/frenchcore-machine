@@ -13,7 +13,7 @@ Last updated: 2026-10-11.
 | Security hardening (safe state loading, CI and supply chain, Standalone MIDI) | Done and merged |
 | 4 Wavetables and Tock | Done in pull requests: factory wavetables (#12), load your own wavetable (#13), wavetable display (#15), Tock (#16), user tock sample (#17) |
 | 5 FX system | Done in pull requests: machinery (#18), distortion (#19), EQ (#20), multiband stereo (#21), rack UI with drag and drop and an Effects tab (#22) |
-| 6 State and presets | Part 1 in a pull request: one project state holding parameters, envelopes, effect order and your own wavetables and Tock sample (#23). Next: preset files, factory presets, preset browser |
+| 6 State and presets | Done in pull requests: one project state (#23), then preset files, five factory presets, your own presets and the preset bar (#24) |
 | 7 Hardening and release | Not started (mostly manual: DAW passes, CPU profiling, release tag) |
 
 ## 2. Open pull requests, in merge order
@@ -35,9 +35,10 @@ Nothing in this list is merged by the agent; the owner merges.
 | 11 | #21 | Phase 5 part 4: multiband stereo (stacked on #20) | see PR |
 | 12 | #22 | Phase 5 part 5: FX rack UI (stacked on #21) | see PR |
 | 13 | #23 | Phase 6 part 1: project state (stacked on #22) | see PR |
+| 14 | #24 | Phase 6 parts 2 and 3: presets and preset bar (stacked on #23) | see PR |
 | any | Dependabot #10, #9, #8 | Version bumps of the GitHub actions (independent) | Green |
 
-The stacked pull requests (#13, #15 to #23) point at the branch of the one before them: merge them in the order above, and GitHub retargets each to `main` when the previous one is merged.
+The stacked pull requests (#13, #15 to #24) point at the branch of the one before them: merge them in the order above, and GitHub retargets each to `main` when the previous one is merged.
 
 Notes on the Dependabot pull requests: they are independent of each other and of the code, they only touch `.github/workflows/build.yml`. They are major version jumps; CI passed with them on all three systems. Merge them one by one (Dependabot rebases the others), or close them if you prefer to stay on the older pinned versions.
 
@@ -63,6 +64,7 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-11 | The random macOS failure of `PublishedPointer never shows a torn or freed object across threads` was a defect of the test (the reader thread could start too late), not of the code. Fixed in #14. | PR #14 |
 | 2026-10-11 | The macOS check failed on #18 and the PRs stacked on it because a test compared a stepped value with exact equality (1.9999999 vs 2 on arm64). The test now uses a tolerance; the code was right. | PR #18 |
 | 2026-10-11 | Project state: a saved project describes everything, so a control it does not mention takes its default instead of keeping the current value. | `docs/specs/project-state.md` |
+| 2026-10-11 | Presets: `.fcmpreset` is an XML wrapper with a name and a format version around the project state. User presets only go in Documents/Frenchcore Machine/Presets, with file names limited to letters, numbers, space and `- _ . ( )`. Factory presets are a code table over the defaults. The shown preset name is not saved in the DAW project. | `docs/specs/presets.md` |
 | 2026-10-11 | The Punch/Tail Split stays in milliseconds when tempo Sync is on (owner's answer). | `docs/specs/voice-punch-tail.md` |
 
 ## 4. What the owner needs to do or listen to
@@ -74,6 +76,8 @@ Things only the owner can do in GitHub (the agent cannot):
 - Check Settings, Actions, General: workflow permissions on "Read repository contents".
 
 Things to listen to (sound):
+
+- The five factory presets once #24 is merged (Init, Classic Punch, Rumble Kick, Hardcore Crunch, Gabber Fold): they are a placeholder built from the plugin's own pieces. Tell the agent which to keep, rename or replace, and what kinds of kick you want as starting points. Also try saving one of your own and loading it back.
 
 - Once #12 and #13 are merged: pick each factory wavetable on Osc 1, move Position and play; then load a WAV of your own with the new buttons (try a bad file too: it should be refused with a message).
 - The effects once #18 to #21 are merged: switch Distortion on and try each Type with Drive and Tone; try EQ and Stereo (High Width to 200 % on headphones, Mono Below on). Note that with effects in the plugin your DAW is told about a few samples of latency at the default Quality.
