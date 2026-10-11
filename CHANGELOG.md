@@ -25,6 +25,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Security
 
+- Loading saved state is now safe against damaged or hostile data: values that are not finite numbers (`nan`, `inf`) become the parameter's default, out-of-range values are clamped, unknown entries are ignored, and oversized state is rejected. The oscillator and the parameter reader also guard their inputs, which fixes an out-of-bounds read on the audio thread reachable through a crafted `value="nan"`. See `docs/specs/state-safe-loading.md`.
+- `stateVersion` is now always written, a missing or newer version loads safely, and the migration hook (`StateMigrations`) exists.
+- `docs/ARCHITECTURE.md` has a new "Untrusted input" section with the rules for upcoming wavetable and preset files.
 - Standalone: copying the host's MIDI into the audition buffer is now capped to the memory reserved in `prepareToPlay` (excess events are dropped, but note-offs and All Notes Off / All Sound Off are kept first so no note gets stuck), so a huge burst of MIDI can no longer make the audio thread allocate.
 
 ### Changed

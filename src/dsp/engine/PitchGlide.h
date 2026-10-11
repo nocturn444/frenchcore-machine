@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 #include <juce_core/juce_core.h>
 
 namespace fcm::dsp
@@ -32,7 +34,10 @@ class PitchGlide
         if (hasValue && juce::exactlyEqual(note, target))
             return;
 
-        const auto glideSamples = static_cast<int>(glideMs * 0.001 * sampleRate + 0.5);
+        // A glide time that is not a sensible number (NaN, huge) must not overflow the sample count.
+        const double safeMs =
+            std::isfinite(glideMs) ? std::clamp(static_cast<double>(glideMs), 0.0, 60000.0) : 0.0;
+        const auto glideSamples = static_cast<int>(safeMs * 0.001 * sampleRate + 0.5);
         target = note;
         if (!hasValue || !glideOn || glideSamples < 1)
         {

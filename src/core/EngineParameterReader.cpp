@@ -17,14 +17,24 @@ std::atomic<float>* lookup(juce::AudioProcessorValueTreeState& state, const std:
     return pointer;
 }
 
-bool toBool(const std::atomic<float>* value) noexcept
+// A value from a parameter, or `fallback` when it is not a finite number: a damaged project must
+// never push a NaN or an infinity into the engine (docs/specs/state-safe-loading.md).
+float finiteOr(const std::atomic<float>* value, float fallback) noexcept
 {
-    return value->load() >= 0.5f;
+    const float number = value->load();
+    return std::isfinite(number) ? number : fallback;
 }
 
-int toInt(const std::atomic<float>* value) noexcept
+bool toBool(const std::atomic<float>* value, bool fallback) noexcept
 {
-    return static_cast<int>(std::lround(value->load()));
+    return finiteOr(value, fallback ? 1.0f : 0.0f) >= 0.5f;
+}
+
+int toInt(const std::atomic<float>* value, int fallback) noexcept
+{
+    // Clamped first: converting a huge float to an integer is undefined.
+    const float number = juce::jlimit(-1.0e6f, 1.0e6f, finiteOr(value, static_cast<float>(fallback)));
+    return static_cast<int>(std::lround(number));
 }
 } // namespace
 
@@ -52,27 +62,30 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
 
 dsp::EngineParameters EngineParameterReader::read() const noexcept
 {
+    const dsp::EngineParameters defaults;
     dsp::EngineParameters result;
 
-    result.outputGain = juce::Decibels::decibelsToGain(outputGain->load(), -48.0f);
-    result.limiterOn = toBool(limiterOn);
-    result.keyTrack = toBool(keyTrack);
-    result.rootNote = toInt(rootNote);
-    result.glideOn = toBool(glideOn);
-    result.glideMs = glideTime->load();
-    result.velocitySensitivity = velocitySensitivity->load() * 0.01f;
+    // The default gain is 0 dB; the other fields fall back to the engine's own defaults.
+    result.outputGain = juce::Decibels::decibelsToGain(finiteOr(outputGain, 0.0f), -48.0f);
+    result.limiterOn = toBool(limiterOn, defaults.limiterOn);
+    result.keyTrack = toBool(keyTrack, defaults.keyTrack);
+    result.rootNote = toInt(rootNote, defaults.rootNote);
+    result.glideOn = toBool(glideOn, defaults.glideOn);
+    result.glideMs = finiteOr(glideTime, defaults.glideMs);
+    result.velocitySensitivity = finiteOr(velocitySensitivity, defaults.velocitySensitivity * 100.0f) * 0.01f;
 
     for (size_t i = 0; i < oscillators.size(); ++i)
     {
         const auto& source = oscillators[i];
+        const auto& fallback = defaults.oscillators[i];
         auto& target = result.oscillators[i];
-        target.on = toBool(source.on);
-        target.level = source.level->load();
-        target.pitchSemitones = toInt(source.pitch);
-        target.octave = toInt(source.octave);
-        target.fineCents = source.fine->load();
-        target.position = source.position->load();
-        target.startPhase = source.phase->load() / 360.0f;
+        target.on = toBool(source.on, fallback.on);
+        target.level = finiteOr(source.level, fallback.level);
+        target.pitchSemitones = toInt(source.pitch, fallback.pitchSemitones);
+        target.octave = toInt(source.octave, fallback.octave);
+        target.fineCents = finiteOr(source.fine, fallback.fineCents);
+        target.position = finiteOr(source.position, fallback.position);
+        target.startPhase = finiteOr(source.phase, fallback.startPhase * 360.0f) / 360.0f;
     }
 
     return result;
