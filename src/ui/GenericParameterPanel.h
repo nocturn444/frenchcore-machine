@@ -15,8 +15,10 @@ class GenericParameterPanel : public juce::Component
 {
   public:
     // Groups listed in `excludedGroups` (ID prefixes) are skipped: a dedicated panel shows them.
+    // With `onlyGroup` set, only that group (an effect's, for the FX rack) is shown, under `title`.
     explicit GenericParameterPanel(juce::AudioProcessorValueTreeState& state,
-                                   const std::vector<juce::String>& excludedGroups = {});
+                                   const std::vector<juce::String>& excludedGroups = {},
+                                   const juce::String& onlyGroup = {}, const juce::String& title = {});
 
     void paint(juce::Graphics& g) override;
     void resized() override;

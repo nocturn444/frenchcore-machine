@@ -167,7 +167,7 @@ After the oscillators and the Tock, the kick goes through a row of effects. The 
 
 - **On**: each effect has its own switch, **off by default**, so the sound does not change until you switch one on.
 - **Mix**: how much of the effect you hear against the untouched sound (0 to 100 %, default 100 %).
-- **Order**: the effects can be dragged into any order (a later version shows the rack). Each one exists once, and its controls keep working with automation wherever it sits.
+- **Order**: the effects can be dragged into any order in the **Effects** tab (next to Envelopes in the lower half of the window). Each effect is a column, in the order the sound goes through them from left to right; grab the handle bar at the top of a column and drag it left or right, and the others slide to make room. Each effect exists once, and its controls keep working with automation wherever it sits. The order is saved with the project.
 - Switching an effect on or off, changing its Mix or moving it never clicks and never shifts the timing of the kick.
 - The effects work on both channels. They sit before the output gain and the safety limiter, so the limiter always protects the final sound.
 ### Distortion

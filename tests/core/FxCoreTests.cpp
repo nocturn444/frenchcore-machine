@@ -245,3 +245,63 @@ TEST_CASE("Values that are not finite numbers fall back to the effect's defaults
                 processor.state.getParameter(id)->getDefaultValue()));
         }
 }
+
+TEST_CASE("The position under a drag is the slot the mouse is over", "[core][fx][rack]")
+{
+    constexpr double kWidth = 300.0;
+    REQUIRE(FxOrderState::positionAt(0.0, kWidth, 4) == 0);
+    REQUIRE(FxOrderState::positionAt(299.9, kWidth, 4) == 0);
+    REQUIRE(FxOrderState::positionAt(300.0, kWidth, 4) == 1); // each boundary belongs to the next slot
+    REQUIRE(FxOrderState::positionAt(599.9, kWidth, 4) == 1);
+    REQUIRE(FxOrderState::positionAt(600.0, kWidth, 4) == 2);
+    REQUIRE(FxOrderState::positionAt(1199.0, kWidth, 4) == 3);
+
+    // Outside the row it clamps to the first or last slot.
+    REQUIRE(FxOrderState::positionAt(-50.0, kWidth, 4) == 0);
+    REQUIRE(FxOrderState::positionAt(5000.0, kWidth, 4) == 3);
+}
+
+TEST_CASE("An unusable drag position or row gives the first slot", "[core][fx][rack]")
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+    REQUIRE(FxOrderState::positionAt(nan, 300.0, 4) == 0);
+    REQUIRE(FxOrderState::positionAt(inf, 300.0, 4) == 0);
+    REQUIRE(FxOrderState::positionAt(100.0, 0.0, 4) == 0);
+    REQUIRE(FxOrderState::positionAt(100.0, -5.0, 4) == 0);
+    REQUIRE(FxOrderState::positionAt(100.0, nan, 4) == 0);
+    REQUIRE(FxOrderState::positionAt(100.0, 300.0, 0) == 0);
+    REQUIRE(FxOrderState::positionAt(900.0, 300.0, 1) == 0);
+}
+
+TEST_CASE("Dragging an effect across the row reorders and publishes the chain", "[core][fx][rack]")
+{
+    const auto registry = makeRegistry();
+    std::atomic<std::uint64_t> packed{0};
+    FxOrderState order(registry, packed);
+
+    // Drag the first of three effects to the far right, as the rack does while the mouse moves.
+    constexpr double kWidth = 100.0;
+    for (const double x : {50.0, 120.0, 190.0, 260.0, 295.0})
+    {
+        const auto& ids = order.ids();
+        const int current = static_cast<int>(std::find(ids.begin(), ids.end(), "testgain") - ids.begin());
+        const int target = FxOrderState::positionAt(x, kWidth, 3);
+        if (target != current)
+            order.move(current, target);
+    }
+    REQUIRE(order.ids() == std::vector<std::string>{"testclip", "testdelay", "testgain"});
+    REQUIRE(packed.load() == fcm::dsp::EffectChain::packOrder(std::vector<int>{1, 2, 0}));
+
+    // And back to the left.
+    for (const double x : {250.0, 150.0, 50.0, -10.0})
+    {
+        const auto& ids = order.ids();
+        const int current = static_cast<int>(std::find(ids.begin(), ids.end(), "testgain") - ids.begin());
+        const int target = FxOrderState::positionAt(x, kWidth, 3);
+        if (target != current)
+            order.move(current, target);
+    }
+    REQUIRE(order.ids() == kRegistration);
+    REQUIRE(packed.load() == fcm::dsp::EffectChain::registrationOrder(3));
+}

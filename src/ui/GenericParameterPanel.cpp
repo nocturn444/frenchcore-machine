@@ -27,7 +27,8 @@ juce::String GenericParameterPanel::headingFor(const juce::String& prefix)
 }
 
 GenericParameterPanel::GenericParameterPanel(juce::AudioProcessorValueTreeState& state,
-                                             const std::vector<juce::String>& excludedGroups)
+                                             const std::vector<juce::String>& excludedGroups,
+                                             const juce::String& onlyGroup, const juce::String& title)
 {
     // Groups appear in the order of their first parameter, which is the layout order.
     std::vector<juce::String> prefixes;
@@ -39,6 +40,8 @@ GenericParameterPanel::GenericParameterPanel(juce::AudioProcessorValueTreeState&
             continue;
 
         const auto prefix = ranged->paramID.upToFirstOccurrenceOf(".", false, false);
+        if (onlyGroup.isNotEmpty() && prefix != onlyGroup)
+            continue;
         if (std::find(excludedGroups.begin(), excludedGroups.end(), prefix) != excludedGroups.end())
             continue;
 
@@ -47,7 +50,8 @@ GenericParameterPanel::GenericParameterPanel(juce::AudioProcessorValueTreeState&
         {
             prefixes.push_back(prefix);
             groups.emplace_back();
-            groups.back().heading = std::make_unique<juce::Label>(juce::String(), headingFor(prefix));
+            groups.back().heading = std::make_unique<juce::Label>(
+                juce::String(), title.isNotEmpty() ? title : headingFor(prefix));
             groups.back().heading->setFont(juce::FontOptions(18.0f, juce::Font::bold));
             addAndMakeVisible(*groups.back().heading);
             found = prefixes.end() - 1;

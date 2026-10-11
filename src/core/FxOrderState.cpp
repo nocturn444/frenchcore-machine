@@ -4,6 +4,7 @@
 #include "dsp/fx/EffectChain.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace fcm::core
 {
@@ -31,6 +32,13 @@ const juce::Identifier& FxOrderState::nodeType()
 {
     static const juce::Identifier type{"FxChain"};
     return type;
+}
+
+int FxOrderState::positionAt(double x, double slotWidth, int count) noexcept
+{
+    if (count <= 1 || !std::isfinite(x) || !std::isfinite(slotWidth) || slotWidth <= 0.0)
+        return 0;
+    return std::clamp(static_cast<int>(std::floor(x / slotWidth)), 0, count - 1);
 }
 
 void FxOrderState::publish()

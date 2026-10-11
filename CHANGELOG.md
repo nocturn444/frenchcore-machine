@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- The **Effects** tab (next to Envelopes in the lower area): one column per effect with its On switch, Mix and controls, and a handle bar to drag an effect to another position in the chain. The effects' controls no longer appear in the general controls at the top. See `docs/specs/fx-rack.md`.
 - **Stereo**, a multiband stereo effect: three bands split by Linkwitz-Riley crossovers with a stereo width for each (0 % mono to 200 % very wide), and a Mono Below switch that keeps the low end mono. Width above 100 % adds a decorrelated copy so it widens even the mono kick. Off by default, no delay. See `docs/specs/fx-stereo.md`.
 - **EQ**, a 3-band equaliser effect: a low shelf, a peak and a high shelf, each with Freq, Gain (-18 to +18 dB) and Q. With every Gain at 0 it changes nothing, and it adds no delay. Off by default. See `docs/specs/fx-eq.md`.
 - **Distortion**, the first effect: Soft Clip, Hard Clip, Overdrive, Foldback and Bitcrush, with Drive, Pre-gain, Post-gain, Tone and (for Bitcrush) Bits and Rate. The four clipping types are oversampled by the global Quality setting; Bitcrush is not, on purpose. Off by default. With the effects registered the plugin always reports a few samples of latency at the default Quality (2x), which your DAW compensates. See `docs/specs/fx-distortion.md`.

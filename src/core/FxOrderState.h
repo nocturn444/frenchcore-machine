@@ -42,6 +42,11 @@ class FxOrderState : public juce::ChangeBroadcaster
 
     static const juce::Identifier& nodeType();
 
+    // The position (0-based) in a row of `count` equal slots `slotWidth` wide that the horizontal
+    // position `x` falls in. Clamped to the row; anything unusable gives 0 (used by the rack when an
+    // effect is dragged).
+    static int positionAt(double x, double slotWidth, int count) noexcept;
+
   private:
     void publish();
 

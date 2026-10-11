@@ -3,6 +3,7 @@
 
 #include "ui/AuditionPanel.h"
 #include "ui/EnvelopePanel.h"
+#include "ui/FxRackPanel.h"
 #include "ui/GenericParameterPanel.h"
 #include "ui/WavetablePanel.h"
 
@@ -14,6 +15,18 @@ namespace fcm
 
 class PluginProcessor;
 
+// The two envelope panels side by side: one tab of the lower area.
+class EnvelopeRow : public juce::Component
+{
+  public:
+    explicit EnvelopeRow(PluginProcessor& owner);
+
+    void resized() override;
+
+    ui::EnvelopePanel ampPanel;
+    ui::EnvelopePanel pitchPanel;
+};
+
 class PluginEditor : public juce::AudioProcessorEditor
 {
   public:
@@ -24,8 +37,10 @@ class PluginEditor : public juce::AudioProcessorEditor
   private:
     ui::GenericParameterPanel parameterPanel;
     ui::WavetablePanel wavetablePanel;
-    ui::EnvelopePanel ampPanel;
-    ui::EnvelopePanel pitchPanel;
+    EnvelopeRow envelopeRow;
+    ui::FxRackPanel fxRack;
+    // The lower area: the envelopes and the effects share it (docs/specs/fx-rack.md).
+    juce::TabbedComponent lowerTabs{juce::TabbedButtonBar::TabsAtTop};
     std::unique_ptr<ui::AuditionPanel> auditionPanel; // Standalone only
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginEditor)

@@ -8,6 +8,15 @@ namespace fcm
 
 namespace
 {
+std::vector<juce::String> groupsShownElsewhere()
+{
+    std::vector<juce::String> groups{"ampEnv", "pitchEnv", "punchTail"};
+    const auto& registry = dsp::defaultEffectRegistry();
+    for (int i = 0; i < registry.count(); ++i)
+        groups.emplace_back(std::string(registry.descriptor(i)->id));
+    return groups;
+}
+
 // Default size of the editor (docs/UI_LAYOUT.md). The Standalone adds the audition strip below it;
 // the aspect ratio is fixed for whichever total height applies.
 constexpr int kDefaultWidth = 1100;
@@ -15,26 +24,44 @@ constexpr int kPanelHeight = 860;
 constexpr int kEnvelopeRowHeight = 540;
 } // namespace
 
-PluginEditor::PluginEditor(PluginProcessor& owner)
-    : AudioProcessorEditor(owner),
-      // The envelope parameters are shown by the envelope panels, not by the generic list.
-      parameterPanel(owner.getState(), {"ampEnv", "pitchEnv", "punchTail"}),
-      wavetablePanel(
-          owner.getState(), owner.selectorFor(0), owner.selectorFor(1),
-          [&owner](int oscillator, const juce::File& file) { owner.loadUserWavetable(oscillator, file); },
-          [&owner](const juce::File& file) { owner.loadUserTockSample(file); }, owner.wavetableChanged(),
-          [&owner] { return owner.wavetableMessage(); }),
-      ampPanel(
+EnvelopeRow::EnvelopeRow(PluginProcessor& owner)
+    : ampPanel(
           owner.getAmpEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
           ui::EnvelopePanel::ampConfig(owner.getState())),
       pitchPanel(
           owner.getPitchEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
           ui::EnvelopePanel::pitchConfig())
 {
-    addAndMakeVisible(parameterPanel);
-    addAndMakeVisible(wavetablePanel);
     addAndMakeVisible(ampPanel);
     addAndMakeVisible(pitchPanel);
+}
+
+void EnvelopeRow::resized()
+{
+    auto area = getLocalBounds();
+    ampPanel.setBounds(area.removeFromLeft(area.getWidth() / 2));
+    pitchPanel.setBounds(area);
+}
+
+PluginEditor::PluginEditor(PluginProcessor& owner)
+    : AudioProcessorEditor(owner),
+      // The envelope parameters are shown by the envelope panels and the effects by the FX rack, not by
+      // the generic list.
+      parameterPanel(owner.getState(), groupsShownElsewhere()),
+      wavetablePanel(
+          owner.getState(), owner.selectorFor(0), owner.selectorFor(1),
+          [&owner](int oscillator, const juce::File& file) { owner.loadUserWavetable(oscillator, file); },
+          [&owner](const juce::File& file) { owner.loadUserTockSample(file); }, owner.wavetableChanged(),
+          [&owner] { return owner.wavetableMessage(); }),
+      envelopeRow(owner), fxRack(owner.getState(), owner.getFxOrder(), dsp::defaultEffectRegistry())
+{
+    addAndMakeVisible(parameterPanel);
+    addAndMakeVisible(wavetablePanel);
+    lowerTabs.setTabBarDepth(28);
+    lowerTabs.setOutline(0);
+    lowerTabs.addTab("Envelopes", juce::Colour(0xff15161a), &envelopeRow, false);
+    lowerTabs.addTab("Effects", juce::Colour(0xff15161a), &fxRack, false);
+    addAndMakeVisible(lowerTabs);
 
     int totalHeight = kPanelHeight + ui::WavetablePanel::kHeight;
     if (owner.isStandalone())
@@ -64,9 +91,7 @@ void PluginEditor::resized()
     if (auditionPanel != nullptr)
         auditionPanel->setBounds(area.removeFromBottom(scaled(ui::AuditionPanel::kHeight)));
 
-    auto envelopes = area.removeFromBottom(scaled(kEnvelopeRowHeight));
-    ampPanel.setBounds(envelopes.removeFromLeft(envelopes.getWidth() / 2));
-    pitchPanel.setBounds(envelopes);
+    lowerTabs.setBounds(area.removeFromBottom(scaled(kEnvelopeRowHeight)));
 
     wavetablePanel.setBounds(area.removeFromBottom(scaled(ui::WavetablePanel::kHeight)));
     parameterPanel.setBounds(area);
