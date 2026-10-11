@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "TestUtils.h"
 #include "dsp/engine/Engine.h"
-#include "dsp/envelope/FixedAmpEnvelope.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -210,7 +209,7 @@ TEST_CASE("Engine returns to an older held note without retriggering", "[dsp][en
 
 TEST_CASE("Engine releases the kick when the last key is let go", "[dsp][engine]")
 {
-    const int releaseSamples = static_cast<int>(fcm::dsp::FixedAmpEnvelope::kReleaseMs * 0.001 * 48000.0);
+    const int releaseSamples = static_cast<int>(30.0 * 0.001 * 48000.0); // the default amp release
 
     EngineFixture held;
     const auto whileHeld = held.render(held.samples(0.5), {noteOn(0, 36)});
@@ -417,11 +416,16 @@ TEST_CASE("Engine parameter changes while sounding stay finite and click-free", 
     REQUIRE(largestStep < 0.1f);
 }
 
-TEST_CASE("Engine kick is silent after the reported tail length", "[dsp][engine]")
+TEST_CASE("Engine kick sustains while the key is down and is silent after the release", "[dsp][engine]")
 {
     EngineFixture fixture;
-    const auto out = fixture.render(fixture.samples(Engine::kTailSeconds + 0.2), {noteOn(0, 36)});
-    for (int i = fixture.samples(Engine::kTailSeconds); i < static_cast<int>(out.left.size()); ++i)
+    const auto out = fixture.render(fixture.samples(2.0), {noteOn(0, 36), noteOff(fixture.samples(1.0), 36)});
+
+    // The default Kick + Bass holds its body for as long as the key is down...
+    REQUIRE(fcm::test::peak(std::vector<float>(out.left.begin() + fixture.samples(0.9),
+                                               out.left.begin() + fixture.samples(1.0))) > 0.5f);
+    // ...and is exactly silent once the 30 ms release is over.
+    for (int i = fixture.samples(1.0) + fixture.samples(0.031); i < static_cast<int>(out.left.size()); ++i)
         REQUIRE(juce::exactlyEqual(out.left[static_cast<size_t>(i)], 0.0f));
 }
 

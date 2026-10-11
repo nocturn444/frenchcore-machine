@@ -2,6 +2,7 @@
 #pragma once
 
 #include "ui/AuditionPanel.h"
+#include "ui/EnvelopePanel.h"
 #include "ui/GenericParameterPanel.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -21,6 +22,8 @@ class PluginEditor : public juce::AudioProcessorEditor
 
   private:
     ui::GenericParameterPanel parameterPanel;
+    ui::EnvelopePanel ampPanel;
+    ui::EnvelopePanel pitchPanel;
     std::unique_ptr<ui::AuditionPanel> auditionPanel; // Standalone only
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginEditor)

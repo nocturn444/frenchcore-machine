@@ -14,7 +14,8 @@ Run in at least Ableton Live, FL Studio and Reaper, on Windows and macOS where a
 - [ ] Default patch produces a kick on MIDI input; pitch follows the note when key track is on.
 - [ ] Glide on/off behaves as specified.
 - [ ] Load a factory wavetable and a user wavetable; position sweeps without clicks.
-- [ ] Edit both envelopes; changes are heard immediately without clicks or dropouts.
+- [ ] Edit both envelopes (drag points, add and delete extra points, bend segments, turn the knobs, load each shape); changes are heard immediately without clicks or dropouts, and the knobs and the display always agree.
+- [ ] Punch/Tail balance and split: the dashed marker follows Split, and moving the controls while a kick plays does not click.
 - [ ] Every distortion type at extreme settings; no NaN, no crash, safety limiter catches peaks.
 - [ ] Reorder the FX chain while audio plays; no dropouts.
 - [ ] Automate a parameter of each effect, reorder the chain, automation still controls the same effect.

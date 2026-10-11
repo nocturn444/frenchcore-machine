@@ -41,6 +41,13 @@ Two layers, so a mistake in one does not matter.
 - `EngineParameterReader::read` replaces any non-finite value with the parameter's default before converting it (integers included, so no conversion of NaN to an integer happens).
 - `WavetableOscillator` never indexes outside its table whatever it is given: non-finite or negative frequency becomes 0, the frequency is capped below Nyquist, the mip level is clamped to `0 .. kNumMipLevels - 1`, a non-finite or out-of-range position becomes 0 or is clamped, the phase is forced into `[0, 1)` (also when it comes from a tiny negative value that rounds to exactly 1), and the table index is clamped. Allocation-free.
 
+### 4.1 Envelopes, tempo and tail length (Phase 3 data)
+
+- The seven envelope and Punch/Tail parameters (`ampEnv.timeScale`, `pitchEnv.timeScale`, `pitchEnv.amount`, `punchTail.balance`, `punchTail.split`, `punchTail.punchLevel`, `punchTail.tailLevel`) are ordinary parameters, so `loadState` sanitizes them like the rest, and `EngineParameterReader` falls back to the engine defaults if one still holds a non-finite value.
+- The `AmpEnvelope` and `PitchEnvelope` child nodes are restored by `EnvelopeState::restoreFrom` after `loadState` accepted the state (not when it rejected it). A damaged node gives the default shape.
+- The tempo that synced envelopes follow is not trusted either: the plugin keeps the last good tempo when the host gives 0, a negative number or a NaN, and `Voice` ignores a tempo or time scale that is not finite. `EnvelopeRenderer::start` treats a non-finite time scale as 1, because `std::max` and `std::clamp` pass a NaN through.
+- `getTailLengthSeconds` goes through `core::tailLengthSeconds`, which never returns a non-finite or negative time to the host.
+
 ## 5. Tests
 
 Catch2:
@@ -50,6 +57,9 @@ Catch2:
 - A state without `stateVersion` loads as version 1; a future `stateVersion` loads the known controls and ignores the rest; a non-numeric or negative `stateVersion` counts as 1; `stateVersion` is written back after loading and on saving.
 - Unknown parameter IDs are ignored; a wrong root node, an empty or oversized state is rejected and leaves the current settings alone.
 - Migrations: `applyMigrations` runs the steps in order from the stored version to the target (tested with injected steps), does nothing when the version is already current, and reports a missing step.
+
+- Envelope robustness (`fcm_dsp_tests`): an engine with a tempo-synced envelope and a host tempo of NaN, infinity, 0, a negative number or an absurd value, and with a NaN or infinite time scale, still plays a finite kick and the voice ends after the release; the renderer treats a NaN time scale as 1.
+- `tailLengthSeconds` (`fcm_core_tests`): the usual value, and always finite and non-negative for NaN, infinite and negative inputs.
 
 ## 6. Out of scope
 

@@ -5,7 +5,10 @@
 #include "core/ParameterIds.h"
 #include "core/ParameterLayout.h"
 #include "core/StateLoader.h"
+#include "core/TailLength.h"
 #include "plugin/PluginEditor.h"
+
+#include <cmath>
 
 namespace fcm
 {
@@ -21,12 +24,20 @@ PluginProcessor::PluginProcessor()
       state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state)
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
+    engine.setEnvelopeSources(&ampEnvelope.source(), &pitchEnvelope.source());
+}
+
+double PluginProcessor::getTailLengthSeconds() const
+{
+    // After the key goes up the amp envelope fades out over its release, stretched by the time scale.
+    return core::tailLengthSeconds(ampEnvelope.getReleaseSeconds(),
+                                   state.getRawParameterValue(core::ParameterIds::kAmpEnvTimeScale)->load());
 }
 
 void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     // Parameters given before prepare() apply immediately instead of ramping from the defaults.
-    engine.setParameters(parameterReader.read());
+    engine.setParameters(readEngineParameters());
     engine.prepare({sampleRate, static_cast<juce::uint32>(samplesPerBlock),
                     static_cast<juce::uint32>(getTotalNumOutputChannels())});
 
@@ -48,7 +59,7 @@ bool PluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
-    engine.setParameters(parameterReader.read()); // once per block
+    engine.setParameters(readEngineParameters()); // once per block
 
     if (isStandalone())
     {
@@ -58,6 +69,29 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiB
     }
 
     engine.process(buffer, midi);
+}
+
+dsp::EngineParameters PluginProcessor::readEngineParameters()
+{
+    auto parameters = parameterReader.read();
+
+    // The Standalone has its own BPM control; a plugin follows the host, and keeps the last tempo
+    // when the host gives none (or 120 before it ever did).
+    float bpm = tempoState.get();
+    if (isStandalone())
+        bpm = auditionState.getBpm();
+    else if (const auto* host = getPlayHead())
+        if (const auto position = host->getPosition())
+            if (const auto hostBpm = position->getBpm())
+                bpm = static_cast<float>(*hostBpm);
+
+    // A host (or a damaged value) can hand over 0, a negative number or a NaN: keep the last good tempo.
+    if (!std::isfinite(bpm) || bpm <= 0.0f)
+        bpm = tempoState.get();
+
+    tempoState.set(bpm);
+    parameters.bpm = bpm;
+    return parameters;
 }
 
 void PluginProcessor::addAuditionEvents(int numSamples, const juce::MidiBuffer& hostMidi)
@@ -105,6 +139,13 @@ void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
     auto tree = state.copyState();
     tree.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
 
+    // The envelope shapes are state that is not a parameter: they travel as child nodes.
+    for (auto* envelope : {&ampEnvelope, &pitchEnvelope})
+    {
+        tree.removeChild(tree.getChildWithName(core::EnvelopeState::nodeType(envelope->kind())), nullptr);
+        tree.appendChild(envelope->toValueTree(), nullptr);
+    }
+
     if (auto xml = tree.createXml())
         copyXmlToBinary(*xml, destData);
 }
@@ -117,7 +158,16 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
         return;
 
     if (auto xml = getXmlFromBinary(data, sizeInBytes); xml != nullptr && xml->hasTagName(kStateType))
-        core::loadState(state, juce::ValueTree::fromXml(*xml), kStateType);
+    {
+        const auto tree = juce::ValueTree::fromXml(*xml);
+        if (core::loadState(state, tree, kStateType) == core::StateLoadResult::rejected)
+            return;
+
+        // A missing or damaged node gives the default shape instead of failing the whole load.
+        ampEnvelope.restoreFrom(tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::amp)));
+        pitchEnvelope.restoreFrom(
+            tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
+    }
 }
 
 } // namespace fcm

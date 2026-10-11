@@ -3,6 +3,8 @@
 
 #include "core/AuditionState.h"
 #include "core/EngineParameterReader.h"
+#include "core/EnvelopeState.h"
+#include "core/TempoState.h"
 #include "dsp/engine/AuditionSequencer.h"
 #include "dsp/engine/Engine.h"
 
@@ -30,7 +32,7 @@ class PluginProcessor : public juce::AudioProcessor
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return dsp::Engine::kTailSeconds; }
+    double getTailLengthSeconds() const override;
 
     // Presets are handled by our own preset system (docs/ARCHITECTURE.md §5), not host programs.
     int getNumPrograms() override { return 1; }
@@ -48,9 +50,19 @@ class PluginProcessor : public juce::AudioProcessor
     bool isStandalone() const noexcept { return wrapperType == wrapperType_Standalone; }
     core::AuditionState& getAuditionState() noexcept { return auditionState; }
 
+    // The editable envelopes; the UI edits them through these (docs/specs/envelope-breakpoint.md).
+    core::EnvelopeState& getAmpEnvelope() noexcept { return ampEnvelope; }
+    // The tempo that synced envelopes follow, for the editor to show and convert with.
+    // In the Standalone it is the BPM control itself, so it is right even before audio runs.
+    float currentTempo() const noexcept { return isStandalone() ? auditionState.getBpm() : tempoState.get(); }
+    core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
+
   private:
     juce::AudioProcessorValueTreeState state;
     core::EngineParameterReader parameterReader;
+    core::TempoState tempoState;
+    core::EnvelopeState ampEnvelope{dsp::EnvelopeKind::amp};
+    core::EnvelopeState pitchEnvelope{dsp::EnvelopeKind::pitch};
     dsp::Engine engine;
 
     // Standalone only. The host's MIDI is copied here together with the audition events; the
@@ -60,6 +72,8 @@ class PluginProcessor : public juce::AudioProcessor
     juce::MidiBuffer auditionMidi;
 
     void addAuditionEvents(int numSamples, const juce::MidiBuffer& hostMidi);
+    // The parameters for this block, with the tempo from the host (or the Standalone's BPM).
+    dsp::EngineParameters readEngineParameters();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginProcessor)
 };

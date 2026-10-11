@@ -43,7 +43,13 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
       limiterOn(lookup(state, ParameterIds::kLimiterOn)), keyTrack(lookup(state, ParameterIds::kKeyTrack)),
       rootNote(lookup(state, ParameterIds::kRootNote)), glideOn(lookup(state, ParameterIds::kGlideOn)),
       glideTime(lookup(state, ParameterIds::kGlideTime)),
-      velocitySensitivity(lookup(state, ParameterIds::kVelocitySensitivity))
+      velocitySensitivity(lookup(state, ParameterIds::kVelocitySensitivity)),
+      ampTimeScale(lookup(state, ParameterIds::kAmpEnvTimeScale)),
+      pitchTimeScale(lookup(state, ParameterIds::kPitchEnvTimeScale)),
+      pitchAmount(lookup(state, ParameterIds::kPitchEnvAmount)),
+      punchBalance(lookup(state, ParameterIds::kPunchTailBalance)),
+      punchSplit(lookup(state, ParameterIds::kPunchTailSplit)),
+      punchLevel(lookup(state, ParameterIds::kPunchLevel)), tailLevel(lookup(state, ParameterIds::kTailLevel))
 {
     namespace Osc = ParameterIds::Oscillator;
     for (int index = 0; index < dsp::kNumOscillators; ++index)
@@ -73,6 +79,13 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.glideOn = toBool(glideOn, defaults.glideOn);
     result.glideMs = finiteOr(glideTime, defaults.glideMs);
     result.velocitySensitivity = finiteOr(velocitySensitivity, defaults.velocitySensitivity * 100.0f) * 0.01f;
+    result.ampTimeScale = finiteOr(ampTimeScale, defaults.ampTimeScale);
+    result.pitchTimeScale = finiteOr(pitchTimeScale, defaults.pitchTimeScale);
+    result.pitchAmount = finiteOr(pitchAmount, defaults.pitchAmount);
+    result.punchBalance = finiteOr(punchBalance, defaults.punchBalance * 100.0f) * 0.01f;
+    result.punchSplitMs = finiteOr(punchSplit, defaults.punchSplitMs);
+    result.punchLevel = juce::Decibels::decibelsToGain(finiteOr(punchLevel, 0.0f), -48.0f);
+    result.tailLevel = juce::Decibels::decibelsToGain(finiteOr(tailLevel, 0.0f), -48.0f);
 
     for (size_t i = 0; i < oscillators.size(); ++i)
     {

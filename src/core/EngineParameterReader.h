@@ -37,6 +37,13 @@ class EngineParameterReader
     std::atomic<float>* glideOn;
     std::atomic<float>* glideTime;
     std::atomic<float>* velocitySensitivity;
+    std::atomic<float>* ampTimeScale;
+    std::atomic<float>* pitchTimeScale;
+    std::atomic<float>* pitchAmount;
+    std::atomic<float>* punchBalance;
+    std::atomic<float>* punchSplit;
+    std::atomic<float>* punchLevel;
+    std::atomic<float>* tailLevel;
     std::array<OscillatorPointers, dsp::kNumOscillators> oscillators;
 };
 

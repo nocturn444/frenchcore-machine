@@ -10,7 +10,7 @@ constexpr int kMargin = 12;
 constexpr int kColumnGap = 16;
 constexpr int kRowGap = 4;
 constexpr int kHeadingHeight = 28;
-constexpr int kMaxRowHeight = 56;
+constexpr int kMaxRowHeight = 36;
 constexpr int kValueBoxWidth = 80;
 } // namespace
 
@@ -23,7 +23,8 @@ juce::String GenericParameterPanel::headingFor(const juce::String& prefix)
     return prefix;
 }
 
-GenericParameterPanel::GenericParameterPanel(juce::AudioProcessorValueTreeState& state)
+GenericParameterPanel::GenericParameterPanel(juce::AudioProcessorValueTreeState& state,
+                                             const std::vector<juce::String>& excludedGroups)
 {
     // Groups appear in the order of their first parameter, which is the layout order.
     std::vector<juce::String> prefixes;
@@ -35,6 +36,9 @@ GenericParameterPanel::GenericParameterPanel(juce::AudioProcessorValueTreeState&
             continue;
 
         const auto prefix = ranged->paramID.upToFirstOccurrenceOf(".", false, false);
+        if (std::find(excludedGroups.begin(), excludedGroups.end(), prefix) != excludedGroups.end())
+            continue;
+
         auto found = std::find(prefixes.begin(), prefixes.end(), prefix);
         if (found == prefixes.end())
         {

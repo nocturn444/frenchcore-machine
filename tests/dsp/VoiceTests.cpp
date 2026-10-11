@@ -49,7 +49,11 @@ TEST_CASE("Voice is silent until triggered and plays after", "[dsp][voice]")
     REQUIRE(fcm::test::allFinite(out));
     REQUIRE(fcm::test::peak(out) > 0.5f);
 
-    // The kick decays to silence on its own and the voice goes idle.
+    // The default Kick + Bass holds its body while the key is down; the release ends it and the voice goes
+    // idle.
+    fixture.render(48000, 36.0f);
+    REQUIRE(fixture.voice.isActive());
+    fixture.voice.release();
     fixture.render(48000, 36.0f);
     REQUIRE_FALSE(fixture.voice.isActive());
     REQUIRE(juce::exactlyEqual(fcm::test::peak(fixture.render(1000, 36.0f)), 0.0f));
@@ -239,9 +243,9 @@ TEST_CASE("Voice start phase is applied at every note", "[dsp][voice]")
     fixture.voice.trigger(1.0f);
     const auto out = fixture.render(100, 36.0f);
 
-    // The amp attack takes 1 ms, so the first sample is a small fraction of the peak.
-    REQUIRE(out[0] > 0.0f);
-    REQUIRE(out[0] < 0.05f);
+    // The amp attack takes 1 ms and starts at 0, so the first samples are a small fraction of the peak.
+    REQUIRE(std::abs(out[0]) < 0.05f);
+    REQUIRE(out[5] > 0.0f);
     REQUIRE(fcm::test::peak(out) > 0.8f);
 }
 

@@ -5,9 +5,15 @@ include(Catch)
 juce_add_console_app(fcm_dsp_tests PRODUCT_NAME "fcm_dsp_tests")
 target_sources(fcm_dsp_tests PRIVATE
     dsp/AuditionTests.cpp
+    dsp/BreakpointEnvelopeTests.cpp
     dsp/EngineTests.cpp
-    dsp/EnvelopeTests.cpp
+    dsp/EnvelopeEngineTests.cpp
+    dsp/EnvelopeRendererTests.cpp
+    dsp/EnvelopeRobustnessTests.cpp
+    dsp/MusicalTimeTests.cpp
     dsp/NoteHandlingTests.cpp
+    dsp/PublishedPointerTests.cpp
+    dsp/PunchTailTests.cpp
     dsp/OscillatorRobustnessTests.cpp
     dsp/VoiceTests.cpp
     dsp/WavetableTests.cpp
@@ -26,9 +32,13 @@ catch_discover_tests(fcm_dsp_tests)
 juce_add_console_app(fcm_core_tests PRODUCT_NAME "fcm_core_tests")
 target_sources(fcm_core_tests PRIVATE
     core/AuditionStateTests.cpp
+    core/EnvelopeStateTests.cpp
+    core/ParameterTests.cpp
+    core/TempoStateTests.cpp
     core/BoundedMidiCopyTests.cpp
     core/ParameterTests.cpp
     core/StateLoaderTests.cpp
+    core/TailLengthTests.cpp
 )
 target_link_libraries(fcm_core_tests PRIVATE
     fcm_core

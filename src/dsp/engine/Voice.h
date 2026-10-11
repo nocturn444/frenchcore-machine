@@ -2,12 +2,13 @@
 #pragma once
 
 #include "dsp/engine/EngineParameters.h"
-#include "dsp/envelope/FixedAmpEnvelope.h"
-#include "dsp/envelope/FixedPitchEnvelope.h"
+#include "dsp/envelope/EnvelopeRenderer.h"
+#include "dsp/envelope/EnvelopeShape.h"
 #include "dsp/oscillator/WavetableOscillator.h"
 
 #include <array>
 #include <juce_audio_basics/juce_audio_basics.h>
+#include <memory>
 
 namespace fcm::dsp
 {
@@ -23,6 +24,8 @@ class Voice
     // Kicks that can fade out at once. Notes closer together than the fade (a chord sent at one
     // instant, for example) each need their own slot to avoid a step.
     static constexpr int kMaxGhosts = 4;
+    // Width of the smooth change between the punch and the tail gain (docs/specs/voice-punch-tail.md).
+    static constexpr double kPunchTailCrossfadeMs = 4.0;
 
     // The wavetable must outlive the voice.
     void prepare(double sampleRate, const WavetableData* wavetable);
@@ -31,6 +34,10 @@ class Voice
     // Called once per block. With `snap` the smoothed values jump to the new targets instead of
     // ramping (first call after prepare).
     void setParameters(const EngineParameters& parameters, bool snap) noexcept;
+
+    // Called once per block with the shapes the audio thread currently reads; nullptr means the
+    // default shape. The shapes must outlive the block.
+    void setShapes(const EnvelopeShape* ampShape, const EnvelopeShape* pitchShape) noexcept;
 
     // Starts a kick. `velocityGain` is the final level factor (already scaled by sensitivity).
     void trigger(float velocityGain) noexcept;
@@ -48,9 +55,10 @@ class Voice
     struct Core
     {
         std::array<WavetableOscillator, kNumOscillators> oscillators;
-        FixedAmpEnvelope amp;
-        FixedPitchEnvelope pitch;
+        EnvelopeRenderer amp;
+        EnvelopeRenderer pitch;
         float velocityGain = 1.0f;
+        double samplesSinceNoteOn = 0.0; // for the punch / tail split
         bool active = false;
         bool hasRendered = false; // false until the first sample: a kick that never sounded needs no fade
     };
@@ -66,6 +74,10 @@ class Voice
     {
         std::array<float, kNumOscillators> level;
         std::array<float, kNumOscillators> semitones;
+        float pitchAmount;
+        float punchGain;
+        float tailGain;
+        float punchSplitMs;
     };
 
     float render(Core& voiceCore, float settleNote, const Frame& frame) noexcept;
@@ -79,6 +91,20 @@ class Voice
     std::array<juce::SmoothedValue<float>, kNumOscillators> levels;
     std::array<juce::SmoothedValue<float>, kNumOscillators> semitones;
     std::array<juce::SmoothedValue<float>, kNumOscillators> positions;
+    juce::SmoothedValue<float> pitchAmount;
+    juce::SmoothedValue<float> punchBalance;
+    juce::SmoothedValue<float> punchSplitMs;
+    juce::SmoothedValue<float> punchLevel;
+    juce::SmoothedValue<float> tailLevel;
+    float bpm = 120.0f;
+    const EnvelopeShape* ampShapeInUse = nullptr; // for the tempo sync scale at note-on
+    const EnvelopeShape* pitchShapeInUse = nullptr;
+    float ampTimeScale = 1.0f; // read at every note-on
+    float pitchTimeScale = 1.0f;
+
+    // Shapes for the Voice's own use when nothing is published (tests, and before the first publish).
+    std::unique_ptr<const EnvelopeShape> defaultAmpShape;
+    std::unique_ptr<const EnvelopeShape> defaultPitchShape;
 };
 
 } // namespace fcm::dsp

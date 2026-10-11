@@ -63,13 +63,13 @@ Done when:
 
 ## Phase 3: Envelopes
 
-- [ ] Spec: breakpoint envelope model and editor interactions
-- [ ] `BreakpointEnvelope` model + real-time renderer, with tests
-- [ ] Lock-free publishing of envelope shapes to the audio thread
-- [ ] Envelope editor component (add/move/delete points, curvature)
-- [ ] Shape presets including the default "Kick + Bass"
-- [ ] AHDSR / pitch knobs bound to the main envelope points
-- [ ] Punch/Tail balance with split time, with tests
+- [x] Spec: breakpoint envelope model and editor interactions
+- [x] `BreakpointEnvelope` model + real-time renderer, with tests
+- [x] Lock-free publishing of envelope shapes to the audio thread
+- [x] Envelope editor component (add/move/delete points, curvature)
+- [x] Shape presets including the default "Kick + Bass"
+- [x] AHDSR / pitch knobs bound to the main envelope points
+- [x] Punch/Tail balance with split time, with tests
 
 ## Phase 4: Wavetables
 

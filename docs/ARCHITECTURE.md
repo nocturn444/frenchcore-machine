@@ -127,22 +127,29 @@ Details and tests in [voice-note-handling](specs/voice-note-handling.md).
 
 ### 4.4 Envelopes
 
+Details, ranges and tests in [envelope-breakpoint](specs/envelope-breakpoint.md); the decision record is [ADR 0006](decisions/0006-envelope-model-and-publishing.md).
+
 Both envelopes use the same `BreakpointEnvelope` model:
 
-- A list of points (time in ms, value 0..1) with a curvature value per segment (-1 concave, 0 linear, +1 convex).
-- The first point is fixed at time 0; the last point marks the end of the envelope.
-- **Amp envelope:** default shape is a "kick + bass" curve: instant attack, short punch hold, quick drop, rise back into a sustained body (the bass), then release. Optional sustain point holds while the note is held.
-- **Knobs and points edit the same envelope.** Each envelope panel has 5 knobs that move its main points (amp: Attack, Hold, Decay, Sustain, Release; pitch: Amount, Attack, Decay, Curve, End). Dragging points in the display and turning knobs change the same model; extra points added by hand keep their position relative to the nearest main point.
-- **Pitch envelope:** maps 0..1 to a pitch offset in semitones above the settling pitch (`Pitch Env Amount`, default +48 st). Default shape is a very fast exponential fall.
-- The UI edits a copy of the model. When the user changes it, the UI builds a new immutable `EnvelopeShape` and publishes it to the audio thread with an atomic pointer swap.
-- Envelope shapes are part of the plugin state, not automatable parameters. Global controls (`Amp Env Time Scale`, `Pitch Env Amount`, `Pitch Env Time Scale`) are automatable.
+- A list of points (time in ms, level 0..1, at most 32, at most 2000 ms in total) with a curvature value per segment (-1 fast first, 0 linear, +1 slow first). Points are flagged **main** (the ones the knobs move) or **extra** (added by hand).
+- The first point is fixed at time 0; the last point marks the end of the envelope. On the amp envelope the last point is also the sustain level.
+- **Amp envelope:** default shape is "Kick + Bass": 1 ms attack, 25 ms punch, quick drop to 40 % by 80 ms, rise to a 70 % body by 140 ms held while the key is down. Releasing the key fades the sound out linearly from where it is over the `Release` time (default 30 ms). A held level of 0 makes a one-shot that ends by itself.
+- **Knobs and points edit the same envelope.** Each envelope panel has 5 knobs that move its main points (amp: Attack, Hold, Decay, Sustain, Release; pitch: Amount, Attack, Decay, Curve, End). Dragging points in the display and turning knobs change the same model; extra points keep the same fraction of the section they sit in when a knob changes the section's length.
+- **Pitch envelope:** maps 0..1 to a pitch offset in semitones above the settling pitch (`Pitch Env Amount`, default +48 st). Default shape ("Classic Drop") is a fast exponential fall that lands exactly on the note in 90 ms. The pitch envelope ignores note-off.
+- The editable model is a plain value type (`BreakpointEnvelope`, owned by `core::EnvelopeState`). After every edit it builds an immutable, fixed-size `EnvelopeShape` and publishes it to the audio thread through `PublishedPointer` (hazard-pointer deferred release, ADR 0006). The engine acquires the current shapes once per block; `EnvelopeRenderer` plays them per sample.
+- Envelope shapes are part of the plugin state (child nodes `AmpEnvelope` and `PitchEnvelope`), not automatable parameters. Global controls (`Amp Env Time Scale`, `Pitch Env Amount`, `Pitch Env Time Scale`) are automatable; time scale is read at each note-on.
+- Shape presets (`EnvelopePresets`) are a data table per envelope kind; the first is the default.
+- **Tempo sync** ([ADR 0007](decisions/0007-envelope-tempo-sync.md)): a shape may remember the tempo its times were written at (`syncRefBpm`); at each note-on the voice plays it scaled by reference / current tempo. The current tempo is the host tempo in a plugin, the audition strip's BPM in the Standalone, 120 otherwise; it reaches the engine in `EngineParameters` and the editor through `core::TempoState`. Knobs show musical figures (`MusicalTime`) while synced.
 
 ### 4.5 Punch / Tail balance
 
+Details and tests in [voice-punch-tail](specs/voice-punch-tail.md).
+
 - Splits the voice output in time into a **punch** region (from note-on to the split point) and a **tail** region (after it).
-- `Punch Tail Balance` (-100 to +100): negative favours the punch, positive the tail, 0 leaves both untouched. Implemented as two gains applied to the regions.
-- `Punch Tail Split` (ms after note-on): where the punch ends and the tail begins, shown as a vertical marker on the amp envelope display. The gain change crossfades over a few milliseconds to avoid clicks.
-- Both are automatable parameters.
+- `Punch Tail Balance` (-100 to +100): negative favours the punch, positive the tail, 0 leaves both untouched. Implemented as two gains (`1 - |balance|` on the region that is cut) applied after the amp envelope.
+- `Punch Tail Split` (ms after note-on, default 80): where the punch ends and the tail begins, shown as a dashed vertical marker on the amp envelope display. The gain changes with a 4 ms smoothstep centred on the split, counted from each kick's own note-on.
+- `Punch Level` and `Tail Level` (dB, default 0) multiply the two region gains on top of the balance.
+- All four are automatable parameters and are smoothed over 10 ms.
 
 ### 4.6 FX chain (main extension point)
 
@@ -221,7 +228,7 @@ Three threads matter:
 
 Patterns used:
 
-- **Atomic pointer swap + deferred release** for large immutable data (wavetables, envelope shapes): the producer builds a new object, publishes it with an atomic store, and the old object is handed to a release pool that frees it on the message thread later.
+- **Atomic pointer swap + deferred release** for large immutable data (wavetables, envelope shapes): the producer builds a new object and publishes it with an atomic exchange (`PublishedPointer`); the audio thread records the pointer it reads as a hazard pointer, and the old object is freed on the publishing thread once it is no longer that one ([ADR 0006](decisions/0006-envelope-model-and-publishing.md)).
 - **Atomic packed values** for small state (FX order).
 - **APVTS raw parameter pointers** (`std::atomic<float>*`) are read once per block, and parameters that cause clicks are smoothed (`juce::SmoothedValue`).
 - **Debug check:** in debug builds a scoped guard flags any allocation on the audio thread.
