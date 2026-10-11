@@ -55,6 +55,10 @@ The built-in wavetables, in menu order:
 
 Harder waves carry more energy than the sine at the same Level, so they sound louder: lower **Level** if needed. Changing the Wavetable while a kick is sounding changes the sound from the next moment on and can click, so set it up before you play. 
 
+### The wavetable display
+
+Above each Load button a small display shows what that oscillator plays: the wavetable's name, a faint stack of its waveforms and, in bright blue, the waveform at the current **Position**. Move the Position knob and the bright line moves with it. It only shows; there is nothing to click.
+
 ### Your own wavetable
 
 Under the controls there are two buttons, **Load Osc 1 Wavetable...** and **Load Osc 2 Wavetable...**. Pick a WAV file and, if it is usable, that oscillator switches to the **User** entry of its Wavetable menu and plays it. A line of text next to the buttons says what was loaded, or why a file was refused.

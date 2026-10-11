@@ -86,3 +86,51 @@ TEST_CASE("An unusable parameter value selects a valid table", "[core][wavetable
         REQUIRE(selector.source().acquire() != nullptr);
     }
 }
+
+TEST_CASE("The display shows the frames and the name of the published table", "[core][wavetable][display]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    fcm::test::TestProcessor processor;
+    WavetableSelector selector(processor.state, 0);
+
+    REQUIRE(selector.displayFrames() == FactoryWavetables::makeFrames(0));
+    REQUIRE(selector.displayName() == "Sine");
+
+    setEntry(processor.state, 0, 8);
+    selector.update();
+    REQUIRE(selector.displayFrames() == FactoryWavetables::makeFrames(8));
+    REQUIRE(selector.displayName() == "Rumble Core");
+
+    // The User entry without a user wavetable.
+    setEntry(processor.state, 0, WavetableSelector::userEntry());
+    selector.update();
+    REQUIRE(selector.displayName().startsWith("User (empty"));
+    REQUIRE(selector.displayFrames() == FactoryWavetables::makeFrames(0));
+
+    // With one loaded.
+    REQUIRE(selector.loadUser(std::vector<float>(2048, 0.25f), "my kick"));
+    REQUIRE(selector.displayName() == "User: my kick");
+    REQUIRE(selector.displayFrames() == std::vector<float>(2048, 0.25f));
+}
+
+TEST_CASE("Every change of the table is announced to the display", "[core][wavetable][display]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    fcm::test::TestProcessor processor;
+    WavetableSelector selector(processor.state, 0);
+
+    struct Counter : juce::ChangeListener
+    {
+        int count = 0;
+        void changeListenerCallback(juce::ChangeBroadcaster*) override { ++count; }
+    } counter;
+    selector.changes().addChangeListener(&counter);
+
+    setEntry(processor.state, 0, 3);
+    selector.update();
+    for (int i = 0; i < 40 && counter.count == 0; ++i)
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(10);
+    REQUIRE(counter.count >= 1);
+
+    selector.changes().removeChangeListener(&counter);
+}

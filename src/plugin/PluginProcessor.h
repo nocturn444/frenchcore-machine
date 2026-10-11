@@ -59,6 +59,11 @@ class PluginProcessor : public juce::AudioProcessor
     float currentTempo() const noexcept { return isStandalone() ? auditionState.getBpm() : tempoState.get(); }
     core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
 
+    core::WavetableSelector& selectorFor(int oscillator) noexcept
+    {
+        return oscillator == 0 ? wavetable1 : wavetable2;
+    }
+
     // User wavetables (docs/specs/wavetable-user.md). Message thread. The file is read and decoded
     // in the background; on success the oscillator switches to the User entry, otherwise the
     // reason is kept in wavetableMessage(). Both announce through wavetableChanged.
@@ -75,10 +80,7 @@ class PluginProcessor : public juce::AudioProcessor
     // After `state`: they listen to its parameters and must go first on destruction.
     core::WavetableSelector wavetable1{state, 0};
     core::WavetableSelector wavetable2{state, 1};
-    core::WavetableSelector& selectorFor(int oscillator) noexcept
-    {
-        return oscillator == 0 ? wavetable1 : wavetable2;
-    }
+
     juce::String lastWavetableMessage;
     juce::ChangeBroadcaster wavetableBroadcaster;
     dsp::Engine engine;

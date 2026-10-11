@@ -16,7 +16,7 @@ It is a display only: it has no controls.
 
 ## 2. User interface
 
-The strip under the controls now holds, for each oscillator, the display above its Load button, and one line of messages along the bottom. The window is about 130 pixels taller than before; it scales like the rest.
+The strip under the controls now holds, for each oscillator, the display above its Load button, and one line of messages along the bottom. The window is about 150 pixels taller than in the first Phase 3 version (the strip is 150 pixels high at the default size); it scales like the rest.
 
 ## 3. Parameters
 

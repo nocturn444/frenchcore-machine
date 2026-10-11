@@ -53,18 +53,26 @@ void WavetableSelector::update()
         return;
 
     // The User entry without a user wavetable plays the Sine.
-    std::unique_ptr<const dsp::WavetableData> table;
-    if (wanted == userEntry())
-        table = hasUser() ? dsp::WavetableData::fromFrames(userFrames) : dsp::FactoryWavetables::build(0);
-    else
-        table = dsp::FactoryWavetables::build(wanted);
+    const bool useUser = wanted == userEntry() && hasUser();
+    std::vector<float> frames =
+        useUser ? userFrames : dsp::FactoryWavetables::makeFrames(wanted == userEntry() ? 0 : wanted);
+    auto table = dsp::WavetableData::fromFrames(frames);
 
     if (table != nullptr)
     {
         published.publish(std::move(table));
+        shownFrames = std::move(frames);
         entry = wanted;
         dirty = false;
+        broadcaster.sendChangeMessage();
     }
+}
+
+juce::String WavetableSelector::displayName() const
+{
+    if (entry == userEntry())
+        return hasUser() ? "User: " + userDisplayName : juce::String("User (empty, plays the Sine)");
+    return dsp::FactoryWavetables::name(entry);
 }
 
 bool WavetableSelector::loadUser(std::vector<float> frames, const juce::String& name)

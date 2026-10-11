@@ -19,9 +19,10 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
     : AudioProcessorEditor(owner),
       // The envelope parameters are shown by the envelope panels, not by the generic list.
       parameterPanel(owner.getState(), {"ampEnv", "pitchEnv", "punchTail"}),
-      wavetablePanel([&owner](int oscillator, const juce::File& file)
-                     { owner.loadUserWavetable(oscillator, file); }, owner.wavetableChanged(),
-                     [&owner] { return owner.wavetableMessage(); }),
+      wavetablePanel(
+          owner.getState(), owner.selectorFor(0), owner.selectorFor(1),
+          [&owner](int oscillator, const juce::File& file) { owner.loadUserWavetable(oscillator, file); },
+          owner.wavetableChanged(), [&owner] { return owner.wavetableMessage(); }),
       ampPanel(
           owner.getAmpEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
           ui::EnvelopePanel::ampConfig(owner.getState())),

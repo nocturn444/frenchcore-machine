@@ -5,6 +5,7 @@ target_sources(fcm_ui INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/EnvelopeEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EnvelopePanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GenericParameterPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/WavetableDisplay.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/WavetablePanel.cpp
 )
 target_link_libraries(fcm_ui INTERFACE fcm_core)

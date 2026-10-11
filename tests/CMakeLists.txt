@@ -41,6 +41,7 @@ target_sources(fcm_core_tests PRIVATE
     core/TailLengthTests.cpp
     core/WavetableImportTests.cpp
     core/WavetableSelectorTests.cpp
+    core/WavetableShapeTests.cpp
 )
 target_link_libraries(fcm_core_tests PRIVATE
     fcm_core

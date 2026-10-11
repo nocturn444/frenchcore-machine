@@ -24,6 +24,12 @@ class WavetableSelector : private juce::AudioProcessorValueTreeState::Listener, 
     // The audio thread acquires its table here, once per block.
     dsp::PublishedPointer<dsp::WavetableData>& source() noexcept { return published; }
 
+    // What the display shows: the raw frames of the published table (numFrames * 2048 samples), its
+    // name, and a broadcaster that announces every change. Message thread.
+    const std::vector<float>& displayFrames() const noexcept { return shownFrames; }
+    juce::String displayName() const;
+    juce::ChangeBroadcaster& changes() noexcept { return broadcaster; }
+
     // The entry the published table was built from.
     int currentEntry() const noexcept { return entry; }
 
@@ -59,6 +65,8 @@ class WavetableSelector : private juce::AudioProcessorValueTreeState::Listener, 
     std::atomic<float>* raw = nullptr;
     dsp::PublishedPointer<dsp::WavetableData> published;
     int entry = -1;
+    std::vector<float> shownFrames;
+    juce::ChangeBroadcaster broadcaster;
     bool dirty = false; // the user frames changed since the last build
     int oscillator = 0;
     std::vector<float> userFrames;
