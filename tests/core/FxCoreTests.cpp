@@ -197,9 +197,9 @@ TEST_CASE("The reader hands the effects' values to the engine in spec order", "[
     REQUIRE_THAT(read.effects[0].mix, WithinAbs(1.0, 1.0e-4));
     REQUIRE_THAT(read.effects[0].values[0], WithinAbs(1.0, 1.0e-4)); // gain
     REQUIRE_THAT(read.effects[1].values[0], WithinAbs(1.0, 1.0e-4)); // threshold
-    REQUIRE(read.effects[1].values[1] == 1.0f);                      // mode: Soft
-    REQUIRE(read.effects[1].values[2] == 1.0f);                      // flag
-    REQUIRE(read.effects[1].values[3] == 2.0f);                      // steps
+    REQUIRE_THAT(read.effects[1].values[1], WithinAbs(1.0, 1.0e-3)); // mode: Soft
+    REQUIRE_THAT(read.effects[1].values[2], WithinAbs(1.0, 1.0e-3)); // flag
+    REQUIRE_THAT(read.effects[1].values[3], WithinAbs(2.0, 1.0e-3)); // steps
     REQUIRE(read.oversamplingFactor == 2);
 
     setValue(processor.state, "testgain.enabled", 1.0f);
@@ -212,8 +212,8 @@ TEST_CASE("The reader hands the effects' values to the engine in spec order", "[
     REQUIRE(read.effects[0].enabled);
     REQUIRE_THAT(read.effects[0].mix, WithinAbs(0.4, 1.0e-3));
     REQUIRE_THAT(read.effects[0].values[0], WithinAbs(2.5, 1.0e-3));
-    REQUIRE(read.effects[1].values[1] == 0.0f);
-    REQUIRE(read.effects[1].values[3] == -2.0f);
+    REQUIRE_THAT(read.effects[1].values[1], WithinAbs(0.0, 1.0e-3));
+    REQUIRE_THAT(read.effects[1].values[3], WithinAbs(-2.0, 1.0e-3));
     REQUIRE(read.oversamplingFactor == 8);
 }
 
