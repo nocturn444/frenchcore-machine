@@ -98,15 +98,20 @@ MIDI ──► NoteHandler (mono, last-note priority, optional glide)
 
 ### 4.1 Voice and note handling
 
+Details and tests in [voice-note-handling](specs/voice-note-handling.md).
+
 - Monophonic. A new note retriggers both envelopes from the start (kick behaviour). Retrigger can be made legato-optional later.
-- The MIDI note sets the pitch the pitch envelope settles on (the "bass" tail). A `Key Track` switch allows a fixed root pitch instead.
-- Glide (portamento) is optional: `Glide On`, `Glide Time` (ms). It slides the settling pitch only, not the pitch envelope's attack.
+- `NoteHandler` keeps a fixed-size stack of held notes (last-note priority). Releasing the sounding note while another is held moves the pitch back to the older note without retriggering. Note-off does not cut the kick in Phase 2: the envelopes run to silence on their own.
+- The MIDI note sets the pitch the pitch envelope settles on (the "bass" tail). A `Key Track` switch allows a fixed `Root Note` instead.
+- Glide (portamento) is optional: `Glide On`, `Glide Time` (ms). `PitchGlide` slides the settling pitch only, not the pitch envelope's attack, with a linear ramp in semitones.
 - Velocity can scale output level (`Velocity Sensitivity`, 0 to 100%).
+- Click-free retrigger: when a note arrives while the voice is sounding, a copy of the previous voice state keeps rendering for 1.5 ms with a fade-out and is added to the new kick. The new kick starts at the exact sample of the note-on, so there is no added latency.
+- Until the envelope editor (Phase 3), the amp and pitch envelopes are hard-coded shapes with constants in `src/dsp/envelope/`.
 
 ### 4.2 Wavetable oscillators
 
 - Two identical oscillators (`osc1`, `osc2`). They are two instances of the same `WavetableOscillator` class with parameter IDs prefixed by the oscillator ID, so the count is a constant, not duplicated code.
-- Each oscillator has: On, Level, Pitch (semitones), Octave, Fine tune (cents), Position, Phase and its own wavetable. Both follow the same pitch envelope and note pitch.
+- Each oscillator has: On, Level, Pitch (semitones), Octave, Fine tune (cents), Position, Phase (start phase at every note) and its own wavetable. Ranges and defaults in [oscillator-wavetable](specs/oscillator-wavetable.md). Both follow the same pitch envelope and note pitch.
 - A wavetable is a sequence of frames of 2048 samples each (Serum/Vital-compatible WAV). Up to 256 frames.
 - `Position` selects/interpolates between frames.
 - Anti-aliasing: on load, each frame is converted to a set of band-limited mipmaps (one per octave, built with FFT by zeroing harmonics above Nyquist). Playback picks the mipmap for the current frequency and interpolates linearly between samples and between adjacent frames.
@@ -186,6 +191,11 @@ MVP effects:
 ### 4.7 Output stage
 
 - `Output Gain` followed by a fixed safety soft clipper/limiter that cannot be reordered or removed. It protects speakers from the very high gain distortion settings typical of frenchcore. It can be set to "off" by advanced users.
+- The limiter is a soft clipper: untouched below 0.8, bending smoothly toward (never above) 1.0 beyond that. Exact formula in [voice-note-handling](specs/voice-note-handling.md) §4.6.
+
+### 4.8 Parameter hand-off from `fcm_core` to `fcm_dsp`
+
+`fcm_dsp` receives all voice and global parameters in a plain `EngineParameters` struct, set once per block with `Engine::setParameters`. `fcm_core::EngineParameterReader` fills it from the APVTS raw parameter pointers and is the only place that maps parameter IDs to DSP fields. See [ADR 0005](decisions/0005-engine-parameter-handoff.md).
 
 ## 5. State, parameters and presets
 
