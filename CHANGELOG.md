@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Two wavetable oscillators (On, Level, Pitch, Octave, Fine, Position, Phase) using band-limited mipmapped wavetables; the only wavetable for now is a built-in sine.
 - Safety Limiter (soft clipper, on by default) after Output Gain; the output never goes above 0 dBFS while it is on.
 - Generic parameter panel in the editor (one control per parameter) until the real panels land.
+- Standalone only: an on-screen keyboard (also playable with the computer keyboard, `Z`/`X` shift the octave) and an Auto-play loop with a BPM control (default 200) to hear the kick without a DAW. Not shown in VST3/AU. See `docs/specs/standalone-audition.md`.
 - Specs for voice and note handling and for the wavetable oscillator, and ADR 0005 (engine parameter hand-off).
 - `fcm_core_tests`: tests for the parameter layout (including a guard on released parameter IDs) and the parameter-to-engine mapping.
 

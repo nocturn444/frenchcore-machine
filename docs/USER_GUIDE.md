@@ -10,12 +10,21 @@ _Filled in with the first release._
 
 _The full quick start is written when the MVP features land. What works today:_
 
-1. Load Frenchcore Machine as an instrument on a MIDI track (or open the Standalone; it needs a MIDI keyboard or a virtual MIDI source, there is no on-screen keyboard yet).
+1. Load Frenchcore Machine as an instrument on a MIDI track, or open the Standalone app and use its on-screen keyboard (see [Standalone](#standalone-playing-without-a-daw)).
 2. Play a MIDI note. You hear a kick: a pure sine that starts four octaves higher and falls to the pitch of your note in a fraction of a second, then fades out. That fast fall is what gives the kick its punch.
 3. Play a lower or higher note to retune the kick, or turn **Key Track** off to make every note play the same pitch (the **Root Note**).
 4. Make the note longer or shorter in the piano roll to control how long the tail rings.
 
 The controls are a plain list for now; the real layout comes later.
+
+## Standalone: playing without a DAW
+
+The Standalone app (the version that runs by itself, without a DAW) has a strip at the bottom of the window so you can hear the kick right away. The VST3 and AU versions do not have it, because your DAW already gives you notes and tempo.
+
+- **Keyboard.** Click the keys with the mouse, or play them with your computer keyboard: the letters `A W S E D F T G Y H U J K O L P ;` work like piano keys starting from C1 (the home row `A S D F G H J K L ;` are the white keys, the row above them are the black keys). `Z` moves the letters one octave down and `X` one octave up. The computer keys work as long as the window is active, except while you are typing a number in the BPM box.
+- **Auto-play.** Switch it on and the kick repeats by itself, one per beat, so you can change the sound while it loops. **BPM** sets the tempo (60 to 300, default 200); drag it or type a number, and double-click it to go back to 200. Each note is held for 80 % of the beat, so the tail rings almost until the next kick.
+- While Auto-play is on, pressing a key does not play a note: it chooses the pitch of the loop, which changes at the next kick. The loop starts on C1 until you choose another note.
+- Auto-play and the BPM are not saved: every time you open the Standalone it starts with Auto-play off and 200 BPM.
 
 ## Oscillators and wavetables
 

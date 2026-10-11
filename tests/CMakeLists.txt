@@ -4,6 +4,7 @@ include(Catch)
 # DSP tests link only juce_dsp, which enforces that fcm_dsp never depends on UI or plugin code.
 juce_add_console_app(fcm_dsp_tests PRODUCT_NAME "fcm_dsp_tests")
 target_sources(fcm_dsp_tests PRIVATE
+    dsp/AuditionTests.cpp
     dsp/EngineTests.cpp
     dsp/EnvelopeTests.cpp
     dsp/NoteHandlingTests.cpp
@@ -23,6 +24,7 @@ catch_discover_tests(fcm_dsp_tests)
 # Core tests need the JUCE parameter classes (APVTS), so they link juce_audio_processors.
 juce_add_console_app(fcm_core_tests PRODUCT_NAME "fcm_core_tests")
 target_sources(fcm_core_tests PRIVATE
+    core/AuditionStateTests.cpp
     core/ParameterTests.cpp
 )
 target_link_libraries(fcm_core_tests PRIVATE

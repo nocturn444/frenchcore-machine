@@ -50,6 +50,7 @@ Goal: a MIDI note plays a pitched kick from a built-in sine table.
 - [x] Fixed amp and pitch envelopes (hard-coded default shapes)
 - [x] Output gain + safety limiter
 - [x] Parameters wired through APVTS; basic generic UI
+- [x] Standalone-only audition strip: on-screen keyboard and auto-play loop (requested by the product owner during Phase 2 review; [spec](specs/standalone-audition.md))
 
 Done when:
 

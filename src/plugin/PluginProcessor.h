@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "core/AuditionState.h"
 #include "core/EngineParameterReader.h"
+#include "dsp/engine/AuditionSequencer.h"
 #include "dsp/engine/Engine.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -42,10 +44,22 @@ class PluginProcessor : public juce::AudioProcessor
 
     juce::AudioProcessorValueTreeState& getState() noexcept { return state; }
 
+    // The on-screen keyboard and auto-play exist only in the Standalone (docs/specs/standalone-audition.md).
+    bool isStandalone() const noexcept { return wrapperType == wrapperType_Standalone; }
+    core::AuditionState& getAuditionState() noexcept { return auditionState; }
+
   private:
     juce::AudioProcessorValueTreeState state;
     core::EngineParameterReader parameterReader;
     dsp::Engine engine;
+
+    // Standalone only. The host's MIDI is copied here together with the audition events; the
+    // capacity is reserved in prepareToPlay so processBlock does not allocate.
+    core::AuditionState auditionState;
+    dsp::AuditionSequencer auditionSequencer;
+    juce::MidiBuffer auditionMidi;
+
+    void addAuditionEvents(int numSamples, const juce::MidiBuffer& hostMidi);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginProcessor)
 };

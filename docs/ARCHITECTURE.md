@@ -232,6 +232,7 @@ Patterns used:
 - Main areas, as agreed in [UI_LAYOUT.md](UI_LAYOUT.md): preset bar, two oscillator panels, amp and pitch envelope panels, tock, punch/tail balance, global, and the FX rack. LFOs (post-MVP) and "Other" have reserved space.
 - The UI never calls DSP code. It changes parameters through APVTS attachments and non-parameter state through `fcm_core` APIs.
 - A JUCE 9 WebView-based UI is a possible future option for the visual redesign. It is not used in the MVP.
+- **Standalone-only audition strip** (on-screen keyboard and auto-play loop, [spec](specs/standalone-audition.md)). It exists only when `AudioProcessor::wrapperType` is `wrapperType_Standalone`. Its settings are not parameters and not state: `core::AuditionState` holds atomics and a lock-free `dsp::NoteQueue` (message thread to audio thread), and the audio thread turns them into MIDI events (`dsp::AuditionSequencer` for the loop) inside a pre-allocated MIDI buffer. `MidiKeyboardState` (which locks) stays on the message thread.
 
 ## 8. Testing strategy
 
