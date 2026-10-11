@@ -163,7 +163,7 @@ The shapes are saved with your project, so the kick comes back exactly as you le
 
 ## Effects
 
-After the oscillators and the Tock, the kick goes through a row of effects. The first effects (distortion, EQ, multiband stereo) arrive in the next versions; this version has the row itself, which every effect will use the same way:
+After the oscillators and the Tock, the kick goes through a row of effects: Distortion, EQ and Stereo. They live in the **Effects** tab, and every one works the same way:
 
 - **On**: each effect has its own switch, **off by default**, so the sound does not change until you switch one on.
 - **Mix**: how much of the effect you hear against the untouched sound (0 to 100 %, default 100 %).
