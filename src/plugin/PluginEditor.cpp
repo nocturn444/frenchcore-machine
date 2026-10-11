@@ -55,7 +55,9 @@ void PluginEditor::resized()
     // Every part keeps its share of the height as the window scales.
     const int designHeight = kPanelHeight + ui::WavetablePanel::kHeight +
                              (auditionPanel != nullptr ? ui::AuditionPanel::kHeight : 0);
-    const auto scaled = [&](int designPixels) { return area.getHeight() * designPixels / designHeight; };
+    // The full height, taken before any strip is cut off: `area` shrinks as the strips are removed.
+    const int fullHeight = area.getHeight();
+    const auto scaled = [&](int designPixels) { return fullHeight * designPixels / designHeight; };
 
     if (auditionPanel != nullptr)
         auditionPanel->setBounds(area.removeFromBottom(scaled(ui::AuditionPanel::kHeight)));
