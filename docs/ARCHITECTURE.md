@@ -204,7 +204,8 @@ MVP effects:
   - `Wavetable`: source name, embedded audio (base64 or binary blob).
   - `AmpEnvelope`, `PitchEnvelope`: point lists.
   - `FxChain`: order of effect IDs.
-- **Versioning:** the root state node carries `stateVersion`. Loading older state runs migrations in `src/core/StateMigrations.cpp`. Each effect also carries its descriptor `version`.
+- **Versioning:** the root state node carries `stateVersion`, always written on save (`core::kStateVersion`, currently 1). A missing or damaged value counts as version 1. Loading older state runs the steps of `stateMigrations()` in `src/core/StateMigrations.cpp` in order (the list is empty while only version 1 exists); a state whose version is newer than this build is still loaded: the controls this build knows are applied and the rest is ignored. Each effect also carries its descriptor `version`.
+- **Loading is always sanitized** (`core::loadState` in `src/core/StateLoader.cpp`, spec [state-safe-loading](specs/state-safe-loading.md)): the root type must match; unknown or value-less `PARAM` entries are dropped; every parameter value that is not a plain finite number becomes the parameter's default, and every other value is clamped to the parameter's range and snapped to its step. `EngineParameterReader` and the oscillator repeat these guards as a second layer, so a bad value can never index outside memory on the audio thread. State blobs above `core::kMaxStateBytes` (32 MiB) are rejected before parsing.
 - **Presets** are the same state serialized to an `.fcmpreset` XML file. Factory presets are embedded. User presets go to the platform's user documents folder (`Frenchcore Machine/Presets`).
 - Unknown effect IDs or parameters in a preset (e.g. a preset made with a newer version) are ignored with a warning, never a crash.
 
@@ -267,3 +268,16 @@ Patterns used:
 ## 11. Decision records
 
 Significant decisions are written as Architecture Decision Records in [docs/decisions/](decisions/). Changing a decision means adding a new ADR that supersedes the old one, not editing history.
+
+## 12. Untrusted input
+
+Everything that comes from outside the process is untrusted: the state blob a host hands to `setStateInformation`, and (when they arrive) user WAV wavetables and `.fcmpreset` files, which people share. A hostile or merely damaged file must never crash the host, hang it, or write outside our own folders.
+
+Rules for any code that reads such data:
+
+- **Size limits first.** Check the byte size before reading or parsing (state blobs: `kMaxStateBytes`). Wavetable WAVs: cap file size, channel count, sample rate and frame count (at most 256 frames of 2048 samples, [oscillator-wavetable](specs/oscillator-wavetable.md)). Presets: cap file size and the number of nodes and properties.
+- **Validate every number.** Reject or replace non-finite samples (NaN, infinity) and out-of-range values; never trust a value to be a valid index, size or enum. Parse numbers with the strict reader in `StateLoader.cpp`, not with `getDoubleValue`, which turns `nan` and `inf` into real NaN and infinity.
+- **Decode off the audio thread.** Parsing, decoding and the wavetable mipmap build run on a background or message thread and are published by atomic pointer swap ([section 6](#6-threading-and-real-time-rules)). The audio thread only sees data that has already been validated.
+- **Never write to a path taken from the data.** A preset or state may name a file, but nothing in it decides where we write. User presets are saved only inside the presets folder, with a file name built from sanitized characters (no separators, no `..`, no reserved names) and a length limit; existing files are not overwritten silently.
+- **Unknown content is ignored, not fatal.** Unknown parameters, effect IDs and nodes are skipped; a newer `stateVersion` loads what is known.
+- **Tests with hostile files.** Each loader ships Catch2 tests with corrupt, truncated, oversized and NaN-filled input, asserting no crash, no non-finite output and no allocation on the audio thread. The state loader's tests are in `tests/core/StateLoaderTests.cpp`.
