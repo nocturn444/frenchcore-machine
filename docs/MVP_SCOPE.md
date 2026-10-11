@@ -20,18 +20,19 @@ The MVP is done when all of the following are true:
 | Voice | MIDI note sets the bass pitch, key-track switch for fixed pitch | |
 | Voice | Optional glide with time control | |
 | Voice | Velocity sensitivity | |
-| Oscillator | Wavetable oscillator with position control | Band-limited mipmaps. |
+| Oscillators | Two identical wavetable oscillators: on/off, level, pitch, octave, fine tune, position, phase | Band-limited mipmaps. |
 | Oscillator | 6 to 10 factory wavetables designed for kicks | Sine, triangle-ish, saturated sines, "hardcore" shapes. |
 | Oscillator | Load user wavetables (Serum/Vital-style WAV, 2048-sample frames) | Also accepts a single-cycle WAV. Embedded in the project state. |
-| Tock sampler | Optional transient layer: factory tock/click samples + user-loaded samples | Level, tune, start, decay, filter. Mandatory in the UI sketch. |
-| Envelopes | Amp envelope, breakpoint editor, default "kick + bass" shape | Add/move/delete points, segment curvature. |
-| Envelopes | Pitch envelope, breakpoint editor, amount in semitones | |
+| Tock | Optional transient layer, Synth mode (generated click) or Sample mode (factory tocks + user samples) | Level, tune, start, decay, tone. |
+| Envelopes | Amp envelope, breakpoint editor + 5 AHDSR knobs on the same curve, default "kick + bass" shape | Add/move/delete points, segment curvature. |
+| Envelopes | Pitch envelope, breakpoint editor + 5 knobs, amount in semitones | |
+| Punch/Tail | Balance between punch and tail level, with a split-time slider | |
 | Envelopes | Shape presets for both envelopes | e.g. "Kick + Bass", "Short Punch", "Long Tail". |
-| FX | Distortion: soft clip, hard clip, overdrive, foldback, bitcrush | Oversampling 1x/2x/4x/8x. |
+| FX | Distortion: soft clip, hard clip, overdrive, foldback, bitcrush | Oversampled per the global quality setting. |
 | FX | 3-band parametric EQ | |
 | FX | Multiband stereo width (3 bands) | Mono-below option. |
 | FX | User-reorderable chain (drag and drop), per-slot enable and mix | Serum-style, one slot per effect type. |
-| Output | Output gain + safety limiter | |
+| Global | Output gain, safety limiter, quality (oversampling), glide, velocity, key track | |
 | Presets | Factory presets, save/load user presets, prev/next browsing | |
 | UI | Functional, resizable editor following [UI_LAYOUT.md](UI_LAYOUT.md) | Placeholder styling. |
 | Docs | User guide, build guide, architecture, contribution guide | |
@@ -42,7 +43,7 @@ The MVP is done when all of the following are true:
 - CLAP format.
 - More effects: compressor/OTT, filter, reverb, transient shaper, "kick tuner" analyzer.
 - Multiple instances of the same effect in the chain.
-- Envelope modulating wavetable position or FX parameters (general modulation matrix).
+- LFOs (two, per the UI sketch) and modulation of wavetable position or FX parameters (modulation system).
 - Wavetable editor or drawing tool.
 - Sample layer beyond the click (full sample-based kick layer).
 - Preset tagging, search, online sharing.
@@ -51,5 +52,5 @@ The MVP is done when all of the following are true:
 
 ## Open items to confirm with the product owner
 
-- The red (to-discuss) areas of the UI sketch in [UI_LAYOUT.md](UI_LAYOUT.md): panel B, LFOs, punch/tail balance, other, global.
+- Contents of the reserved "Other" area in [UI_LAYOUT.md](UI_LAYOUT.md).
 - The exact list and sound of the factory wavetables and presets.

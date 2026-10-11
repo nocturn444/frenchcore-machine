@@ -4,15 +4,16 @@
 
 Un sintetizador wavetable en formato plugin con un solo objetivo: hacer kicks de frenchcore rápido.
 
-Frenchcore Machine está a mitad de camino entre arrastrar un sample y construir un kick desde cero en un synth completo. Trae un oscilador wavetable, una envolvente que ya tiene la forma clásica de kick + bass, una capa de click y una cadena de efectos reordenable con lo que un kick de frenchcore realmente necesita. Pensalo como un Serum o un Vital muy simplificado, enfocado en kicks.
+Frenchcore Machine está a mitad de camino entre arrastrar un sample y construir un kick desde cero en un synth completo. Trae dos osciladores wavetable, una envolvente que ya tiene la forma clásica de kick + bass, una capa de click (el "tock") y una cadena de efectos reordenable con lo que un kick de frenchcore realmente necesita. Pensalo como un Serum o un Vital muy simplificado, enfocado en kicks.
 
 > **Estado:** desarrollo inicial. Todavía no hay nada usable. El avance está en el [plan](docs/PLAN.md) (en inglés).
 
 ## Funciones (previstas para v0.1.0)
 
-- Oscilador wavetable con wavetables de fábrica para kicks, y carga de wavetables propias (WAV compatible con Serum/Vital).
-- Envolvente de amplitud editable (forma kick + bass por defecto) y envolvente de pitch.
-- Tock sampler: una capa opcional de transiente con tocks de fábrica o tus propios samples.
+- Dos osciladores wavetable con wavetables de fábrica para kicks, y carga de wavetables propias (WAV compatible con Serum/Vital).
+- Envolvente de amplitud editable (forma kick + bass por defecto) y envolvente de pitch, con puntos y perillas.
+- Tock: una capa opcional de click, sintetizada o con tocks de fábrica o tus propios samples.
+- Balance entre punch y cola, con punto de división ajustable.
 - Monofónico con glide opcional; la nota MIDI afina la cola del kick.
 - Efectos que podés ordenar arrastrándolos: distorsión (soft clip, hard clip, overdrive, foldback, bitcrush), EQ de 3 bandas y stereo multibanda.
 - Presets.

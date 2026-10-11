@@ -22,7 +22,7 @@ A pull request that adds behaviour without updating the relevant docs is not mer
 - [x] Core documentation: plan, architecture, MVP scope, README (EN/ES), contributing, license, changelog
 - [x] Project system prompt for agents (`CLAUDE.md`)
 - [x] GitHub templates (PR, issues) and cloud session setup
-- [~] UI layout spec from the product owner's sketch (`docs/UI_LAYOUT.md`)
+- [x] UI layout spec from the product owner's sketch (`docs/UI_LAYOUT.md`)
 
 ## Phase 1: Skeleton that builds everywhere
 
@@ -41,7 +41,7 @@ Goal: a MIDI note plays a pitched kick from a built-in sine table.
 
 - [ ] Spec: voice and note handling (mono, retrigger, key track, glide, velocity)
 - [ ] Spec: wavetable oscillator (format, mipmaps, interpolation)
-- [ ] `WavetableData` + mipmap builder + oscillator, with tests
+- [ ] `WavetableData` + mipmap builder + oscillator, with tests (two instances: osc1, osc2)
 - [ ] Voice + note handler, with tests
 - [ ] Fixed amp and pitch envelopes (hard-coded default shapes)
 - [ ] Output gain + safety limiter
@@ -54,6 +54,8 @@ Goal: a MIDI note plays a pitched kick from a built-in sine table.
 - [ ] Lock-free publishing of envelope shapes to the audio thread
 - [ ] Envelope editor component (add/move/delete points, curvature)
 - [ ] Shape presets including the default "Kick + Bass"
+- [ ] AHDSR / pitch knobs bound to the main envelope points
+- [ ] Punch/Tail balance with split time, with tests
 
 ## Phase 4: Wavetables
 
@@ -61,7 +63,7 @@ Goal: a MIDI note plays a pitched kick from a built-in sine table.
 - [ ] User wavetable loading (background thread, validation, error messages)
 - [ ] Wavetable embedded in plugin state
 - [ ] Wavetable display with position indicator
-- [ ] Tock sampler (factory and user samples)
+- [ ] Tock: synth mode and sample mode (factory and user samples)
 
 ## Phase 5: FX system
 
@@ -93,7 +95,7 @@ Goal: a MIDI note plays a pitched kick from a built-in sine table.
 - Visual design pass (custom LookAndFeel, possibly WebView UI).
 - More effects (compressor/OTT, filter, transient shaper, reverb).
 - CLAP format.
-- Modulation of wavetable position and FX parameters by envelopes.
+- Two LFOs and a modulation system (wavetable position, FX parameters).
 - Signed and notarized installers.
 
 ## Risks

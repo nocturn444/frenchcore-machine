@@ -12,7 +12,7 @@ This guide describes the intended workflow. It will be validated and updated whe
    - the DSP approach and latency;
    - the tests that prove it works.
 2. **Create the folder** `src/dsp/fx/<id>/` with:
-   - `<Name>Effect.h/.cpp`: a class deriving from `Effect` (see [ARCHITECTURE.md §4.5](ARCHITECTURE.md#45-fx-chain-main-extension-point));
+   - `<Name>Effect.h/.cpp`: a class deriving from `Effect` (see [ARCHITECTURE.md §4.6](ARCHITECTURE.md#46-fx-chain-main-extension-point));
    - a `createParameters()` function returning the effect's parameter group. Parameter IDs are `"<id>.<suffix>"`;
    - optional `<Name>Panel.h/.cpp` under `src/ui/fx/` if the effect needs a custom panel. Without one, the rack shows an automatic panel built from the parameters.
 3. **Register it** with one line in `src/dsp/fx/RegisterEffects.cpp`. Append to the end of the list; order in this file is the default chain order for new instances and must not be reshuffled.

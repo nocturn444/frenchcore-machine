@@ -71,9 +71,11 @@ MIDI ──► NoteHandler (mono, last-note priority, optional glide)
         ┌──────────────────────────────┐
         │ Voice                        │
         │  Pitch envelope ─► pitch     │
-        │  Wavetable oscillator        │
-        │  + Tock sampler (optional)   │
+        │  Oscillator 1 (wavetable)    │
+        │  + Oscillator 2 (wavetable)  │
+        │  + Tock (optional)           │
         │  × Amp envelope              │
+        │  × Punch/Tail balance        │
         └──────────────┬───────────────┘
                        ▼
         FX chain (user-ordered slots, each with bypass and mix)
@@ -90,19 +92,22 @@ MIDI ──► NoteHandler (mono, last-note priority, optional glide)
 - Glide (portamento) is optional: `Glide On`, `Glide Time` (ms). It slides the settling pitch only, not the pitch envelope's attack.
 - Velocity can scale output level (`Velocity Sensitivity`, 0 to 100%).
 
-### 4.2 Wavetable oscillator
+### 4.2 Wavetable oscillators
 
+- Two identical oscillators (`osc1`, `osc2`). They are two instances of the same `WavetableOscillator` class with parameter IDs prefixed by the oscillator ID, so the count is a constant, not duplicated code.
+- Each oscillator has: On, Level, Pitch (semitones), Octave, Fine tune (cents), Position, Phase and its own wavetable. Both follow the same pitch envelope and note pitch.
 - A wavetable is a sequence of frames of 2048 samples each (Serum/Vital-compatible WAV). Up to 256 frames.
 - `Position` selects/interpolates between frames.
 - Anti-aliasing: on load, each frame is converted to a set of band-limited mipmaps (one per octave, built with FFT by zeroing harmonics above Nyquist). Playback picks the mipmap for the current frequency and interpolates linearly between samples and between adjacent frames.
 - Loading and mipmap generation happen on a background thread. The finished `WavetableData` is published to the audio thread with an atomic pointer swap; the old one is released on the message thread (see section 6).
 - The source of the user's wavetable (file path and an embedded copy of the audio) is stored in the plugin state so projects survive moving files.
 
-### 4.3 Tock sampler (click layer)
+### 4.3 Tock (click layer with optional samples)
 
-- Optional short transient (the "tock") mixed before the amp envelope, played from a sample: factory tocks or a user-loaded WAV. User samples are embedded in the plugin state like wavetables.
-- Sample loading follows the same background-load and atomic-publish pattern as wavetables.
-- Parameters: `Tock On`, `Tock Sample`, `Tock Level`, `Tock Tune`, `Tock Start`, `Tock Decay`, `Tock Tone`.
+- Optional short transient (the "tock") mixed before the amp envelope. Two sources, selected with `Tock Mode`:
+  - **Synth:** a generated click (short noise burst or pitched blip) with its own decay and filter.
+  - **Sample:** a factory tock or a user-loaded WAV. User samples are embedded in the plugin state like wavetables, and loading follows the same background-load and atomic-publish pattern.
+- Parameters: `Tock On`, `Tock Mode`, `Tock Sample`, `Tock Level`, `Tock Tune`, `Tock Start`, `Tock Decay`, `Tock Tone`.
 
 ### 4.4 Envelopes
 
@@ -110,12 +115,20 @@ Both envelopes use the same `BreakpointEnvelope` model:
 
 - A list of points (time in ms, value 0..1) with a curvature value per segment (-1 concave, 0 linear, +1 convex).
 - The first point is fixed at time 0; the last point marks the end of the envelope.
-- **Amp envelope:** default shape is a "kick + bass" curve: instant attack, short punch hold, quick drop to a sustained body, then release. Optional sustain point holds while the note is held.
+- **Amp envelope:** default shape is a "kick + bass" curve: instant attack, short punch hold, quick drop, rise back into a sustained body (the bass), then release. Optional sustain point holds while the note is held.
+- **Knobs and points edit the same envelope.** Each envelope panel has 5 knobs that move its main points (amp: Attack, Hold, Decay, Sustain, Release; pitch: Amount, Attack, Decay, Curve, End). Dragging points in the display and turning knobs change the same model; extra points added by hand keep their position relative to the nearest main point.
 - **Pitch envelope:** maps 0..1 to a pitch offset in semitones above the settling pitch (`Pitch Env Amount`, default +48 st). Default shape is a very fast exponential fall.
 - The UI edits a copy of the model. When the user changes it, the UI builds a new immutable `EnvelopeShape` and publishes it to the audio thread with an atomic pointer swap.
 - Envelope shapes are part of the plugin state, not automatable parameters. Global controls (`Amp Env Time Scale`, `Pitch Env Amount`, `Pitch Env Time Scale`) are automatable.
 
-### 4.5 FX chain (main extension point)
+### 4.5 Punch / Tail balance
+
+- Splits the voice output in time into a **punch** region (from note-on to the split point) and a **tail** region (after it).
+- `Punch Tail Balance` (-100 to +100): negative favours the punch, positive the tail, 0 leaves both untouched. Implemented as two gains applied to the regions.
+- `Punch Tail Split` (ms after note-on): where the punch ends and the tail begins, shown as a vertical marker on the amp envelope display. The gain change crossfades over a few milliseconds to avoid clicks.
+- Both are automatable parameters.
+
+### 4.6 FX chain (main extension point)
 
 The effects system follows the "one slot per effect type" model used by Serum: each effect type exists exactly once, the user can enable it, bypass it and drag it to any position in the chain.
 
@@ -147,7 +160,7 @@ public:
 - **`EffectChain`** owns one instance of every registered effect and an order array. The order is stored as a lock-free packed value (e.g. up to 16 slot indices in an atomic) written by the message thread and read once per block by the audio thread. Reordering never allocates and never pauses audio.
 - **Per-slot common controls** are added automatically by the chain for every effect: `<id>.enabled`, `<id>.mix` (dry/wet), and the slot's position.
 - **Latency:** the chain reports the sum of enabled effects' latency to the host whenever it changes.
-- **Oversampling:** effects that create harmonics (distortion) run inside `juce::dsp::Oversampling` (2x default, 4x/8x selectable). Oversampling is owned by the effect, not the chain.
+- **Oversampling:** effects that create harmonics (distortion) run inside `juce::dsp::Oversampling`. The factor (1x/2x/4x/8x, 2x default) is one global `Quality` parameter in the Global panel; each effect owns its oversampler and reads that factor in `prepare()`.
 
 Adding an effect is documented step by step in [ADDING_AN_EFFECT.md](ADDING_AN_EFFECT.md).
 
@@ -155,11 +168,11 @@ MVP effects:
 
 | ID | Effect | Key parameters |
 |---|---|---|
-| `distortion` | Distortion with selectable type: soft clip (tanh), hard clip, overdrive (asymmetric), foldback, bitcrush (bit depth + sample-rate reduction) | Type, Drive, Pre-gain, Post-gain, Tone, Oversampling |
+| `distortion` | Distortion with selectable type: soft clip (tanh), hard clip, overdrive (asymmetric), foldback, bitcrush (bit depth + sample-rate reduction) | Type, Drive, Pre-gain, Post-gain, Tone |
 | `eq` | 3-band parametric EQ: low shelf, peak, high shelf | Freq, Gain, Q per band |
 | `stereo` | Multiband stereo: 3 bands split by Linkwitz-Riley crossovers, mid/side width per band | Crossover 1/2, Width per band, Mono-below toggle |
 
-### 4.6 Output stage
+### 4.7 Output stage
 
 - `Output Gain` followed by a fixed safety soft clipper/limiter that cannot be reordered or removed. It protects speakers from the very high gain distortion settings typical of frenchcore. It can be set to "off" by advanced users.
 
@@ -195,12 +208,7 @@ Patterns used:
 
 - Functional first; visual design will be done later and must not require structural changes. All drawing goes through a custom `LookAndFeel` so restyling is a separate task.
 - Resizable editor with a fixed aspect ratio, laid out with `juce::FlexBox`/`Grid` relative to the window size.
-- Main areas (subject to the layout sketch in [UI_LAYOUT.md](UI_LAYOUT.md)):
-  - Header: preset bar (save, save as, select, init).
-  - Oscillator: voice header, wavetable display, position, load button.
-  - Envelopes: side-by-side editors for amp and pitch, with shape presets.
-  - Tock sampler panel.
-  - FX rack: list of effect slots that can be dragged to reorder, each with enable, mix and its panel.
+- Main areas, as agreed in [UI_LAYOUT.md](UI_LAYOUT.md): preset bar, two oscillator panels, amp and pitch envelope panels, tock, punch/tail balance, global, and the FX rack. LFOs (post-MVP) and "Other" have reserved space.
 - The UI never calls DSP code. It changes parameters through APVTS attachments and non-parameter state through `fcm_core` APIs.
 - A JUCE 9 WebView-based UI is a possible future option for the visual redesign. It is not used in the MVP.
 

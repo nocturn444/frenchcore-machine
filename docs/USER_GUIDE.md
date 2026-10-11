@@ -10,9 +10,11 @@ _Filled in with the first release._
 
 _Filled in when the MVP features land._
 
-## Oscillator and wavetables
+## Oscillators and wavetables
 
-## Tock sampler
+## Tock
+
+## Punch / Tail balance
 
 ## Envelopes
 
@@ -20,4 +22,4 @@ _Filled in when the MVP features land._
 
 ## Presets
 
-## Output and safety limiter
+## Global: output, limiter, quality, glide
