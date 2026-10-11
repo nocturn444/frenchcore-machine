@@ -5,6 +5,7 @@
 #include "core/EngineParameterReader.h"
 #include "core/EnvelopeState.h"
 #include "core/TempoState.h"
+#include "core/TockSelector.h"
 #include "core/WavetableLoader.h"
 #include "core/WavetableSelector.h"
 #include "dsp/engine/AuditionSequencer.h"
@@ -80,6 +81,7 @@ class PluginProcessor : public juce::AudioProcessor
     // After `state`: they listen to its parameters and must go first on destruction.
     core::WavetableSelector wavetable1{state, 0};
     core::WavetableSelector wavetable2{state, 1};
+    core::TockSelector tockSelector{state};
 
     juce::String lastWavetableMessage;
     juce::ChangeBroadcaster wavetableBroadcaster;

@@ -37,6 +37,13 @@ class EngineParameterReader
     std::atomic<float>* glideOn;
     std::atomic<float>* glideTime;
     std::atomic<float>* velocitySensitivity;
+    std::atomic<float>* tockOn;
+    std::atomic<float>* tockMode;
+    std::atomic<float>* tockLevel;
+    std::atomic<float>* tockTune;
+    std::atomic<float>* tockStart;
+    std::atomic<float>* tockDecay;
+    std::atomic<float>* tockTone;
     std::atomic<float>* ampTimeScale;
     std::atomic<float>* pitchTimeScale;
     std::atomic<float>* pitchAmount;

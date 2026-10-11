@@ -159,6 +159,7 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
     for (size_t i = 0; i < kNumOscillators; ++i)
         tables[i] = wavetableSources[i] != nullptr ? wavetableSources[i]->acquire() : nullptr;
     voice.setWavetables(tables);
+    voice.setTockSample(tockSource != nullptr ? tockSource->acquire() : nullptr);
 
     // The voice is mono: render into the first channel and copy it to the others.
     float* output = buffer.getWritePointer(0);

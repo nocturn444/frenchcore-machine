@@ -18,6 +18,8 @@ juce::String GenericParameterPanel::headingFor(const juce::String& prefix)
 {
     if (prefix == "global")
         return "Global";
+    if (prefix == "tock")
+        return "Tock";
     if (prefix.startsWith("osc"))
         return "Oscillator " + prefix.fromFirstOccurrenceOf("osc", false, false);
     return prefix;

@@ -44,6 +44,10 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
       rootNote(lookup(state, ParameterIds::kRootNote)), glideOn(lookup(state, ParameterIds::kGlideOn)),
       glideTime(lookup(state, ParameterIds::kGlideTime)),
       velocitySensitivity(lookup(state, ParameterIds::kVelocitySensitivity)),
+      tockOn(lookup(state, ParameterIds::kTockOn)), tockMode(lookup(state, ParameterIds::kTockMode)),
+      tockLevel(lookup(state, ParameterIds::kTockLevel)), tockTune(lookup(state, ParameterIds::kTockTune)),
+      tockStart(lookup(state, ParameterIds::kTockStart)), tockDecay(lookup(state, ParameterIds::kTockDecay)),
+      tockTone(lookup(state, ParameterIds::kTockTone)),
       ampTimeScale(lookup(state, ParameterIds::kAmpEnvTimeScale)),
       pitchTimeScale(lookup(state, ParameterIds::kPitchEnvTimeScale)),
       pitchAmount(lookup(state, ParameterIds::kPitchEnvAmount)),
@@ -86,6 +90,15 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.punchSplitMs = finiteOr(punchSplit, defaults.punchSplitMs);
     result.punchLevel = juce::Decibels::decibelsToGain(finiteOr(punchLevel, 0.0f), -48.0f);
     result.tailLevel = juce::Decibels::decibelsToGain(finiteOr(tailLevel, 0.0f), -48.0f);
+
+    // The Tock's level is in dB (-12 by default), like the other levels.
+    result.tock.on = toBool(tockOn, defaults.tock.on);
+    result.tock.sampleMode = toInt(tockMode, 0) >= 1;
+    result.tock.level = juce::Decibels::decibelsToGain(finiteOr(tockLevel, -12.0f), -48.0f);
+    result.tock.tuneSemitones = static_cast<float>(toInt(tockTune, 0));
+    result.tock.startMs = finiteOr(tockStart, defaults.tock.startMs);
+    result.tock.decayMs = finiteOr(tockDecay, defaults.tock.decayMs);
+    result.tock.tone = finiteOr(tockTone, defaults.tock.tone);
 
     for (size_t i = 0; i < oscillators.size(); ++i)
     {

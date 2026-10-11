@@ -71,6 +71,21 @@ Under the controls there are two buttons, **Load Osc 1 Wavetable...** and **Load
 
 ## Tock
 
+The Tock is a very short click or knock played at the start of every kick, on top of the oscillators. It is the attack that helps the kick cut through a mix. It is **off by default**; switch it on with **Tock On** (the last column of the controls).
+
+| Control | What it does |
+|---|---|
+| **Tock On** | Turns the Tock on or off. |
+| **Tock Mode** | **Synth** makes the click from scratch (a short tone burst plus a burst of noise). **Sample** plays one of the built-in tock sounds. |
+| **Tock Sample** | The built-in sounds used in Sample mode: **Click** (a dry, tiny click), **Knock** (a short low thud), **Snap** (a quick noisy snap), **Tick** (a short bright tick). |
+| **Tock Level** | How loud it is, from silent to +12 dB (default -12 dB). |
+| **Tock Tune** | Its pitch, in semitones. In Synth mode it moves the tone of the click; in Sample mode it plays the sound faster or slower. |
+| **Tock Start** | A delay of 0 to 20 ms between the note and the Tock. A small delay puts the click just after the start of the pitch drop. |
+| **Tock Decay** | How fast it fades out, 2 to 200 ms (the time to fall by 60 dB). |
+| **Tock Tone** | Dull to bright: at 0 the Tock is dark, at 1 it is wide open. |
+
+The Tock follows the velocity, the Punch/Tail balance and the amp envelope like the rest of the kick. Start, Tune, Decay, Tone, Mode and Sample are read when a note starts, so changing them affects the next kick; Level changes at once. If the Tock sounds too soft, raise Start a little or shorten the amp envelope's attack, because the amp envelope also shapes the Tock. Loading your own tock sample comes in a later version.
+
 ## Punch / Tail balance
 
 A frenchcore kick has a **punch** (the hit at the start) and a **tail** (the bass that rings after it). This control balances them without redrawing the envelope. It sits under the knobs of the Amp Envelope panel.

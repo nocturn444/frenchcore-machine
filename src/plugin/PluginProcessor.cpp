@@ -26,6 +26,7 @@ PluginProcessor::PluginProcessor()
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
     engine.setEnvelopeSources(&ampEnvelope.source(), &pitchEnvelope.source());
     engine.setWavetableSources(&wavetable1.source(), &wavetable2.source());
+    engine.setTockSource(&tockSelector.source());
 }
 
 double PluginProcessor::getTailLengthSeconds() const
@@ -179,6 +180,8 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
         ampEnvelope.restoreFrom(tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::amp)));
         pitchEnvelope.restoreFrom(
             tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
+
+        tockSelector.update();
 
         // User wavetables first, then the table of each current Wavetable value (the new parameter
         // values schedule that too; doing it now makes the load complete at once).

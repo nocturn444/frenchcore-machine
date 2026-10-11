@@ -11,5 +11,7 @@ target_sources(fcm_dsp INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/oscillator/FactoryWavetables.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/oscillator/WavetableData.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/oscillator/WavetableOscillator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tock/FactoryTocks.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tock/Tock.cpp
 )
 target_include_directories(fcm_dsp INTERFACE ${PROJECT_SOURCE_DIR}/src)

@@ -123,7 +123,7 @@ Details and tests in [voice-note-handling](specs/voice-note-handling.md).
 - Optional short transient (the "tock") mixed before the amp envelope. Two sources, selected with `Tock Mode`:
   - **Synth:** a generated click (short noise burst or pitched blip) with its own decay and filter.
   - **Sample:** a factory tock or a user-loaded WAV. User samples are embedded in the plugin state like wavetables, and loading follows the same background-load and atomic-publish pattern.
-- Parameters: `Tock On`, `Tock Mode`, `Tock Sample`, `Tock Level`, `Tock Tune`, `Tock Start`, `Tock Decay`, `Tock Tone`.
+- Parameters: `Tock On`, `Tock Mode`, `Tock Sample`, `Tock Level`, `Tock Tune`, `Tock Start`, `Tock Decay`, `Tock Tone` (details, ranges and the choices made in [tock](specs/tock.md)). The Tock is added to the oscillator sum before the amp envelope, and the selected sample is published to the voice like a wavetable ([ADR 0008](decisions/0008-wavetable-selection-and-publishing.md)).
 
 ### 4.4 Envelopes
 

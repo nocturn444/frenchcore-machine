@@ -4,6 +4,7 @@
 #include "core/ParameterIds.h"
 #include "dsp/engine/EngineParameters.h"
 #include "dsp/oscillator/FactoryWavetables.h"
+#include "dsp/tock/FactoryTocks.h"
 
 namespace fcm::core
 {
@@ -139,6 +140,35 @@ void addOscillatorParameters(juce::AudioProcessorValueTreeState::ParameterLayout
         juce::NormalisableRange<float>{0.0f, 360.0f, 1.0f}, 0.0f,
         juce::AudioParameterFloatAttributes{}.withLabel("deg")));
 }
+void addTockParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+{
+    layout.add(std::make_unique<juce::AudioParameterBool>(id(ParameterIds::kTockOn), "Tock On", false));
+    // Both lists are append-only: the saved value is the entry number (docs/specs/tock.md).
+    layout.add(std::make_unique<juce::AudioParameterChoice>(id(ParameterIds::kTockMode), "Tock Mode",
+                                                            juce::StringArray{"Synth", "Sample"}, 0));
+    juce::StringArray sampleNames;
+    for (int i = 0; i < dsp::FactoryTocks::count(); ++i)
+        sampleNames.add(dsp::FactoryTocks::name(i));
+    layout.add(std::make_unique<juce::AudioParameterChoice>(id(ParameterIds::kTockSample), "Tock Sample",
+                                                            sampleNames, 0));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kTockLevel), "Tock Level", juce::NormalisableRange<float>{-48.0f, 12.0f, 0.1f},
+        -12.0f, juce::AudioParameterFloatAttributes{}.withLabel("dB")));
+    layout.add(
+        std::make_unique<juce::AudioParameterInt>(id(ParameterIds::kTockTune), "Tock Tune", -24, 24, 0,
+                                                  juce::AudioParameterIntAttributes{}.withLabel("st")));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kTockStart), "Tock Start", juce::NormalisableRange<float>{0.0f, 20.0f, 0.1f}, 0.0f,
+        juce::AudioParameterFloatAttributes{}.withLabel("ms")));
+    juce::NormalisableRange<float> decayRange{2.0f, 200.0f, 0.1f};
+    decayRange.setSkewForCentre(25.0f);
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kTockDecay), "Tock Decay", decayRange, 25.0f,
+        juce::AudioParameterFloatAttributes{}.withLabel("ms")));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::kTockTone), "Tock Tone",
+                                                           juce::NormalisableRange<float>{0.0f, 1.0f}, 0.7f));
+}
 } // namespace
 
 juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
@@ -149,6 +179,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
     addEnvelopeParameters(layout);
     for (int index = 0; index < dsp::kNumOscillators; ++index)
         addOscillatorParameters(layout, index);
+    addTockParameters(layout);
 
     return layout;
 }

@@ -17,6 +17,7 @@ constexpr double kPitchSmoothSeconds = 0.020;
 constexpr double kPositionSmoothSeconds = 0.010;
 constexpr double kPitchAmountSmoothSeconds = 0.020;
 constexpr double kPunchTailSmoothSeconds = 0.010;
+constexpr double kTockLevelSmoothSeconds = 0.010;
 
 float totalSemitones(const OscillatorParameters& osc) noexcept
 {
@@ -35,6 +36,7 @@ void Voice::prepare(double newSampleRate, const WavetableData* wavetable)
     auto prepareCore = [&](Core& voiceCore)
     {
         voiceCore.amp.prepare(sampleRate);
+        voiceCore.tock.prepare(sampleRate);
         voiceCore.pitch.prepare(sampleRate);
         for (auto& osc : voiceCore.oscillators)
         {
@@ -58,6 +60,7 @@ void Voice::prepare(double newSampleRate, const WavetableData* wavetable)
     punchSplitMs.reset(sampleRate, kPunchTailSmoothSeconds);
     punchLevel.reset(sampleRate, kPunchTailSmoothSeconds);
     tailLevel.reset(sampleRate, kPunchTailSmoothSeconds);
+    tockLevel.reset(sampleRate, kTockLevelSmoothSeconds);
 
     setShapes(nullptr, nullptr);
     reset();
@@ -69,6 +72,7 @@ void Voice::reset() noexcept
     {
         voiceCore.amp.reset();
         voiceCore.pitch.reset();
+        voiceCore.tock.reset();
         for (auto& osc : voiceCore.oscillators)
             osc.reset();
         voiceCore.active = false;
@@ -124,6 +128,13 @@ void Voice::setWavetables(const std::array<const WavetableData*, kNumOscillators
     }
 }
 
+void Voice::setTockSample(const TockSample* sample) noexcept
+{
+    core.tock.setSample(sample);
+    for (auto& ghost : ghosts)
+        ghost.core.tock.setSample(sample);
+}
+
 void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcept
 {
     for (size_t i = 0; i < kNumOscillators; ++i)
@@ -153,8 +164,19 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
     ampTimeScale = std::isfinite(parameters.ampTimeScale) ? parameters.ampTimeScale : 1.0f;
     pitchTimeScale = std::isfinite(parameters.pitchTimeScale) ? parameters.pitchTimeScale : 1.0f;
 
+    // The Tock's settings are read at note-on; only its level moves smoothly.
+    tockOn = parameters.tock.on;
+    tockSettings.sampleMode = parameters.tock.sampleMode;
+    tockSettings.tuneSemitones = parameters.tock.tuneSemitones;
+    tockSettings.startMs = parameters.tock.startMs;
+    tockSettings.decayMs = parameters.tock.decayMs;
+    tockSettings.tone = parameters.tock.tone;
+    const float tockGain =
+        std::isfinite(parameters.tock.level) ? std::max(parameters.tock.level, 0.0f) : 0.0f;
+
     if (snap)
     {
+        tockLevel.setCurrentAndTargetValue(tockGain);
         pitchAmount.setCurrentAndTargetValue(parameters.pitchAmount);
         punchBalance.setCurrentAndTargetValue(parameters.punchBalance);
         punchSplitMs.setCurrentAndTargetValue(parameters.punchSplitMs);
@@ -163,6 +185,7 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
     }
     else
     {
+        tockLevel.setTargetValue(tockGain);
         pitchAmount.setTargetValue(parameters.pitchAmount);
         punchBalance.setTargetValue(parameters.punchBalance);
         punchSplitMs.setTargetValue(parameters.punchSplitMs);
@@ -195,6 +218,10 @@ void Voice::trigger(float velocityGain) noexcept
     { return shape != nullptr && shape->syncRefBpm > 0.0f ? shape->syncRefBpm / bpm : 1.0f; };
     core.amp.start(ampTimeScale * syncScale(ampShapeInUse));
     core.pitch.start(pitchTimeScale * syncScale(pitchShapeInUse));
+    if (tockOn)
+        core.tock.start(tockSettings);
+    else
+        core.tock.reset();
     core.samplesSinceNoteOn = 0.0;
     core.velocityGain = velocityGain;
     core.active = true;
@@ -235,6 +262,8 @@ float Voice::render(Core& voiceCore, float settleNote, const Frame& frame) noexc
             440.0 * std::exp2((static_cast<double>(baseNote + frame.semitones[i]) - 69.0) / 12.0);
         sum += voiceCore.oscillators[i].process(frequency) * frame.level[i];
     }
+    // The Tock joins the oscillators before the amp envelope (docs/specs/tock.md).
+    sum += voiceCore.tock.process() * frame.tockLevel;
     return sum * amp * voiceCore.velocityGain * punchTailGain;
 }
 
@@ -245,6 +274,7 @@ float Voice::process(float settleNote) noexcept
     frame.pitchAmount = pitchAmount.getNextValue();
     const float balance = punchBalance.getNextValue();
     frame.punchSplitMs = punchSplitMs.getNextValue();
+    frame.tockLevel = tockLevel.getNextValue();
     frame.punchGain = (balance > 0.0f ? 1.0f - balance : 1.0f) * punchLevel.getNextValue();
     frame.tailGain = (balance < 0.0f ? 1.0f + balance : 1.0f) * tailLevel.getNextValue();
     for (size_t i = 0; i < kNumOscillators; ++i)

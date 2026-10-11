@@ -32,6 +32,16 @@ inline constexpr const char* kPunchTailSplit = "punchTail.split";
 inline constexpr const char* kPunchLevel = "punchTail.punchLevel";
 inline constexpr const char* kTailLevel = "punchTail.tailLevel";
 
+// The Tock (docs/specs/tock.md).
+inline constexpr const char* kTockOn = "tock.on";
+inline constexpr const char* kTockMode = "tock.mode";
+inline constexpr const char* kTockSample = "tock.sample";
+inline constexpr const char* kTockLevel = "tock.level";
+inline constexpr const char* kTockTune = "tock.tune";
+inline constexpr const char* kTockStart = "tock.start";
+inline constexpr const char* kTockDecay = "tock.decay";
+inline constexpr const char* kTockTone = "tock.tone";
+
 // The two oscillators are instances of the same class, so their parameters share these suffixes
 // behind the prefix "osc1." / "osc2." (docs/specs/oscillator-wavetable.md §3).
 inline constexpr std::array<const char*, 2> kOscillatorPrefixes{"osc1", "osc2"};

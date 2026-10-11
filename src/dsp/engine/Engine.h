@@ -8,6 +8,7 @@
 #include "dsp/envelope/EnvelopeShape.h"
 #include "dsp/envelope/PublishedPointer.h"
 #include "dsp/oscillator/WavetableData.h"
+#include "dsp/tock/TockSample.h"
 
 #include <array>
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -48,6 +49,10 @@ class Engine
         wavetableSources = {osc1, osc2};
     }
 
+    // Where the Tock's sample comes from (docs/specs/tock.md). Call before playback; the publisher
+    // must outlive the engine. Without it the Tock has no sample in Sample mode.
+    void setTockSource(PublishedPointer<TockSample>* source) noexcept { tockSource = source; }
+
     // Real-time safe. Call once per block, before process().
     void setParameters(const EngineParameters& newParameters) noexcept;
 
@@ -77,6 +82,7 @@ class Engine
     PublishedPointer<EnvelopeShape>* ampSource = nullptr;
     PublishedPointer<EnvelopeShape>* pitchSource = nullptr;
     std::array<PublishedPointer<WavetableData>*, kNumOscillators> wavetableSources{};
+    PublishedPointer<TockSample>* tockSource = nullptr;
     int lastNote = -1; // the note the settling pitch follows when Key Track is on
     juce::SmoothedValue<float> outputGain{1.0f};
 };

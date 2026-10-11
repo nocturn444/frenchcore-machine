@@ -15,6 +15,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/NoteHandlingTests.cpp
     dsp/PublishedPointerTests.cpp
     dsp/PunchTailTests.cpp
+    dsp/TockTests.cpp
     dsp/OscillatorRobustnessTests.cpp
     dsp/VoiceTests.cpp
     dsp/WavetableTests.cpp
@@ -39,6 +40,7 @@ target_sources(fcm_core_tests PRIVATE
     core/BoundedMidiCopyTests.cpp
     core/StateLoaderTests.cpp
     core/TailLengthTests.cpp
+    core/TockSelectorTests.cpp
     core/WavetableImportTests.cpp
     core/WavetableSelectorTests.cpp
     core/WavetableShapeTests.cpp

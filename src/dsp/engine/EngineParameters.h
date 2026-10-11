@@ -8,6 +8,18 @@ namespace fcm::dsp
 
 inline constexpr int kNumOscillators = 2;
 
+// The Tock, the click layer (docs/specs/tock.md). Everything but `level` is read at note-on.
+struct TockParameters
+{
+    bool on = false;
+    bool sampleMode = false;   // false: Synth, true: Sample
+    float level = 0.25118864f; // linear gain, -12 dB
+    float tuneSemitones = 0.0f;
+    float startMs = 0.0f;
+    float decayMs = 25.0f; // time to fall by 60 dB
+    float tone = 0.7f;     // 0 dull .. 1 open
+};
+
 struct OscillatorParameters
 {
     bool on = true;
@@ -43,6 +55,8 @@ struct EngineParameters
     float punchSplitMs = 80.0f; // where the punch ends and the tail begins, after note-on
     float punchLevel = 1.0f;    // linear gain of the punch region, on top of the balance
     float tailLevel = 1.0f;     // linear gain of the tail region, on top of the balance
+
+    TockParameters tock;
 
     // The tempo that tempo-synced envelopes follow (host tempo, or the Standalone's BPM).
     float bpm = 120.0f;
