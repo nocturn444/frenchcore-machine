@@ -5,7 +5,8 @@
 #include "dsp/engine/NoteHandler.h"
 #include "dsp/engine/PitchGlide.h"
 #include "dsp/engine/Voice.h"
-#include "dsp/envelope/FixedAmpEnvelope.h"
+#include "dsp/envelope/EnvelopeShape.h"
+#include "dsp/envelope/PublishedPointer.h"
 #include "dsp/oscillator/WavetableData.h"
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -21,15 +22,21 @@ namespace fcm::dsp
 class Engine
 {
   public:
-    // Longest time a kick keeps sounding after its note, for the host's tail length.
-    static constexpr double kTailSeconds = FixedAmpEnvelope::kMaxLengthSeconds + 0.1;
-
     // May allocate. Called before playback starts and whenever the sample rate or block size changes.
     // Parameters set before this call take effect at once; later changes are smoothed.
     void prepare(const juce::dsp::ProcessSpec& spec);
 
     // Real-time safe. Returns all internal state to its initial value.
     void reset() noexcept;
+
+    // Where the envelope shapes come from (ADR 0006). Call before playback; the publishers must
+    // outlive the engine. Without them the engine plays the default shapes.
+    void setEnvelopeSources(PublishedPointer<EnvelopeShape>* amp,
+                            PublishedPointer<EnvelopeShape>* pitch) noexcept
+    {
+        ampSource = amp;
+        pitchSource = pitch;
+    }
 
     // Real-time safe. Call once per block, before process().
     void setParameters(const EngineParameters& newParameters) noexcept;
@@ -57,6 +64,8 @@ class Engine
     NoteHandler notes;
     PitchGlide glide;
     Voice voice;
+    PublishedPointer<EnvelopeShape>* ampSource = nullptr;
+    PublishedPointer<EnvelopeShape>* pitchSource = nullptr;
     int lastNote = -1; // the note the settling pitch follows when Key Track is on
     juce::SmoothedValue<float> outputGain{1.0f};
 };

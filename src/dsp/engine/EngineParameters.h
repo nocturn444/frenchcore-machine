@@ -34,6 +34,13 @@ struct EngineParameters
     float velocitySensitivity = 0.0f; // 0..1: every kick equally loud by default
     float outputGain = 1.0f;          // linear
     bool limiterOn = true;
+
+    // Envelopes and Punch / Tail (docs/specs/envelope-breakpoint.md, voice-punch-tail.md).
+    float ampTimeScale = 1.0f;
+    float pitchTimeScale = 1.0f;
+    float pitchAmount = 48.0f;  // semitones above the settling pitch at envelope level 1
+    float punchBalance = 0.0f;  // -1 (punch only) .. +1 (tail only)
+    float punchSplitMs = 80.0f; // where the punch ends and the tail begins, after note-on
 };
 
 } // namespace fcm::dsp

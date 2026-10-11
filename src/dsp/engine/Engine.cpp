@@ -150,6 +150,10 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
     if (numSamples == 0 || channels == 0)
         return;
 
+    // The envelope shapes are fixed for the whole block.
+    voice.setShapes(ampSource != nullptr ? ampSource->acquire() : nullptr,
+                    pitchSource != nullptr ? pitchSource->acquire() : nullptr);
+
     // The voice is mono: render into the first channel and copy it to the others.
     float* output = buffer.getWritePointer(0);
 

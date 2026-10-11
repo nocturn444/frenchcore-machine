@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "dsp/engine/Voice.h"
 
+#include "dsp/envelope/BreakpointEnvelope.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -12,6 +14,8 @@ namespace
 constexpr double kLevelSmoothSeconds = 0.010;
 constexpr double kPitchSmoothSeconds = 0.020;
 constexpr double kPositionSmoothSeconds = 0.010;
+constexpr double kPitchAmountSmoothSeconds = 0.020;
+constexpr double kPunchTailSmoothSeconds = 0.010;
 
 float totalSemitones(const OscillatorParameters& osc) noexcept
 {
@@ -22,6 +26,9 @@ float totalSemitones(const OscillatorParameters& osc) noexcept
 void Voice::prepare(double newSampleRate, const WavetableData* wavetable)
 {
     sampleRate = newSampleRate;
+
+    defaultAmpShape = BreakpointEnvelope(EnvelopeKind::amp).toShape();
+    defaultPitchShape = BreakpointEnvelope(EnvelopeKind::pitch).toShape();
 
     auto prepareCore = [&](Core& voiceCore)
     {
@@ -44,6 +51,11 @@ void Voice::prepare(double newSampleRate, const WavetableData* wavetable)
         positions[i].reset(sampleRate, kPositionSmoothSeconds);
     }
 
+    pitchAmount.reset(sampleRate, kPitchAmountSmoothSeconds);
+    punchBalance.reset(sampleRate, kPunchTailSmoothSeconds);
+    punchSplitMs.reset(sampleRate, kPunchTailSmoothSeconds);
+
+    setShapes(nullptr, nullptr);
     reset();
 }
 
@@ -58,6 +70,7 @@ void Voice::reset() noexcept
         voiceCore.active = false;
         voiceCore.hasRendered = false;
         voiceCore.velocityGain = 1.0f;
+        voiceCore.samplesSinceNoteOn = 0.0;
     };
     resetCore(core);
     for (auto& ghost : ghosts)
@@ -72,6 +85,23 @@ void Voice::reset() noexcept
         levels[i].setCurrentAndTargetValue(levels[i].getTargetValue());
         semitones[i].setCurrentAndTargetValue(semitones[i].getTargetValue());
         positions[i].setCurrentAndTargetValue(positions[i].getTargetValue());
+    }
+    pitchAmount.setCurrentAndTargetValue(pitchAmount.getTargetValue());
+    punchBalance.setCurrentAndTargetValue(punchBalance.getTargetValue());
+    punchSplitMs.setCurrentAndTargetValue(punchSplitMs.getTargetValue());
+}
+
+void Voice::setShapes(const EnvelopeShape* ampShape, const EnvelopeShape* pitchShape) noexcept
+{
+    const EnvelopeShape* amp = ampShape != nullptr ? ampShape : defaultAmpShape.get();
+    const EnvelopeShape* pitch = pitchShape != nullptr ? pitchShape : defaultPitchShape.get();
+
+    core.amp.setShape(amp);
+    core.pitch.setShape(pitch);
+    for (auto& ghost : ghosts)
+    {
+        ghost.core.amp.setShape(amp);
+        ghost.core.pitch.setShape(pitch);
     }
 }
 
@@ -96,6 +126,22 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
         }
         startPhases[i] = osc.startPhase;
     }
+
+    ampTimeScale = parameters.ampTimeScale;
+    pitchTimeScale = parameters.pitchTimeScale;
+
+    if (snap)
+    {
+        pitchAmount.setCurrentAndTargetValue(parameters.pitchAmount);
+        punchBalance.setCurrentAndTargetValue(parameters.punchBalance);
+        punchSplitMs.setCurrentAndTargetValue(parameters.punchSplitMs);
+    }
+    else
+    {
+        pitchAmount.setTargetValue(parameters.pitchAmount);
+        punchBalance.setTargetValue(parameters.punchBalance);
+        punchSplitMs.setTargetValue(parameters.punchSplitMs);
+    }
 }
 
 void Voice::trigger(float velocityGain) noexcept
@@ -116,8 +162,9 @@ void Voice::trigger(float velocityGain) noexcept
     for (size_t i = 0; i < kNumOscillators; ++i)
         core.oscillators[i].reset(static_cast<double>(startPhases[i]));
 
-    core.amp.start();
-    core.pitch.start();
+    core.amp.start(ampTimeScale);
+    core.pitch.start(pitchTimeScale);
+    core.samplesSinceNoteOn = 0.0;
     core.velocityGain = velocityGain;
     core.active = true;
     core.hasRendered = false;
@@ -132,10 +179,21 @@ bool Voice::isActive() const noexcept
 float Voice::render(Core& voiceCore, float settleNote, const Frame& frame) noexcept
 {
     voiceCore.hasRendered = true;
-    const float pitchOffset = voiceCore.pitch.next();
+    const float pitchOffset = voiceCore.pitch.next() * frame.pitchAmount;
     const float amp = voiceCore.amp.next();
     if (!voiceCore.amp.isActive())
         voiceCore.active = false;
+
+    // Punch / tail: the gain moves from the punch gain to the tail gain around the split time,
+    // counted from this kick's own note-on, with a smoothstep over a few milliseconds.
+    const double crossfadeSamples = kPunchTailCrossfadeMs * 0.001 * sampleRate;
+    const double splitSamples = static_cast<double>(frame.punchSplitMs) * 0.001 * sampleRate;
+    const double progress = std::clamp(
+        (voiceCore.samplesSinceNoteOn - (splitSamples - 0.5 * crossfadeSamples)) / crossfadeSamples, 0.0,
+        1.0);
+    const auto s = static_cast<float>(progress * progress * (3.0 - 2.0 * progress));
+    const float punchTailGain = frame.punchGain + (frame.tailGain - frame.punchGain) * s;
+    voiceCore.samplesSinceNoteOn += 1.0;
 
     // Hz of the settling pitch plus the envelope's offset, then each oscillator's own tuning.
     const float baseNote = settleNote + pitchOffset;
@@ -146,13 +204,18 @@ float Voice::render(Core& voiceCore, float settleNote, const Frame& frame) noexc
             440.0 * std::exp2((static_cast<double>(baseNote + frame.semitones[i]) - 69.0) / 12.0);
         sum += voiceCore.oscillators[i].process(frequency) * frame.level[i];
     }
-    return sum * amp * voiceCore.velocityGain;
+    return sum * amp * voiceCore.velocityGain * punchTailGain;
 }
 
 float Voice::process(float settleNote) noexcept
 {
     // Smoothers always advance so a parameter change is never left half-done while the voice is idle.
     Frame frame;
+    frame.pitchAmount = pitchAmount.getNextValue();
+    const float balance = punchBalance.getNextValue();
+    frame.punchSplitMs = punchSplitMs.getNextValue();
+    frame.punchGain = balance > 0.0f ? 1.0f - balance : 1.0f;
+    frame.tailGain = balance < 0.0f ? 1.0f + balance : 1.0f;
     for (size_t i = 0; i < kNumOscillators; ++i)
     {
         frame.level[i] = levels[i].getNextValue();

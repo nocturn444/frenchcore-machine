@@ -5,9 +5,13 @@ include(Catch)
 juce_add_console_app(fcm_dsp_tests PRODUCT_NAME "fcm_dsp_tests")
 target_sources(fcm_dsp_tests PRIVATE
     dsp/AuditionTests.cpp
+    dsp/BreakpointEnvelopeTests.cpp
     dsp/EngineTests.cpp
-    dsp/EnvelopeTests.cpp
+    dsp/EnvelopeEngineTests.cpp
+    dsp/EnvelopeRendererTests.cpp
     dsp/NoteHandlingTests.cpp
+    dsp/PublishedPointerTests.cpp
+    dsp/PunchTailTests.cpp
     dsp/VoiceTests.cpp
     dsp/WavetableTests.cpp
 )
