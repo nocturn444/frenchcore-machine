@@ -11,13 +11,20 @@ namespace
 // Default size of the editor (docs/UI_LAYOUT.md). The Standalone adds the audition strip below it;
 // the aspect ratio is fixed for whichever total height applies.
 constexpr int kDefaultWidth = 1100;
-constexpr int kPanelHeight = 640;
+constexpr int kPanelHeight = 740;
+constexpr int kEnvelopeRowHeight = 420;
 } // namespace
 
 PluginEditor::PluginEditor(PluginProcessor& owner)
-    : AudioProcessorEditor(owner), parameterPanel(owner.getState())
+    : AudioProcessorEditor(owner),
+      // The envelope parameters are shown by the envelope panels, not by the generic list.
+      parameterPanel(owner.getState(), {"ampEnv", "pitchEnv", "punchTail"}),
+      ampPanel(owner.getAmpEnvelope(), owner.getState(), ui::EnvelopePanel::ampConfig(owner.getState())),
+      pitchPanel(owner.getPitchEnvelope(), owner.getState(), ui::EnvelopePanel::pitchConfig())
 {
     addAndMakeVisible(parameterPanel);
+    addAndMakeVisible(ampPanel);
+    addAndMakeVisible(pitchPanel);
 
     int totalHeight = kPanelHeight;
     if (owner.isStandalone())
@@ -44,6 +51,11 @@ void PluginEditor::resized()
             area.getHeight() * ui::AuditionPanel::kHeight / (kPanelHeight + ui::AuditionPanel::kHeight);
         auditionPanel->setBounds(area.removeFromBottom(stripHeight));
     }
+
+    // The envelope row keeps its share of the height as the window scales.
+    auto envelopes = area.removeFromBottom(area.getHeight() * kEnvelopeRowHeight / kPanelHeight);
+    ampPanel.setBounds(envelopes.removeFromLeft(envelopes.getWidth() / 2));
+    pitchPanel.setBounds(envelopes);
 
     parameterPanel.setBounds(area);
 }

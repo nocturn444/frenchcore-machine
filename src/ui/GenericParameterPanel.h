@@ -14,7 +14,9 @@ namespace fcm::ui
 class GenericParameterPanel : public juce::Component
 {
   public:
-    explicit GenericParameterPanel(juce::AudioProcessorValueTreeState& state);
+    // Groups listed in `excludedGroups` (ID prefixes) are skipped: a dedicated panel shows them.
+    explicit GenericParameterPanel(juce::AudioProcessorValueTreeState& state,
+                                   const std::vector<juce::String>& excludedGroups = {});
 
     void paint(juce::Graphics& g) override;
     void resized() override;
