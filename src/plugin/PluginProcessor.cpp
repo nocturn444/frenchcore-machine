@@ -16,13 +16,15 @@ const juce::Identifier kStateVersionProperty{"stateVersion"};
 
 PluginProcessor::PluginProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-      state(*this, nullptr, kStateType, core::createParameterLayout())
+      state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state)
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
 }
 
 void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
+    // Parameters given before prepare() apply immediately instead of ramping from the defaults.
+    engine.setParameters(parameterReader.read());
     engine.prepare({sampleRate, static_cast<juce::uint32>(samplesPerBlock),
                     static_cast<juce::uint32>(getTotalNumOutputChannels())});
 }
@@ -38,6 +40,7 @@ bool PluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
+    engine.setParameters(parameterReader.read()); // once per block
     engine.process(buffer, midi);
 }
 

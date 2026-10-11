@@ -13,9 +13,10 @@ constexpr int kDefaultWidth = 1100;
 constexpr int kDefaultHeight = 640;
 } // namespace
 
-PluginEditor::PluginEditor(PluginProcessor& owner) : AudioProcessorEditor(owner)
+PluginEditor::PluginEditor(PluginProcessor& owner)
+    : AudioProcessorEditor(owner), parameterPanel(owner.getState())
 {
-    addAndMakeVisible(layoutPreview);
+    addAndMakeVisible(parameterPanel);
 
     setResizable(true, true);
     setResizeLimits(kDefaultWidth * 2 / 3, kDefaultHeight * 2 / 3, kDefaultWidth * 2, kDefaultHeight * 2);
@@ -25,7 +26,7 @@ PluginEditor::PluginEditor(PluginProcessor& owner) : AudioProcessorEditor(owner)
 
 void PluginEditor::resized()
 {
-    layoutPreview.setBounds(getLocalBounds());
+    parameterPanel.setBounds(getLocalBounds());
 }
 
 } // namespace fcm

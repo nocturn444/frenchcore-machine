@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "core/EngineParameterReader.h"
 #include "dsp/engine/Engine.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -27,7 +28,7 @@ class PluginProcessor : public juce::AudioProcessor
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
+    double getTailLengthSeconds() const override { return dsp::Engine::kTailSeconds; }
 
     // Presets are handled by our own preset system (docs/ARCHITECTURE.md §5), not host programs.
     int getNumPrograms() override { return 1; }
@@ -43,6 +44,7 @@ class PluginProcessor : public juce::AudioProcessor
 
   private:
     juce::AudioProcessorValueTreeState state;
+    core::EngineParameterReader parameterReader;
     dsp::Engine engine;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginProcessor)
