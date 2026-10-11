@@ -51,8 +51,13 @@ Two sliders (Balance, Split) and, under them, two knobs (Punch Level, Tail Level
 - A balance curve other than linear gain, or a separate level for each region in dB.
 - More than two regions.
 - Showing the effect in the display beyond the split marker.
+- Following the tempo: the Split stays in milliseconds even when the envelopes use tempo Sync (confirmed by the product owner on 2026-10-11, see section 7).
 
 ## 7. Open questions
 
 1. At -100 the tail is fully silent (and at +100 the punch). That is the pan-like behaviour of the architecture note; say if you would rather limit it to a gentler maximum cut.
 2. The 80 ms default split and the 4 ms crossfade are first choices.
+
+Decided by the product owner on 2026-10-11:
+
+3. With tempo Sync on, the Split stays in milliseconds. It marks where the hit ends and the bass begins, which is a matter of sound and not of musical time, so it does not follow the tempo.
