@@ -2,18 +2,104 @@
 #include "core/ParameterLayout.h"
 
 #include "core/ParameterIds.h"
+#include "dsp/engine/EngineParameters.h"
 
 namespace fcm::core
 {
+
+namespace
+{
+constexpr int kParameterVersion = 1;
+
+juce::ParameterID id(const std::string& text)
+{
+    return juce::ParameterID{text, kParameterVersion};
+}
+
+juce::String noteName(int note)
+{
+    // JUCE convention: MIDI note 60 is C3.
+    return juce::MidiMessage::getMidiNoteName(note, true, true, 3);
+}
+
+void addGlobalParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+{
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kOutputGain), "Output Gain", juce::NormalisableRange<float>{-48.0f, 12.0f, 0.1f},
+        0.0f, juce::AudioParameterFloatAttributes{}.withLabel("dB")));
+
+    layout.add(
+        std::make_unique<juce::AudioParameterBool>(id(ParameterIds::kLimiterOn), "Safety Limiter", true));
+    layout.add(std::make_unique<juce::AudioParameterBool>(id(ParameterIds::kKeyTrack), "Key Track", true));
+
+    layout.add(std::make_unique<juce::AudioParameterInt>(
+        id(ParameterIds::kRootNote), "Root Note", 12, 84, 36,
+        juce::AudioParameterIntAttributes{}
+            .withStringFromValueFunction([](int value, int) { return noteName(value); })
+            .withValueFromStringFunction(
+                [](const juce::String& text)
+                {
+                    // Accept a plain note number as well as a name such as "C1".
+                    if (text.containsOnly("0123456789"))
+                        return text.getIntValue();
+                    for (int note = 12; note <= 84; ++note)
+                        if (noteName(note).equalsIgnoreCase(text.trim()))
+                            return note;
+                    return 36;
+                })));
+
+    layout.add(std::make_unique<juce::AudioParameterBool>(id(ParameterIds::kGlideOn), "Glide", false));
+
+    // Skewed so the middle of the knob is 100 ms: most useful glides are short.
+    juce::NormalisableRange<float> glideRange{1.0f, 1000.0f, 1.0f};
+    glideRange.setSkewForCentre(100.0f);
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kGlideTime), "Glide Time", glideRange, 100.0f,
+        juce::AudioParameterFloatAttributes{}.withLabel("ms")));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kVelocitySensitivity), "Velocity Sensitivity",
+        juce::NormalisableRange<float>{0.0f, 100.0f, 1.0f}, 0.0f,
+        juce::AudioParameterFloatAttributes{}.withLabel("%")));
+}
+
+void addOscillatorParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout, int index)
+{
+    namespace Osc = ParameterIds::Oscillator;
+    const juce::String name = "Osc " + juce::String(index + 1) + " ";
+    const bool defaultOn = (index == 0);
+
+    layout.add(std::make_unique<juce::AudioParameterBool>(id(ParameterIds::oscillator(index, Osc::kOn)),
+                                                          name + "On", defaultOn));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::oscillator(index, Osc::kLevel)),
+                                                           name + "Level",
+                                                           juce::NormalisableRange<float>{0.0f, 1.0f}, 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterInt>(
+        id(ParameterIds::oscillator(index, Osc::kPitch)), name + "Pitch", -24, 24, 0,
+        juce::AudioParameterIntAttributes{}.withLabel("st")));
+    layout.add(std::make_unique<juce::AudioParameterInt>(id(ParameterIds::oscillator(index, Osc::kOctave)),
+                                                         name + "Octave", -4, 4, 0));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::oscillator(index, Osc::kFine)), name + "Fine",
+        juce::NormalisableRange<float>{-100.0f, 100.0f, 0.1f}, 0.0f,
+        juce::AudioParameterFloatAttributes{}.withLabel("ct")));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::oscillator(index, Osc::kPosition)), name + "Position",
+        juce::NormalisableRange<float>{0.0f, 1.0f}, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::oscillator(index, Osc::kPhase)), name + "Phase",
+        juce::NormalisableRange<float>{0.0f, 360.0f, 1.0f}, 0.0f,
+        juce::AudioParameterFloatAttributes{}.withLabel("deg")));
+}
+} // namespace
 
 juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ParameterIds::kOutputGain, 1}, "Output Gain",
-        juce::NormalisableRange<float>{-48.0f, 12.0f, 0.1f}, 0.0f,
-        juce::AudioParameterFloatAttributes{}.withLabel("dB")));
+    addGlobalParameters(layout);
+    for (int index = 0; index < dsp::kNumOscillators; ++index)
+        addOscillatorParameters(layout, index);
 
     return layout;
 }

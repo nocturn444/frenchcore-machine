@@ -6,7 +6,7 @@ A wavetable synthesizer plugin built for one job: making frenchcore kicks quickl
 
 Frenchcore Machine sits between dragging in a sample and building a kick from scratch in a full synth. It gives you two wavetable oscillators, an envelope that already has the classic kick + bass shape, a click layer (the "tock") and a reorderable chain of the effects frenchcore kicks actually need. Think of it as a heavily simplified Serum or Vital, focused on kicks.
 
-> **Status:** early development. The plugin builds and loads but makes no sound yet. See the [plan](docs/PLAN.md) for progress.
+> **Status:** early development. A MIDI note already plays a pitched sine kick with a fast pitch drop; envelopes, wavetables, tock, effects and presets are still to come. See the [plan](docs/PLAN.md) for progress.
 
 ## Features (planned for v0.1.0)
 

@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
-#include "ui/LayoutPreview.h"
+#include "ui/AuditionPanel.h"
+#include "ui/GenericParameterPanel.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <memory>
 
 namespace fcm
 {
@@ -18,7 +20,8 @@ class PluginEditor : public juce::AudioProcessorEditor
     void resized() override;
 
   private:
-    ui::LayoutPreview layoutPreview;
+    ui::GenericParameterPanel parameterPanel;
+    std::unique_ptr<ui::AuditionPanel> auditionPanel; // Standalone only
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginEditor)
 };

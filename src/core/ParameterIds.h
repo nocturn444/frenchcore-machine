@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include <array>
+#include <string>
+
 namespace fcm::core
 {
 
@@ -12,6 +15,33 @@ inline constexpr int kStateVersion = 1;
 namespace ParameterIds
 {
 inline constexpr const char* kOutputGain = "global.outputGain";
+inline constexpr const char* kLimiterOn = "global.limiterOn";
+inline constexpr const char* kKeyTrack = "global.keyTrack";
+inline constexpr const char* kRootNote = "global.rootNote";
+inline constexpr const char* kGlideOn = "global.glideOn";
+inline constexpr const char* kGlideTime = "global.glideTime";
+inline constexpr const char* kVelocitySensitivity = "global.velocitySensitivity";
+
+// The two oscillators are instances of the same class, so their parameters share these suffixes
+// behind the prefix "osc1." / "osc2." (docs/specs/oscillator-wavetable.md §3).
+inline constexpr std::array<const char*, 2> kOscillatorPrefixes{"osc1", "osc2"};
+
+namespace Oscillator
+{
+inline constexpr const char* kOn = "on";
+inline constexpr const char* kLevel = "level";
+inline constexpr const char* kPitch = "pitch";
+inline constexpr const char* kOctave = "octave";
+inline constexpr const char* kFine = "fine";
+inline constexpr const char* kPosition = "position";
+inline constexpr const char* kPhase = "phase";
+} // namespace Oscillator
+
+// "osc1.level" for (0, Oscillator::kLevel).
+inline std::string oscillator(int index, const char* suffix)
+{
+    return std::string(kOscillatorPrefixes[static_cast<size_t>(index)]) + "." + suffix;
+}
 } // namespace ParameterIds
 
 } // namespace fcm::core

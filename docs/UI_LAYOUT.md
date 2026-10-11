@@ -50,6 +50,10 @@ In the original sketch, black areas were mandatory and red areas were to be disc
 | **LFO 1 / LFO 2** | Display, 3 knobs, 2 toggles, LFO1/LFO2 tabs (from the sketch) | After MVP. The space is kept empty so adding it does not move other panels | Requires a modulation system |
 | **Other** | Reserved space | To be defined | |
 
+## Standalone audition strip
+
+Only in the Standalone, below the grid: Auto-play toggle, BPM and an on-screen keyboard. It is not part of the plugin layout and does not exist in VST3/AU. See [standalone-audition](specs/standalone-audition.md).
+
 ## Component tree
 
 ```
@@ -67,6 +71,7 @@ FrenchcoreEditor
 ├── FxRackPanel
 │   ├── FxSlotList (drag to reorder)
 │   └── FxDetailPanel (selected effect, auto-generated or custom)
+├── AuditionPanel            (Standalone only)
 └── placeholders: LfoPanel (post-MVP), OtherPanel (reserved)
 ```
 

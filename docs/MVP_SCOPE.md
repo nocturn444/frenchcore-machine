@@ -35,6 +35,7 @@ The MVP is done when all of the following are true:
 | Global | Output gain, safety limiter, quality (oversampling), glide, velocity, key track | |
 | Presets | Factory presets, save/load user presets, prev/next browsing | |
 | UI | Functional, resizable editor following [UI_LAYOUT.md](UI_LAYOUT.md) | Placeholder styling. |
+| UI | Standalone-only strip with an on-screen keyboard and an auto-play loop at a set BPM | Added at the product owner's request; not in VST3/AU. See [spec](specs/standalone-audition.md). |
 | Docs | User guide, build guide, architecture, contribution guide | |
 
 ## Out of scope for the MVP (candidates for later)
