@@ -3,6 +3,7 @@
 
 #include "core/ParameterIds.h"
 #include "core/ParameterLayout.h"
+#include "core/StateLoader.h"
 #include "plugin/PluginEditor.h"
 
 namespace fcm
@@ -100,14 +101,23 @@ juce::AudioProcessorEditor* PluginProcessor::createEditor()
 
 void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    if (auto xml = state.copyState().createXml())
+    // The version is always written, whatever the tree held before (docs/specs/state-safe-loading.md).
+    auto tree = state.copyState();
+    tree.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
+
+    if (auto xml = tree.createXml())
         copyXmlToBinary(*xml, destData);
 }
 
 void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
+    // The host's bytes are not trusted: too big or not our state means nothing changes, and
+    // everything else goes through the checks of core::loadState.
+    if (data == nullptr || sizeInBytes <= 0 || sizeInBytes > core::kMaxStateBytes)
+        return;
+
     if (auto xml = getXmlFromBinary(data, sizeInBytes); xml != nullptr && xml->hasTagName(kStateType))
-        state.replaceState(juce::ValueTree::fromXml(*xml));
+        core::loadState(state, juce::ValueTree::fromXml(*xml), kStateType);
 }
 
 } // namespace fcm

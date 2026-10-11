@@ -23,6 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Specs for voice and note handling and for the wavetable oscillator, and ADR 0005 (engine parameter hand-off).
 - `fcm_core_tests`: tests for the parameter layout (including a guard on released parameter IDs) and the parameter-to-engine mapping.
 
+### Security
+
+- Loading saved state is now safe against damaged or hostile data: values that are not finite numbers (`nan`, `inf`) become the parameter's default, out-of-range values are clamped, unknown entries are ignored, and oversized state is rejected. The oscillator and the parameter reader also guard their inputs, which fixes an out-of-bounds read on the audio thread reachable through a crafted `value="nan"`. See `docs/specs/state-safe-loading.md`.
+- `stateVersion` is now always written, a missing or newer version loads safely, and the migration hook (`StateMigrations`) exists.
+- `docs/ARCHITECTURE.md` has a new "Untrusted input" section with the rules for upcoming wavetable and preset files.
+
 ### Changed
 
 - The editor shows the generic parameter panel instead of the layout placeholder grid; the layout itself stays documented in `docs/UI_LAYOUT.md`.
