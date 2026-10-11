@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- `docs/STATUS.md`: a living summary for the product owner (state of the phases, open pull requests in merge order, decisions taken, what needs their attention).
 - Initial project documentation: plan, architecture, MVP scope, ADRs, spec template, contributing guide, bilingual README.
 - AGPL-3.0 license.
 - Agent instructions (`CLAUDE.md`), GitHub issue and PR templates, and a setup hook for Claude Code cloud sessions.
@@ -33,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Security
 
+- `.github/CODEOWNERS` (the product owner reviews everything) and a louder warning in the cloud session setup hook when the toolchain is incomplete.
 - Phase 3 data is covered by the safe loading too: the new envelope and Punch/Tail parameters, a host tempo that is 0, negative or NaN, a NaN time scale and the tail length reported to the host can no longer silence the kick, keep a voice alive forever or hand the host a non-finite value.
 - Loading saved state is now safe against damaged or hostile data: values that are not finite numbers (`nan`, `inf`) become the parameter's default, out-of-range values are clamped, unknown entries are ignored, and oversized state is rejected. The oscillator and the parameter reader also guard their inputs, which fixes an out-of-bounds read on the audio thread reachable through a crafted `value="nan"`. See `docs/specs/state-safe-loading.md`.
 - `stateVersion` is now always written, a missing or newer version loads safely, and the migration hook (`StateMigrations`) exists.
