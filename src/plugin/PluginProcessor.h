@@ -3,6 +3,7 @@
 
 #include "core/AuditionState.h"
 #include "core/EngineParameterReader.h"
+#include "core/EnvelopeState.h"
 #include "dsp/engine/AuditionSequencer.h"
 #include "dsp/engine/Engine.h"
 
@@ -30,7 +31,7 @@ class PluginProcessor : public juce::AudioProcessor
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return dsp::Engine::kTailSeconds; }
+    double getTailLengthSeconds() const override;
 
     // Presets are handled by our own preset system (docs/ARCHITECTURE.md §5), not host programs.
     int getNumPrograms() override { return 1; }
@@ -48,9 +49,15 @@ class PluginProcessor : public juce::AudioProcessor
     bool isStandalone() const noexcept { return wrapperType == wrapperType_Standalone; }
     core::AuditionState& getAuditionState() noexcept { return auditionState; }
 
+    // The editable envelopes; the UI edits them through these (docs/specs/envelope-breakpoint.md).
+    core::EnvelopeState& getAmpEnvelope() noexcept { return ampEnvelope; }
+    core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
+
   private:
     juce::AudioProcessorValueTreeState state;
     core::EngineParameterReader parameterReader;
+    core::EnvelopeState ampEnvelope{dsp::EnvelopeKind::amp};
+    core::EnvelopeState pitchEnvelope{dsp::EnvelopeKind::pitch};
     dsp::Engine engine;
 
     // Standalone only. The host's MIDI is copied here together with the audition events; the

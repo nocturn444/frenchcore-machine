@@ -22,6 +22,14 @@ inline constexpr const char* kGlideOn = "global.glideOn";
 inline constexpr const char* kGlideTime = "global.glideTime";
 inline constexpr const char* kVelocitySensitivity = "global.velocitySensitivity";
 
+// Envelope globals and Punch / Tail (docs/specs/envelope-breakpoint.md, voice-punch-tail.md).
+// The envelope shapes themselves are state, not parameters.
+inline constexpr const char* kAmpEnvTimeScale = "ampEnv.timeScale";
+inline constexpr const char* kPitchEnvTimeScale = "pitchEnv.timeScale";
+inline constexpr const char* kPitchEnvAmount = "pitchEnv.amount";
+inline constexpr const char* kPunchTailBalance = "punchTail.balance";
+inline constexpr const char* kPunchTailSplit = "punchTail.split";
+
 // The two oscillators are instances of the same class, so their parameters share these suffixes
 // behind the prefix "osc1." / "osc2." (docs/specs/oscillator-wavetable.md §3).
 inline constexpr std::array<const char*, 2> kOscillatorPrefixes{"osc1", "osc2"};

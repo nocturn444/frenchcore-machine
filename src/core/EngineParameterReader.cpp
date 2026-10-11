@@ -33,7 +33,12 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
       limiterOn(lookup(state, ParameterIds::kLimiterOn)), keyTrack(lookup(state, ParameterIds::kKeyTrack)),
       rootNote(lookup(state, ParameterIds::kRootNote)), glideOn(lookup(state, ParameterIds::kGlideOn)),
       glideTime(lookup(state, ParameterIds::kGlideTime)),
-      velocitySensitivity(lookup(state, ParameterIds::kVelocitySensitivity))
+      velocitySensitivity(lookup(state, ParameterIds::kVelocitySensitivity)),
+      ampTimeScale(lookup(state, ParameterIds::kAmpEnvTimeScale)),
+      pitchTimeScale(lookup(state, ParameterIds::kPitchEnvTimeScale)),
+      pitchAmount(lookup(state, ParameterIds::kPitchEnvAmount)),
+      punchBalance(lookup(state, ParameterIds::kPunchTailBalance)),
+      punchSplit(lookup(state, ParameterIds::kPunchTailSplit))
 {
     namespace Osc = ParameterIds::Oscillator;
     for (int index = 0; index < dsp::kNumOscillators; ++index)
@@ -61,6 +66,11 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.glideOn = toBool(glideOn);
     result.glideMs = glideTime->load();
     result.velocitySensitivity = velocitySensitivity->load() * 0.01f;
+    result.ampTimeScale = ampTimeScale->load();
+    result.pitchTimeScale = pitchTimeScale->load();
+    result.pitchAmount = pitchAmount->load();
+    result.punchBalance = punchBalance->load() * 0.01f;
+    result.punchSplitMs = punchSplit->load();
 
     for (size_t i = 0; i < oscillators.size(); ++i)
     {

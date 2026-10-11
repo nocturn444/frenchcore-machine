@@ -22,6 +22,14 @@ PluginProcessor::PluginProcessor()
       state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state)
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
+    engine.setEnvelopeSources(&ampEnvelope.source(), &pitchEnvelope.source());
+}
+
+double PluginProcessor::getTailLengthSeconds() const
+{
+    // After the key goes up the amp envelope fades out over its release, stretched by the time scale.
+    const double timeScale = state.getRawParameterValue(core::ParameterIds::kAmpEnvTimeScale)->load();
+    return static_cast<double>(ampEnvelope.getReleaseSeconds()) * timeScale + 0.05;
 }
 
 void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
@@ -100,14 +108,30 @@ juce::AudioProcessorEditor* PluginProcessor::createEditor()
 
 void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    if (auto xml = state.copyState().createXml())
+    // The envelope shapes are state that is not a parameter: they travel as child nodes.
+    auto tree = state.copyState();
+    for (auto* envelope : {&ampEnvelope, &pitchEnvelope})
+    {
+        tree.removeChild(tree.getChildWithName(core::EnvelopeState::nodeType(envelope->kind())), nullptr);
+        tree.appendChild(envelope->toValueTree(), nullptr);
+    }
+
+    if (auto xml = tree.createXml())
         copyXmlToBinary(*xml, destData);
 }
 
 void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary(data, sizeInBytes); xml != nullptr && xml->hasTagName(kStateType))
-        state.replaceState(juce::ValueTree::fromXml(*xml));
+    {
+        const auto tree = juce::ValueTree::fromXml(*xml);
+        state.replaceState(tree);
+
+        // A missing or damaged node gives the default shape instead of failing the whole load.
+        ampEnvelope.restoreFrom(tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::amp)));
+        pitchEnvelope.restoreFrom(
+            tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
+    }
 }
 
 } // namespace fcm

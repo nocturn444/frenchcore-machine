@@ -63,6 +63,38 @@ void addGlobalParameters(juce::AudioProcessorValueTreeState::ParameterLayout& la
         juce::AudioParameterFloatAttributes{}.withLabel("%")));
 }
 
+void addEnvelopeParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+{
+    // Time scale: a multiplier, centred on 1 so the knob is symmetric in octaves.
+    auto timeScaleRange = []
+    {
+        juce::NormalisableRange<float> range{0.25f, 4.0f, 0.01f};
+        range.setSkewForCentre(1.0f);
+        return range;
+    };
+    const auto times = juce::AudioParameterFloatAttributes{}.withLabel("x");
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kAmpEnvTimeScale), "Amp Env Time Scale", timeScaleRange(), 1.0f, times));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kPitchEnvTimeScale), "Pitch Env Time Scale", timeScaleRange(), 1.0f, times));
+    layout.add(
+        std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::kPitchEnvAmount), "Pitch Env Amount",
+                                                    juce::NormalisableRange<float>{0.0f, 96.0f, 0.1f}, 48.0f,
+                                                    juce::AudioParameterFloatAttributes{}.withLabel("st")));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kPunchTailBalance), "Punch Tail Balance",
+        juce::NormalisableRange<float>{-100.0f, 100.0f, 1.0f}, 0.0f,
+        juce::AudioParameterFloatAttributes{}.withLabel("%")));
+
+    juce::NormalisableRange<float> splitRange{5.0f, 500.0f, 1.0f};
+    splitRange.setSkewForCentre(80.0f);
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kPunchTailSplit), "Punch Tail Split", splitRange, 80.0f,
+        juce::AudioParameterFloatAttributes{}.withLabel("ms")));
+}
+
 void addOscillatorParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout, int index)
 {
     namespace Osc = ParameterIds::Oscillator;
@@ -98,6 +130,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
     addGlobalParameters(layout);
+    addEnvelopeParameters(layout);
     for (int index = 0; index < dsp::kNumOscillators; ++index)
         addOscillatorParameters(layout, index);
 
