@@ -16,6 +16,10 @@ Every feature follows the same order:
 
 A pull request that adds behaviour without updating the relevant docs is not mergeable.
 
+### Starting a phase in a new session
+
+Each phase is self-contained, so it can be picked up by a fresh agent session (for example a Claude Code session on claude.ai/code) with no prior context: read `CLAUDE.md`, then this plan, then `docs/ARCHITECTURE.md`, `docs/MVP_SCOPE.md` and `docs/UI_LAYOUT.md`, and work through the first unchecked phase. Its "Done when" list is the acceptance criteria. Sound and behaviour questions go to the product owner before implementation.
+
 ## Phase 0: Foundation (documentation and repository)
 
 - [x] Initial brief and product decisions
@@ -46,6 +50,15 @@ Goal: a MIDI note plays a pitched kick from a built-in sine table.
 - [ ] Fixed amp and pitch envelopes (hard-coded default shapes)
 - [ ] Output gain + safety limiter
 - [ ] Parameters wired through APVTS; basic generic UI
+
+Done when:
+
+- A MIDI note in the Standalone and in a DAW plays a kick: sine oscillator, fast pitch drop from about +48 semitones down to the note's pitch, amplitude decay. No clicks on retrigger.
+- With key track on, the tail follows the MIDI note; with it off, it stays at a fixed root.
+- Glide, when enabled, slides the tail pitch between consecutive notes.
+- Output never exceeds 0 dBFS with the safety limiter on.
+- New DSP has Catch2 tests (pitch accuracy within 1 cent at the end of the pitch drop, finite output, deterministic reset); CI is green on all three platforms; pluginval passes.
+- Both specs are in `docs/specs/`, and `CHANGELOG.md`, `docs/USER_GUIDE.md` and this plan are updated.
 
 ## Phase 3: Envelopes
 
