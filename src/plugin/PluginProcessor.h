@@ -5,6 +5,7 @@
 #include "core/EngineParameterReader.h"
 #include "core/EnvelopeState.h"
 #include "core/FxOrderState.h"
+#include "core/ProjectState.h"
 #include "core/TempoState.h"
 #include "core/TockSelector.h"
 #include "core/WavetableLoader.h"
@@ -88,6 +89,8 @@ class PluginProcessor : public juce::AudioProcessor,
     core::WavetableSelector wavetable1{state, 0};
     core::WavetableSelector wavetable2{state, 1};
     core::TockSelector tockSelector{state};
+    // Everything that is saved with the project, gathered (docs/specs/project-state.md).
+    core::ProjectState project;
 
     juce::String lastWavetableMessage;
     juce::ChangeBroadcaster wavetableBroadcaster;

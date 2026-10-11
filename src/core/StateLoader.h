@@ -25,6 +25,10 @@ StateLoadResult loadState(juce::AudioProcessorValueTreeState& state, juce::Value
 // The two layers of loadState, exposed for tests: cleans the PARAM entries of a saved tree, and
 // resets any live parameter whose value is not finite or not within its range.
 void sanitizeSavedParameters(juce::ValueTree& saved, const juce::AudioProcessorValueTreeState& state);
+
+// Adds an entry with the default value for every parameter the saved tree does not mention, so a
+// saved state always describes everything. Applied after sanitizeSavedParameters.
+void addMissingParameters(juce::ValueTree& saved, const juce::AudioProcessorValueTreeState& state);
 void sanitizeLiveParameters(juce::AudioProcessorValueTreeState& state);
 
 } // namespace fcm::core

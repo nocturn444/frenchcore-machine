@@ -22,7 +22,9 @@ const juce::Identifier kStateVersionProperty{"stateVersion"};
 
 PluginProcessor::PluginProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-      state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state)
+      state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state),
+      project(core::ProjectState::Parts{
+          state, kStateType, ampEnvelope, pitchEnvelope, fxOrder, {&wavetable1, &wavetable2}, tockSelector})
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
     state.addParameterListener(core::ParameterIds::kQuality, this);
@@ -162,74 +164,19 @@ juce::AudioProcessorEditor* PluginProcessor::createEditor()
 
 void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    // The version is always written, whatever the tree held before (docs/specs/state-safe-loading.md).
-    auto tree = state.copyState();
-    tree.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
-
-    // The envelope shapes are state that is not a parameter: they travel as child nodes.
-    for (auto* envelope : {&ampEnvelope, &pitchEnvelope})
-    {
-        tree.removeChild(tree.getChildWithName(core::EnvelopeState::nodeType(envelope->kind())), nullptr);
-        tree.appendChild(envelope->toValueTree(), nullptr);
-    }
-
-    // User wavetables travel as child nodes too, embedded so the project does not need the files.
-    for (int i = 0; i < dsp::kNumOscillators; ++i)
-    {
-        auto node = selectorFor(i).toValueTree();
-        if (node.isValid())
-        {
-            tree.removeChild(tree.getChildWithName(node.getType()), nullptr);
-            tree.appendChild(node, nullptr);
-        }
-    }
-
-    tree.removeChild(tree.getChildWithName(core::FxOrderState::nodeType()), nullptr);
-    tree.appendChild(fxOrder.toValueTree(), nullptr);
-
-    {
-        auto node = tockSelector.toValueTree();
-        if (node.isValid())
-        {
-            tree.removeChild(tree.getChildWithName(node.getType()), nullptr);
-            tree.appendChild(node, nullptr);
-        }
-    }
-
-    if (auto xml = tree.createXml())
+    if (auto xml = project.toXml())
         copyXmlToBinary(*xml, destData);
 }
 
 void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     // The host's bytes are not trusted: too big or not our state means nothing changes, and
-    // everything else goes through the checks of core::loadState.
+    // everything else goes through the checks of core::ProjectState.
     if (data == nullptr || sizeInBytes <= 0 || sizeInBytes > core::kMaxStateBytes)
         return;
 
-    if (auto xml = getXmlFromBinary(data, sizeInBytes); xml != nullptr && xml->hasTagName(kStateType))
-    {
-        const auto tree = juce::ValueTree::fromXml(*xml);
-        if (core::loadState(state, tree, kStateType) == core::StateLoadResult::rejected)
-            return;
-
-        // A missing or damaged node gives the default shape instead of failing the whole load.
-        ampEnvelope.restoreFrom(tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::amp)));
-        pitchEnvelope.restoreFrom(
-            tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
-
-        fxOrder.restoreFrom(tree.getChildWithName(core::FxOrderState::nodeType()));
-        tockSelector.restoreFrom(tree.getChildWithName("UserTockSample"));
-        tockSelector.update();
-
-        // User wavetables first, then the table of each current Wavetable value (the new parameter
-        // values schedule that too; doing it now makes the load complete at once).
-        for (int i = 0; i < dsp::kNumOscillators; ++i)
-        {
-            selectorFor(i).restoreFrom(tree.getChildWithName("UserWavetable" + juce::String(i + 1)));
-            selectorFor(i).update();
-        }
-    }
+    if (auto xml = getXmlFromBinary(data, sizeInBytes))
+        project.restoreFromXml(*xml);
 }
 
 void PluginProcessor::loadUserWavetable(int oscillator, const juce::File& file)

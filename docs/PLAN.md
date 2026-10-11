@@ -91,8 +91,8 @@ Done when:
 
 ## Phase 6: State and presets
 
-- [ ] Full state save/load including non-parameter state
-- [ ] State versioning and migration framework (hook, safe loading and untrusted-input rules already in place: [spec](specs/state-safe-loading.md); migrations are added here when the state format changes)
+- [x] Full state save/load including non-parameter state ([spec](specs/project-state.md))
+- [x] State versioning and migration framework (hook, safe loading and untrusted-input rules: [spec](specs/state-safe-loading.md); migrations are added when the state format changes)
 - [ ] Preset format, factory presets, user preset save/load, browser
 - [ ] Round-trip tests for state and presets
 

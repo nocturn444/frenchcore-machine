@@ -7,6 +7,7 @@
 #include <cmath>
 #include <map>
 #include <optional>
+#include <set>
 
 namespace fcm::core
 {
@@ -129,6 +130,27 @@ void sanitizeSavedParameters(juce::ValueTree& saved, const juce::AudioProcessorV
     }
 }
 
+void addMissingParameters(juce::ValueTree& saved, const juce::AudioProcessorValueTreeState& state)
+{
+    std::set<juce::String> present;
+    for (int i = 0; i < saved.getNumChildren(); ++i)
+        if (const auto child = saved.getChild(i); child.getType() == kParamType)
+            present.insert(child[kIdProperty].toString());
+
+    // A saved state describes everything: a control it does not mention takes its default value
+    // instead of keeping what it had (docs/specs/project-state.md).
+    for (const auto& [id, parameter] : parametersById(state))
+    {
+        if (present.count(id) > 0)
+            continue;
+
+        juce::ValueTree entry(kParamType);
+        entry.setProperty(kIdProperty, id, nullptr);
+        entry.setProperty(kValueProperty, defaultValue(*parameter), nullptr);
+        saved.appendChild(entry, nullptr);
+    }
+}
+
 void sanitizeLiveParameters(juce::AudioProcessorValueTreeState& state)
 {
     for (auto* parameter : state.processor.getParameters())
@@ -153,6 +175,7 @@ StateLoadResult loadState(juce::AudioProcessorValueTreeState& state, juce::Value
         return StateLoadResult::rejected; // a missing migration step: do not guess
 
     sanitizeSavedParameters(saved, state);
+    addMissingParameters(saved, state);
     state.replaceState(saved);
     state.state.setProperty(kStateVersionProperty, kStateVersion, nullptr);
     sanitizeLiveParameters(state);

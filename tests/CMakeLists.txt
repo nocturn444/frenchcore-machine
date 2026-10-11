@@ -43,6 +43,7 @@ target_sources(fcm_core_tests PRIVATE
     core/EnvelopeStateTests.cpp
     core/FxCoreTests.cpp
     core/ParameterTests.cpp
+    core/ProjectStateTests.cpp
     core/TempoStateTests.cpp
     core/BoundedMidiCopyTests.cpp
     core/StateLoaderTests.cpp
