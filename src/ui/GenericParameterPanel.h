@@ -27,12 +27,16 @@ class GenericParameterPanel : public juce::Component
         std::unique_ptr<juce::Label> label;
         std::unique_ptr<juce::Slider> slider;
         std::unique_ptr<juce::ToggleButton> toggle;
+        std::unique_ptr<juce::ComboBox> combo;
+        std::unique_ptr<juce::ComboBoxParameterAttachment> comboAttachment;
         std::unique_ptr<juce::SliderParameterAttachment> sliderAttachment;
         std::unique_ptr<juce::ButtonParameterAttachment> buttonAttachment;
 
         juce::Component& control()
         {
-            return slider != nullptr ? static_cast<juce::Component&>(*slider) : *toggle;
+            if (slider != nullptr)
+                return *slider;
+            return combo != nullptr ? static_cast<juce::Component&>(*combo) : *toggle;
         }
     };
 

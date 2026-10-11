@@ -27,6 +27,7 @@ float totalSemitones(const OscillatorParameters& osc) noexcept
 void Voice::prepare(double newSampleRate, const WavetableData* wavetable)
 {
     sampleRate = newSampleRate;
+    fallbackTable = wavetable;
 
     defaultAmpShape = BreakpointEnvelope(EnvelopeKind::amp).toShape();
     defaultPitchShape = BreakpointEnvelope(EnvelopeKind::pitch).toShape();
@@ -109,6 +110,17 @@ void Voice::setShapes(const EnvelopeShape* ampShape, const EnvelopeShape* pitchS
     {
         ghost.core.amp.setShape(amp);
         ghost.core.pitch.setShape(pitch);
+    }
+}
+
+void Voice::setWavetables(const std::array<const WavetableData*, kNumOscillators>& tables) noexcept
+{
+    for (size_t i = 0; i < kNumOscillators; ++i)
+    {
+        const WavetableData* table = tables[i] != nullptr ? tables[i] : fallbackTable;
+        core.oscillators[i].setWavetable(table);
+        for (auto& ghost : ghosts)
+            ghost.core.oscillators[i].setWavetable(table);
     }
 }
 

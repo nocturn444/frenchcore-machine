@@ -154,6 +154,12 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
     voice.setShapes(ampSource != nullptr ? ampSource->acquire() : nullptr,
                     pitchSource != nullptr ? pitchSource->acquire() : nullptr);
 
+    // Likewise the wavetables.
+    std::array<const WavetableData*, kNumOscillators> tables{};
+    for (size_t i = 0; i < kNumOscillators; ++i)
+        tables[i] = wavetableSources[i] != nullptr ? wavetableSources[i]->acquire() : nullptr;
+    voice.setWavetables(tables);
+
     // The voice is mono: render into the first channel and copy it to the others.
     float* output = buffer.getWritePointer(0);
 

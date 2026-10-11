@@ -5,6 +5,7 @@
 #include "core/EngineParameterReader.h"
 #include "core/EnvelopeState.h"
 #include "core/TempoState.h"
+#include "core/WavetableSelector.h"
 #include "dsp/engine/AuditionSequencer.h"
 #include "dsp/engine/Engine.h"
 
@@ -63,6 +64,9 @@ class PluginProcessor : public juce::AudioProcessor
     core::TempoState tempoState;
     core::EnvelopeState ampEnvelope{dsp::EnvelopeKind::amp};
     core::EnvelopeState pitchEnvelope{dsp::EnvelopeKind::pitch};
+    // After `state`: they listen to its parameters and must go first on destruction.
+    core::WavetableSelector wavetable1{state, 0};
+    core::WavetableSelector wavetable2{state, 1};
     dsp::Engine engine;
 
     // Standalone only. The host's MIDI is copied here together with the audition events; the

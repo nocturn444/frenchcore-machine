@@ -111,7 +111,7 @@ Details and tests in [voice-note-handling](specs/voice-note-handling.md).
 ### 4.2 Wavetable oscillators
 
 - Two identical oscillators (`osc1`, `osc2`). They are two instances of the same `WavetableOscillator` class with parameter IDs prefixed by the oscillator ID, so the count is a constant, not duplicated code.
-- Each oscillator has: On, Level, Pitch (semitones), Octave, Fine tune (cents), Position, Phase (start phase at every note) and its own wavetable. Ranges and defaults in [oscillator-wavetable](specs/oscillator-wavetable.md). Both follow the same pitch envelope and note pitch.
+- Each oscillator has: On, Wavetable (a choice; nine factory tables, [wavetable-factory](specs/wavetable-factory.md), [ADR 0008](decisions/0008-wavetable-selection-and-publishing.md)), Level, Pitch (semitones), Octave, Fine tune (cents), Position, Phase (start phase at every note) and its own wavetable. Ranges and defaults in [oscillator-wavetable](specs/oscillator-wavetable.md). Both follow the same pitch envelope and note pitch.
 - A wavetable is a sequence of frames of 2048 samples each (Serum/Vital-compatible WAV). Up to 256 frames.
 - `Position` selects/interpolates between frames.
 - Anti-aliasing: on load, each frame is converted to a set of band-limited mipmaps (one per octave, built with FFT by zeroing harmonics above Nyquist). Playback picks the mipmap for the current frequency and interpolates linearly between samples and between adjacent frames.

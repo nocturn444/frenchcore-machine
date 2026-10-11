@@ -7,5 +7,6 @@ target_sources(fcm_core INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/ParameterLayout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/StateLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/StateMigrations.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/WavetableSelector.cpp
 )
 target_link_libraries(fcm_core INTERFACE fcm_dsp)

@@ -39,6 +39,7 @@ inline constexpr std::array<const char*, 2> kOscillatorPrefixes{"osc1", "osc2"};
 namespace Oscillator
 {
 inline constexpr const char* kOn = "on";
+inline constexpr const char* kWavetable = "wavetable";
 inline constexpr const char* kLevel = "level";
 inline constexpr const char* kPitch = "pitch";
 inline constexpr const char* kOctave = "octave";

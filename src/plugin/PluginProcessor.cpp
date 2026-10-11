@@ -25,6 +25,7 @@ PluginProcessor::PluginProcessor()
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
     engine.setEnvelopeSources(&ampEnvelope.source(), &pitchEnvelope.source());
+    engine.setWavetableSources(&wavetable1.source(), &wavetable2.source());
 }
 
 double PluginProcessor::getTailLengthSeconds() const
@@ -167,6 +168,10 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
         ampEnvelope.restoreFrom(tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::amp)));
         pitchEnvelope.restoreFrom(
             tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
+
+        // The new parameter values schedule this too; doing it now makes the load complete at once.
+        wavetable1.update();
+        wavetable2.update();
     }
 }
 

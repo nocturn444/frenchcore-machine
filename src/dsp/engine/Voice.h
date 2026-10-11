@@ -39,6 +39,12 @@ class Voice
     // default shape. The shapes must outlive the block.
     void setShapes(const EnvelopeShape* ampShape, const EnvelopeShape* pitchShape) noexcept;
 
+    // Called once per block with the wavetable each oscillator reads this block (nullptr means the
+    // table given to prepare()). The tables must outlive the block. Fading copies of the previous
+    // kick are updated too, so none of them keeps a table older than the one acquired this block
+    // (docs/decisions/0008-wavetable-selection-and-publishing.md).
+    void setWavetables(const std::array<const WavetableData*, kNumOscillators>& tables) noexcept;
+
     // Starts a kick. `velocityGain` is the final level factor (already scaled by sensitivity).
     void trigger(float velocityGain) noexcept;
 
@@ -87,6 +93,7 @@ class Voice
     float ghostStep = 0.0f;
 
     double sampleRate = 44100.0;
+    const WavetableData* fallbackTable = nullptr; // what prepare() was given
     std::array<float, kNumOscillators> startPhases{};
     std::array<juce::SmoothedValue<float>, kNumOscillators> levels;
     std::array<juce::SmoothedValue<float>, kNumOscillators> semitones;

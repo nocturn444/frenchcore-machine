@@ -61,7 +61,15 @@ void GenericParameterPanel::addRow(Group& group, juce::RangedAudioParameter& par
     row.label->setMinimumHorizontalScale(0.7f);
     addAndMakeVisible(*row.label);
 
-    if (parameter.isBoolean())
+    if (auto* choice = dynamic_cast<juce::AudioParameterChoice*>(&parameter))
+    {
+        row.combo = std::make_unique<juce::ComboBox>();
+        row.combo->setTitle(parameter.getName(64));
+        row.combo->addItemList(choice->choices, 1);
+        row.comboAttachment = std::make_unique<juce::ComboBoxParameterAttachment>(parameter, *row.combo);
+        addAndMakeVisible(*row.combo);
+    }
+    else if (parameter.isBoolean())
     {
         row.toggle = std::make_unique<juce::ToggleButton>();
         row.toggle->setTitle(parameter.getName(64));

@@ -3,6 +3,7 @@
 
 #include "core/ParameterIds.h"
 #include "dsp/engine/EngineParameters.h"
+#include "dsp/oscillator/FactoryWavetables.h"
 
 namespace fcm::core
 {
@@ -111,6 +112,12 @@ void addOscillatorParameters(juce::AudioProcessorValueTreeState::ParameterLayout
 
     layout.add(std::make_unique<juce::AudioParameterBool>(id(ParameterIds::oscillator(index, Osc::kOn)),
                                                           name + "On", defaultOn));
+    // The choice list is append-only: the saved value is the entry number (docs/specs/wavetable-factory.md).
+    juce::StringArray wavetableNames;
+    for (int i = 0; i < dsp::FactoryWavetables::count(); ++i)
+        wavetableNames.add(dsp::FactoryWavetables::name(i));
+    layout.add(std::make_unique<juce::AudioParameterChoice>(
+        id(ParameterIds::oscillator(index, Osc::kWavetable)), name + "Wavetable", wavetableNames, 0));
     layout.add(std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::oscillator(index, Osc::kLevel)),
                                                            name + "Level",
                                                            juce::NormalisableRange<float>{0.0f, 1.0f}, 1.0f));

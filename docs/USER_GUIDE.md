@@ -11,7 +11,7 @@ _Filled in with the first release._
 _The full quick start is written when the MVP features land. What works today:_
 
 1. Load Frenchcore Machine as an instrument on a MIDI track, or open the Standalone app and use its on-screen keyboard (see [Standalone](#standalone-playing-without-a-daw)).
-2. Play a MIDI note. You hear a kick: a pure sine that starts four octaves higher and falls to the pitch of your note in a fraction of a second, with a punch and a bass body that you can reshape in the envelopes. That fast fall is what gives the kick its punch.
+2. Play a MIDI note. You hear a kick: a sine (or the wavetable you choose) that starts four octaves higher and falls to the pitch of your note in a fraction of a second, with a punch and a bass body that you can reshape in the envelopes. That fast fall is what gives the kick its punch.
 3. Play a lower or higher note to retune the kick, or turn **Key Track** off to make every note play the same pitch (the **Root Note**).
 4. Make the note longer or shorter in the piano roll to control how long the tail rings.
 
@@ -33,12 +33,27 @@ There are two identical oscillators, **Osc 1** and **Osc 2**. Osc 1 is on and Os
 | Control | What it does |
 |---|---|
 | **On** | Switches the oscillator on or off, without clicks. |
+| **Wavetable** | Chooses the waveform family this oscillator plays, from the nine built-in ones (list below). |
 | **Level** | How loud this oscillator is. |
 | **Pitch**, **Octave**, **Fine** | Tune this oscillator against the kick's pitch, in semitones, octaves and cents (hundredths of a semitone). For example, set Osc 2 to Octave +1 to add a layer one octave up. |
-| **Position** | Chooses the waveform inside the wavetable. The built-in sine has only one, so it does nothing yet. |
+| **Position** | Slides through the waveforms inside the wavetable, from the first (0) to the last (1), blending smoothly. Sine and Soft Triangle have only one waveform, so Position does nothing for them. |
 | **Phase** | Where in its cycle the oscillator starts at every note. The same value every time means every kick starts exactly the same way. |
 
-The only wavetable for now is a pure sine. Factory wavetables and loading your own come in a later version.
+The built-in wavetables, in menu order:
+
+| Wavetable | Character |
+|---|---|
+| **Sine** | The clean sine. The default. |
+| **Soft Triangle** | A little brighter than a sine, still round. |
+| **Warm Drive** | Sine towards a softly saturated sine as Position goes up. |
+| **Hard Clip** | Sine towards a hard-clipped wave, close to a square. |
+| **Wave Fold** | The sine folds back on itself more and more. |
+| **Odd Stack** | Sine towards a square-like wave by adding odd harmonics. |
+| **Saw Rise** | Sine towards a saw-like wave by adding all harmonics. |
+| **Hardcore Punch** | An asymmetric, heavily driven sine: the aggressive bite. |
+| **Rumble Core** | A biased, overdriven sine with a lot of even harmonics, for gritty body. |
+
+Harder waves carry more energy than the sine at the same Level, so they sound louder: lower **Level** if needed. Changing the Wavetable while a kick is sounding changes the sound from the next moment on and can click, so set it up before you play. Loading your own wavetable comes in a later version.
 
 ## Tock
 

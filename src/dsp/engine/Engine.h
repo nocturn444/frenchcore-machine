@@ -9,6 +9,7 @@
 #include "dsp/envelope/PublishedPointer.h"
 #include "dsp/oscillator/WavetableData.h"
 
+#include <array>
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
 #include <memory>
@@ -36,6 +37,15 @@ class Engine
     {
         ampSource = amp;
         pitchSource = pitch;
+    }
+
+    // Where each oscillator's wavetable comes from (ADR 0008). Call before playback; the publishers
+    // must outlive the engine. Without them, or before the first publish, an oscillator plays the
+    // built-in sine.
+    void setWavetableSources(PublishedPointer<WavetableData>* osc1,
+                             PublishedPointer<WavetableData>* osc2) noexcept
+    {
+        wavetableSources = {osc1, osc2};
     }
 
     // Real-time safe. Call once per block, before process().
@@ -66,6 +76,7 @@ class Engine
     Voice voice;
     PublishedPointer<EnvelopeShape>* ampSource = nullptr;
     PublishedPointer<EnvelopeShape>* pitchSource = nullptr;
+    std::array<PublishedPointer<WavetableData>*, kNumOscillators> wavetableSources{};
     int lastNote = -1; // the note the settling pitch follows when Key Track is on
     juce::SmoothedValue<float> outputGain{1.0f};
 };
