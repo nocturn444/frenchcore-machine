@@ -15,12 +15,13 @@ Run in at least Ableton Live, FL Studio and Reaper, on Windows and macOS where a
 - [ ] Glide on/off behaves as specified.
 - [ ] Load a factory wavetable and a user wavetable; position sweeps without clicks.
 - [ ] Edit both envelopes (drag points, add and delete extra points, bend segments, turn the knobs, load each shape); changes are heard immediately without clicks or dropouts, and the knobs and the display always agree.
-- [ ] Punch/Tail balance and split: the dashed marker follows Split, and moving the controls while a kick plays does not click.
+- [ ] Punch/Tail split and levels: the dashed marker follows Split, and moving the controls while a kick plays does not click.
 - [ ] Every distortion type at extreme settings; no NaN, no crash, safety limiter catches peaks.
 - [ ] Reorder the FX chain while audio plays; no dropouts.
 - [ ] Automate a parameter of each effect, reorder the chain, automation still controls the same effect.
 - [ ] Save the project, close the DAW, reopen: sound is identical, including the user wavetable and FX order.
 - [ ] Save, load and browse presets.
-- [ ] Resize the editor to minimum and maximum sizes.
+- [ ] Resize the editor to minimum and maximum sizes: everything scales together, nothing is cut or overlaps, and the window keeps its shape.
+- [ ] EQ display: drag each dot, turn the wheel over one for Q, double-click one to switch the band; the curve and the knobs below follow, and the sound follows too.
 - [ ] Sample rates 44.1, 48, 96 kHz; buffer sizes 32 to 2048.
 - [ ] CPU usage reasonable with one instance at max oversampling.

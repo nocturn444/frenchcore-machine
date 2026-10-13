@@ -1,0 +1,101 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#pragma once
+
+#include <array>
+#include <juce_audio_basics/juce_audio_basics.h>
+#include <span>
+#include <string_view>
+
+namespace fcm::dsp
+{
+
+inline constexpr int kMaxEffects = 16;
+inline constexpr int kMaxEffectParameters = 24;
+
+// How an effect describes one of its parameters, as plain data (docs/decisions/0009). fcm_core turns
+// the specs of all registered effects into APVTS parameters; fcm_dsp never includes APVTS.
+enum class ParameterKind
+{
+    toggle,  // off / on, value 0 or 1
+    choice,  // one of `choices`, value is the entry number
+    integer, // a whole number from minimum to maximum
+    number   // a float from minimum to maximum
+};
+
+struct ParameterSpec
+{
+    std::string_view idSuffix; // the full ID is "<effect id>.<idSuffix>"
+    std::string_view name;
+    ParameterKind kind = ParameterKind::number;
+    float minimum = 0.0f;
+    float maximum = 1.0f;
+    float step = 0.0f; // 0: continuous
+    float defaultValue = 0.0f;
+    float skewCentre = 0.0f; // 0: linear; otherwise the value that sits at the middle of the control
+    std::string_view unit;   // "dB", "ms", ...
+    std::span<const std::string_view> choices; // for ParameterKind::choice
+};
+
+// Stable identity of an effect. `id` never changes after release; `version` bumps when its parameters
+// change, with a state migration.
+struct EffectDescriptor
+{
+    std::string_view id; // lowercase, no spaces: "distortion", "eq", "stereo"
+    std::string_view displayName;
+    int version = 1;
+};
+
+// What the engine hands the chain once per block for one effect: whether it is on, its dry/wet mix
+// and the values of its own parameters in the order of Effect::parameters().
+struct EffectSlotParameters
+{
+    bool enabled = false;
+    float mix = 1.0f; // 0..1
+    std::array<float, kMaxEffectParameters> values{};
+};
+
+struct EffectSpec
+{
+    double sampleRate = 44100.0;
+    int maxBlockSize = 512;
+    int numChannels = 2;
+};
+
+// An audio effect in the FX chain (docs/specs/fx-chain.md). All allocation happens in prepare();
+// reset(), setParameters() and process() are real-time safe. An effect does not know its position
+// in the chain and never looks at other effects.
+class Effect
+{
+  public:
+    virtual ~Effect() = default;
+
+    virtual const EffectDescriptor& descriptor() const = 0;
+
+    // The effect's own parameters. The array, and every string in it, must be static data of the
+    // effect type: the registry keeps views of it after the instance it asked is gone.
+    virtual std::span<const ParameterSpec> parameters() const = 0;
+
+    virtual void prepare(const EffectSpec& spec) = 0;
+    virtual void reset() noexcept = 0;
+
+    // Once per block, before process(). `values` has one entry per parameter, in the order of
+    // parameters(), in the units of the spec (a choice is its entry number, a toggle 0 or 1).
+    virtual void setParameters(std::span<const float> values) noexcept = 0;
+
+    // The oversampling factor (1, 2, 4 or 8) of the global Quality setting, before process() whenever
+    // it changes and once after prepare(). Effects that do not oversample ignore it.
+    virtual void setOversampling(int factor) noexcept { juce::ignoreUnused(factor); }
+
+    // Processes the block in place (1 or 2 channels).
+    virtual void process(juce::AudioBuffer<float>& buffer) noexcept = 0;
+
+    // Delay of the wet signal in samples at the given oversampling factor (1, 2, 4 or 8). Constant
+    // for a given factor, whether the effect is on or not (docs/decisions/0009).
+    virtual int latencySamples(int oversamplingFactor) const noexcept
+    {
+        juce::ignoreUnused(oversamplingFactor);
+        return 0;
+    }
+};
+
+} // namespace fcm::dsp

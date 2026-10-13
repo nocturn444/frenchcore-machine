@@ -173,7 +173,7 @@ TEST_CASE("The engine plays a note with garbage oscillator settings", "[dsp][osc
         parameters.glideOn = true;
         parameters.outputGain = 1.0f;
 
-        fcm::dsp::Engine engine;
+        fcm::dsp::Engine engine{fcm::test::noEffects()};
         engine.setParameters(parameters);
         engine.prepare({48000.0, 512, 2});
 

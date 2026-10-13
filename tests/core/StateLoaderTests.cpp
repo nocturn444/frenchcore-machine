@@ -102,6 +102,16 @@ const std::vector<std::string> kNotNumbers{"nan",       "NaN",   "-nan",   "inf"
                                            "0x10",      "1,5",   "--1",    "1e",  "."};
 } // namespace
 
+namespace
+{
+// Values go through a 0..1 normalisation and back, so a parameter with a wide range (20000 Hz) is only
+// exact to about a millionth of its size.
+double nearTolerance(double value)
+{
+    return std::max(1.0e-4, std::abs(value) * 1.0e-6);
+}
+} // namespace
+
 TEST_CASE("A value that is not a finite number loads as the parameter's default", "[core][state][security]")
 {
     juce::ScopedJuceInitialiser_GUI juceInitialiser;
@@ -120,7 +130,8 @@ TEST_CASE("A value that is not a finite number loads as the parameter's default"
         for (auto* parameter : allParameters(processor))
         {
             INFO(parameter->paramID);
-            REQUIRE_THAT(liveValue(processor, parameter->paramID), WithinAbs(defaultOf(*parameter), 1.0e-4));
+            REQUIRE_THAT(liveValue(processor, parameter->paramID),
+                         WithinAbs(defaultOf(*parameter), nearTolerance(defaultOf(*parameter))));
         }
         requireNoteIsSafe(processor);
     }
@@ -141,7 +152,8 @@ TEST_CASE("The parameters the audit names survive nan, inf and -inf one at a tim
             INFO(id << " = " << bad);
             auto* parameter = dynamic_cast<juce::RangedAudioParameter*>(processor.state.getParameter(id));
             REQUIRE(parameter != nullptr);
-            REQUIRE_THAT(liveValue(processor, id), WithinAbs(defaultOf(*parameter), 1.0e-4));
+            REQUIRE_THAT(liveValue(processor, id),
+                         WithinAbs(defaultOf(*parameter), nearTolerance(defaultOf(*parameter))));
             requireNoteIsSafe(processor);
         }
 }

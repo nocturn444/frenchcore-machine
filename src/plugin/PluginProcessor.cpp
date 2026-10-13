@@ -6,6 +6,7 @@
 #include "core/ParameterLayout.h"
 #include "core/StateLoader.h"
 #include "core/TailLength.h"
+#include "dsp/fx/EffectRegistry.h"
 #include "plugin/PluginEditor.h"
 
 #include <cmath>
@@ -21,10 +22,16 @@ const juce::Identifier kStateVersionProperty{"stateVersion"};
 
 PluginProcessor::PluginProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-      state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state)
+      state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state),
+      project(core::ProjectState::Parts{
+          state, kStateType, ampEnvelope, pitchEnvelope, fxOrder, {&wavetable1, &wavetable2}, tockSelector}),
+      presetManager(project, core::PresetLibrary(core::PresetLibrary::defaultFolder()), kStateType)
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
+    state.addParameterListener(core::ParameterIds::kQuality, this);
     engine.setEnvelopeSources(&ampEnvelope.source(), &pitchEnvelope.source());
+    engine.setWavetableSources(&wavetable1.source(), &wavetable2.source());
+    engine.setTockSource(&tockSelector.source());
 }
 
 double PluginProcessor::getTailLengthSeconds() const
@@ -40,12 +47,35 @@ void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     engine.setParameters(readEngineParameters());
     engine.prepare({sampleRate, static_cast<juce::uint32>(samplesPerBlock),
                     static_cast<juce::uint32>(getTotalNumOutputChannels())});
+    reportLatency();
 
     if (isStandalone())
     {
         auditionSequencer.prepare(sampleRate);
         auditionMidi.ensureSize(core::kAuditionMidiBytes);
     }
+}
+
+PluginProcessor::~PluginProcessor()
+{
+    state.removeParameterListener(core::ParameterIds::kQuality, this);
+    cancelPendingUpdate();
+}
+
+void PluginProcessor::parameterChanged(const juce::String&, float)
+{
+    triggerAsyncUpdate();
+}
+
+void PluginProcessor::handleAsyncUpdate()
+{
+    reportLatency();
+}
+
+void PluginProcessor::reportLatency()
+{
+    // The latency of the chain depends only on Quality, never on what is switched on.
+    setLatencySamples(engine.latencySamples(parameterReader.read().oversamplingFactor));
 }
 
 void PluginProcessor::releaseResources() {}
@@ -135,39 +165,71 @@ juce::AudioProcessorEditor* PluginProcessor::createEditor()
 
 void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    // The version is always written, whatever the tree held before (docs/specs/state-safe-loading.md).
-    auto tree = state.copyState();
-    tree.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
-
-    // The envelope shapes are state that is not a parameter: they travel as child nodes.
-    for (auto* envelope : {&ampEnvelope, &pitchEnvelope})
-    {
-        tree.removeChild(tree.getChildWithName(core::EnvelopeState::nodeType(envelope->kind())), nullptr);
-        tree.appendChild(envelope->toValueTree(), nullptr);
-    }
-
-    if (auto xml = tree.createXml())
+    if (auto xml = project.toXml())
         copyXmlToBinary(*xml, destData);
 }
 
 void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     // The host's bytes are not trusted: too big or not our state means nothing changes, and
-    // everything else goes through the checks of core::loadState.
+    // everything else goes through the checks of core::ProjectState.
     if (data == nullptr || sizeInBytes <= 0 || sizeInBytes > core::kMaxStateBytes)
         return;
 
-    if (auto xml = getXmlFromBinary(data, sizeInBytes); xml != nullptr && xml->hasTagName(kStateType))
-    {
-        const auto tree = juce::ValueTree::fromXml(*xml);
-        if (core::loadState(state, tree, kStateType) == core::StateLoadResult::rejected)
-            return;
+    if (auto xml = getXmlFromBinary(data, sizeInBytes))
+        project.restoreFromXml(*xml);
+}
 
-        // A missing or damaged node gives the default shape instead of failing the whole load.
-        ampEnvelope.restoreFrom(tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::amp)));
-        pitchEnvelope.restoreFrom(
-            tree.getChildWithName(core::EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
-    }
+void PluginProcessor::loadUserWavetable(int oscillator, const juce::File& file)
+{
+    if (oscillator < 0 || oscillator >= dsp::kNumOscillators)
+        return;
+
+    wavetableLoader.load(
+        file,
+        [this, oscillator](core::WavetableImportResult result, juce::String name)
+        {
+            const juce::String label = "Osc " + juce::String(oscillator + 1) + ": ";
+            if (!result.ok() || !selectorFor(oscillator).loadUser(std::move(result.frames), name))
+            {
+                lastWavetableMessage =
+                    label + (result.error.isNotEmpty() ? result.error : "The file is not usable");
+            }
+            else
+            {
+                auto* parameter = state.getParameter(
+                    core::ParameterIds::oscillator(oscillator, core::ParameterIds::Oscillator::kWavetable));
+                parameter->setValueNotifyingHost(
+                    parameter->convertTo0to1(static_cast<float>(core::WavetableSelector::userEntry())));
+                selectorFor(oscillator).update();
+                lastWavetableMessage = label + "loaded " + selectorFor(oscillator).userName();
+            }
+            wavetableBroadcaster.sendChangeMessage();
+        });
+}
+
+void PluginProcessor::loadUserTockSample(const juce::File& file)
+{
+    wavetableLoader.loadTock(
+        file,
+        [this](core::TockImportResult result, juce::String name)
+        {
+            const juce::String label = "Tock: ";
+            if (!result.ok() || !tockSelector.loadUser(std::move(result.sample), name))
+            {
+                lastWavetableMessage =
+                    label + (result.error.isNotEmpty() ? result.error : "The file is not usable");
+            }
+            else
+            {
+                auto* parameter = state.getParameter(core::ParameterIds::kTockSample);
+                parameter->setValueNotifyingHost(
+                    parameter->convertTo0to1(static_cast<float>(core::TockSelector::userEntry())));
+                tockSelector.update();
+                lastWavetableMessage = label + "loaded " + tockSelector.userName();
+            }
+            wavetableBroadcaster.sendChangeMessage();
+        });
 }
 
 } // namespace fcm

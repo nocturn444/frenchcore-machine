@@ -69,36 +69,36 @@ Done when:
 - [x] Envelope editor component (add/move/delete points, curvature)
 - [x] Shape presets including the default "Kick + Bass"
 - [x] AHDSR / pitch knobs bound to the main envelope points
-- [x] Punch/Tail balance with split time, with tests
+- [x] Punch/Tail split and levels, with tests (the Balance knob was removed on 2026-10-13)
 
 ## Phase 4: Wavetables
 
-- [ ] Factory wavetable set designed with the product owner
-- [ ] User wavetable loading (background thread, validation, error messages)
-- [ ] Wavetable embedded in plugin state
-- [ ] Wavetable display with position indicator
-- [ ] Tock: synth mode and sample mode (factory and user samples)
+- [x] Factory wavetable set (nine generated tables and the Wavetable choice per oscillator, [spec](specs/wavetable-factory.md); the list was chosen by the agent and waits for the product owner's ears)
+- [x] User wavetable loading (background thread, validation, error messages; [spec](specs/wavetable-user.md))
+- [x] Wavetable embedded in plugin state
+- [x] Wavetable display with position indicator ([spec](specs/wavetable-display.md))
+- [x] Tock: synth mode and sample mode (factory and user samples, [spec](specs/tock.md))
 
 ## Phase 5: FX system
 
-- [ ] Spec + ADR: effect interface, registry, chain model (ADR 0003 already drafted)
-- [ ] `Effect` interface, `EffectRegistry`, `EffectChain` with lock-free reorder, with tests
-- [ ] Distortion (5 types, oversampling)
-- [ ] 3-band EQ
-- [ ] Multiband stereo
-- [ ] FX rack UI with drag-and-drop reordering, enable and mix per slot
-- [ ] `docs/ADDING_AN_EFFECT.md` validated by following it for one of the effects
+- [x] Spec + ADR: effect interface, registry, chain model ([spec](specs/fx-chain.md), ADR 0003 and 0009)
+- [x] `Effect` interface, `EffectRegistry`, `EffectChain` with lock-free reorder, with tests
+- [x] Distortion (5 types, oversampling; [spec](specs/fx-distortion.md))
+- [x] Parametric EQ, 4 bands ([spec](specs/fx-eq.md))
+- [x] Multiband stereo ([spec](specs/fx-stereo.md))
+- [x] FX rack UI with drag-and-drop reordering, enable and mix per slot ([spec](specs/fx-rack.md))
+- [x] `docs/ADDING_AN_EFFECT.md` validated by following it for the three effects
 
 ## Phase 6: State and presets
 
-- [ ] Full state save/load including non-parameter state
-- [ ] State versioning and migration framework (hook, safe loading and untrusted-input rules already in place: [spec](specs/state-safe-loading.md); migrations are added here when the state format changes)
-- [ ] Preset format, factory presets, user preset save/load, browser
-- [ ] Round-trip tests for state and presets
+- [x] Full state save/load including non-parameter state ([spec](specs/project-state.md))
+- [x] State versioning and migration framework (hook, safe loading and untrusted-input rules: [spec](specs/state-safe-loading.md); migrations are added when the state format changes)
+- [x] Preset format, factory presets, user preset save/load, browser ([presets](specs/presets.md), [preset-browser](specs/preset-browser.md)); the final list of factory presets is for nocturn4 to decide by ear
+- [x] Round-trip tests for state and presets
 
 ## Phase 7: MVP hardening and release
 
-- [ ] UI layout matches `UI_LAYOUT.md`
+- [x] UI layout matches `UI_LAYOUT.md` ([spec](specs/ui-grid-layout.md); pending the product owner's eyes)
 - [ ] Manual test pass in at least: Ableton Live, FL Studio, Reaper (see [TESTING.md](TESTING.md))
 - [ ] CPU profiling; no allocation on the audio thread (debug guard clean)
 - [ ] User guide complete

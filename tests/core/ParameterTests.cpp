@@ -35,14 +35,62 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
         "global.glideOn",
         "global.glideTime",
         "global.velocitySensitivity",
+        "global.quality",
         "ampEnv.timeScale",
         "pitchEnv.timeScale",
         "pitchEnv.amount",
-        "punchTail.balance",
         "punchTail.split",
         "punchTail.punchLevel",
         "punchTail.tailLevel",
+        "tock.on",
+        "tock.mode",
+        "tock.sample",
+        "tock.level",
+        "tock.tune",
+        "tock.start",
+        "tock.decay",
+        "tock.tone",
+        "distortion.enabled",
+        "distortion.mix",
+        "distortion.type",
+        "distortion.drive",
+        "distortion.pregain",
+        "distortion.postgain",
+        "distortion.tone",
+        "distortion.bits",
+        "distortion.rate",
+        "eq.enabled",
+        "eq.mix",
+        "eq.b1.on",
+        "eq.b1.type",
+        "eq.b1.freq",
+        "eq.b1.gain",
+        "eq.b1.q",
+        "eq.b2.on",
+        "eq.b2.type",
+        "eq.b2.freq",
+        "eq.b2.gain",
+        "eq.b2.q",
+        "eq.b3.on",
+        "eq.b3.type",
+        "eq.b3.freq",
+        "eq.b3.gain",
+        "eq.b3.q",
+        "eq.b4.on",
+        "eq.b4.type",
+        "eq.b4.freq",
+        "eq.b4.gain",
+        "eq.b4.q",
+        "stereo.enabled",
+        "stereo.mix",
+        "stereo.xover1",
+        "stereo.xover2",
+        "stereo.lowwidth",
+        "stereo.midwidth",
+        "stereo.highwidth",
+        "stereo.monobelow",
         "osc1.on",
+        "osc1.wavetable",
         "osc1.level",
         "osc1.pitch",
         "osc1.octave",
@@ -50,6 +98,7 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
         "osc1.position",
         "osc1.phase",
         "osc2.on",
+        "osc2.wavetable",
         "osc2.level",
         "osc2.pitch",
         "osc2.octave",
@@ -97,10 +146,18 @@ TEST_CASE("Default parameters map to the default EngineParameters", "[core][para
     REQUIRE_THAT(read.pitchTimeScale,
                  Catch::Matchers::WithinAbs(defaults.pitchTimeScale, kRoundingTolerance));
     REQUIRE_THAT(read.pitchAmount, Catch::Matchers::WithinAbs(defaults.pitchAmount, kRoundingTolerance));
-    REQUIRE_THAT(read.punchBalance, Catch::Matchers::WithinAbs(defaults.punchBalance, kRoundingTolerance));
     REQUIRE_THAT(read.punchSplitMs, Catch::Matchers::WithinAbs(defaults.punchSplitMs, 1.0e-2));
     REQUIRE_THAT(read.punchLevel, Catch::Matchers::WithinAbs(defaults.punchLevel, kRoundingTolerance));
     REQUIRE_THAT(read.tailLevel, Catch::Matchers::WithinAbs(defaults.tailLevel, kRoundingTolerance));
+
+    REQUIRE(read.tock.on == defaults.tock.on);
+    REQUIRE(read.tock.sampleMode == defaults.tock.sampleMode);
+    REQUIRE_THAT(read.tock.level, Catch::Matchers::WithinAbs(defaults.tock.level, kRoundingTolerance));
+    REQUIRE_THAT(read.tock.tuneSemitones,
+                 Catch::Matchers::WithinAbs(defaults.tock.tuneSemitones, kRoundingTolerance));
+    REQUIRE_THAT(read.tock.startMs, Catch::Matchers::WithinAbs(defaults.tock.startMs, kRoundingTolerance));
+    REQUIRE_THAT(read.tock.decayMs, Catch::Matchers::WithinAbs(defaults.tock.decayMs, 1.0e-2));
+    REQUIRE_THAT(read.tock.tone, Catch::Matchers::WithinAbs(defaults.tock.tone, kRoundingTolerance));
 
     for (size_t i = 0; i < read.oscillators.size(); ++i)
     {
@@ -134,10 +191,16 @@ TEST_CASE("Parameter values are converted to DSP units", "[core][parameters]")
     setValue(processor.state, Ids::kAmpEnvTimeScale, 2.0f);
     setValue(processor.state, Ids::kPitchEnvTimeScale, 0.5f);
     setValue(processor.state, Ids::kPitchEnvAmount, 36.0f);
-    setValue(processor.state, Ids::kPunchTailBalance, -25.0f);
     setValue(processor.state, Ids::kPunchTailSplit, 120.0f);
     setValue(processor.state, Ids::kPunchLevel, -6.0f);
     setValue(processor.state, Ids::kTailLevel, 3.0f);
+    setValue(processor.state, Ids::kTockOn, 1.0f);
+    setValue(processor.state, Ids::kTockMode, 1.0f);
+    setValue(processor.state, Ids::kTockLevel, -6.0f);
+    setValue(processor.state, Ids::kTockTune, 7.0f);
+    setValue(processor.state, Ids::kTockStart, 4.5f);
+    setValue(processor.state, Ids::kTockDecay, 60.0f);
+    setValue(processor.state, Ids::kTockTone, 0.25f);
 
     setValue(processor.state, Ids::oscillator(1, Ids::Oscillator::kOn), 1.0f);
     setValue(processor.state, Ids::oscillator(1, Ids::Oscillator::kLevel), 0.25f);
@@ -158,10 +221,16 @@ TEST_CASE("Parameter values are converted to DSP units", "[core][parameters]")
     REQUIRE_THAT(read.ampTimeScale, Catch::Matchers::WithinAbs(2.0, 1.0e-2));
     REQUIRE_THAT(read.pitchTimeScale, Catch::Matchers::WithinAbs(0.5, 1.0e-2));
     REQUIRE_THAT(read.pitchAmount, Catch::Matchers::WithinAbs(36.0, 0.06));
-    REQUIRE_THAT(read.punchBalance, Catch::Matchers::WithinAbs(-0.25, 1.0e-3)); // percent to -1..+1
     REQUIRE_THAT(read.punchSplitMs, Catch::Matchers::WithinAbs(120.0, 1.0));
     REQUIRE_THAT(read.punchLevel, Catch::Matchers::WithinAbs(0.5012, 1.0e-3)); // -6 dB
     REQUIRE_THAT(read.tailLevel, Catch::Matchers::WithinAbs(1.4125, 1.0e-3));  // +3 dB
+    REQUIRE(read.tock.on);
+    REQUIRE(read.tock.sampleMode);
+    REQUIRE_THAT(read.tock.level, Catch::Matchers::WithinAbs(0.5012, 1.0e-3)); // -6 dB
+    REQUIRE_THAT(read.tock.tuneSemitones, Catch::Matchers::WithinAbs(7.0, 1.0e-6));
+    REQUIRE_THAT(read.tock.startMs, Catch::Matchers::WithinAbs(4.5, 1.0e-3));
+    REQUIRE_THAT(read.tock.decayMs, Catch::Matchers::WithinAbs(60.0, 0.1));
+    REQUIRE_THAT(read.tock.tone, Catch::Matchers::WithinAbs(0.25, 1.0e-3));
 
     // The first oscillator keeps its own settings: both are the same code with different IDs.
     REQUIRE(read.oscillators[0].on);
@@ -199,10 +268,14 @@ TEST_CASE("Parameter ranges match the spec", "[core][parameters]")
     expectRange(Ids::kAmpEnvTimeScale, 0.25f, 4.0f);
     expectRange(Ids::kPitchEnvTimeScale, 0.25f, 4.0f);
     expectRange(Ids::kPitchEnvAmount, 0.0f, 96.0f);
-    expectRange(Ids::kPunchTailBalance, -100.0f, 100.0f);
     expectRange(Ids::kPunchTailSplit, 5.0f, 500.0f);
     expectRange(Ids::kPunchLevel, -48.0f, 12.0f);
     expectRange(Ids::kTailLevel, -48.0f, 12.0f);
+    expectRange(Ids::kTockLevel, -48.0f, 12.0f);
+    expectRange(Ids::kTockTune, -24.0f, 24.0f);
+    expectRange(Ids::kTockStart, 0.0f, 20.0f);
+    expectRange(Ids::kTockDecay, 2.0f, 200.0f);
+    expectRange(Ids::kTockTone, 0.0f, 1.0f);
 
     for (int index = 0; index < 2; ++index)
     {

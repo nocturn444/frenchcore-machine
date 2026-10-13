@@ -12,9 +12,9 @@ namespace fcm::test
 class TestProcessor : public juce::AudioProcessor
 {
   public:
-    TestProcessor()
+    explicit TestProcessor(const fcm::dsp::EffectRegistry& registry = fcm::dsp::defaultEffectRegistry())
         : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-          state(*this, nullptr, "FrenchcoreMachineState", fcm::core::createParameterLayout())
+          state(*this, nullptr, "FrenchcoreMachineState", fcm::core::createParameterLayout(registry))
     {
     }
 

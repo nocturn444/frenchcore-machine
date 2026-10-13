@@ -5,6 +5,7 @@
 #include "dsp/envelope/EnvelopeRenderer.h"
 #include "dsp/envelope/EnvelopeShape.h"
 #include "dsp/oscillator/WavetableOscillator.h"
+#include "dsp/tock/Tock.h"
 
 #include <array>
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -39,6 +40,16 @@ class Voice
     // default shape. The shapes must outlive the block.
     void setShapes(const EnvelopeShape* ampShape, const EnvelopeShape* pitchShape) noexcept;
 
+    // Called once per block with the wavetable each oscillator reads this block (nullptr means the
+    // table given to prepare()). The tables must outlive the block. Fading copies of the previous
+    // kick are updated too, so none of them keeps a table older than the one acquired this block
+    // (docs/decisions/0008-wavetable-selection-and-publishing.md).
+    void setWavetables(const std::array<const WavetableData*, kNumOscillators>& tables) noexcept;
+
+    // Called once per block with the Tock sample for this block (nullptr: none). Like the wavetables,
+    // it is also set on the fading copies of the previous kick.
+    void setTockSample(const TockSample* sample) noexcept;
+
     // Starts a kick. `velocityGain` is the final level factor (already scaled by sensitivity).
     void trigger(float velocityGain) noexcept;
 
@@ -57,6 +68,7 @@ class Voice
         std::array<WavetableOscillator, kNumOscillators> oscillators;
         EnvelopeRenderer amp;
         EnvelopeRenderer pitch;
+        Tock tock;
         float velocityGain = 1.0f;
         double samplesSinceNoteOn = 0.0; // for the punch / tail split
         bool active = false;
@@ -78,6 +90,7 @@ class Voice
         float punchGain;
         float tailGain;
         float punchSplitMs;
+        float tockLevel;
     };
 
     float render(Core& voiceCore, float settleNote, const Frame& frame) noexcept;
@@ -87,15 +100,18 @@ class Voice
     float ghostStep = 0.0f;
 
     double sampleRate = 44100.0;
+    const WavetableData* fallbackTable = nullptr; // what prepare() was given
     std::array<float, kNumOscillators> startPhases{};
     std::array<juce::SmoothedValue<float>, kNumOscillators> levels;
     std::array<juce::SmoothedValue<float>, kNumOscillators> semitones;
     std::array<juce::SmoothedValue<float>, kNumOscillators> positions;
     juce::SmoothedValue<float> pitchAmount;
-    juce::SmoothedValue<float> punchBalance;
     juce::SmoothedValue<float> punchSplitMs;
     juce::SmoothedValue<float> punchLevel;
     juce::SmoothedValue<float> tailLevel;
+    juce::SmoothedValue<float> tockLevel;
+    TockSettings tockSettings;
+    bool tockOn = false;
     float bpm = 120.0f;
     const EnvelopeShape* ampShapeInUse = nullptr; // for the tempo sync scale at note-on
     const EnvelopeShape* pitchShapeInUse = nullptr;

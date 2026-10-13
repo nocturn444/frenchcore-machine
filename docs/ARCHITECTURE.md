@@ -43,7 +43,6 @@ frenchcore-machine/
 │   └── plugin/               JUCE AudioProcessor / AudioProcessorEditor glue
 ├── resources/
 │   ├── wavetables/           Factory wavetables (WAV), embedded via BinaryData
-│   └── presets/              Factory presets (XML), embedded via BinaryData
 ├── tests/                    Catch2 unit tests, mirrors src/ layout
 ├── docs/                     All documentation (this file, plan, specs, ADRs)
 └── .github/                  CI workflows, PR and issue templates
@@ -86,7 +85,7 @@ MIDI ──► NoteHandler (mono, last-note priority, optional glide)
         │  + Oscillator 2 (wavetable)  │
         │  + Tock (optional)           │
         │  × Amp envelope              │
-        │  × Punch/Tail balance        │
+        │  × Punch/Tail levels         │
         └──────────────┬───────────────┘
                        ▼
         FX chain (user-ordered slots, each with bypass and mix)
@@ -111,19 +110,19 @@ Details and tests in [voice-note-handling](specs/voice-note-handling.md).
 ### 4.2 Wavetable oscillators
 
 - Two identical oscillators (`osc1`, `osc2`). They are two instances of the same `WavetableOscillator` class with parameter IDs prefixed by the oscillator ID, so the count is a constant, not duplicated code.
-- Each oscillator has: On, Level, Pitch (semitones), Octave, Fine tune (cents), Position, Phase (start phase at every note) and its own wavetable. Ranges and defaults in [oscillator-wavetable](specs/oscillator-wavetable.md). Both follow the same pitch envelope and note pitch.
+- Each oscillator has: On, Wavetable (a choice; nine factory tables, [wavetable-factory](specs/wavetable-factory.md), [ADR 0008](decisions/0008-wavetable-selection-and-publishing.md)), Level, Pitch (semitones), Octave, Fine tune (cents), Position, Phase (start phase at every note) and its own wavetable. Ranges and defaults in [oscillator-wavetable](specs/oscillator-wavetable.md). Both follow the same pitch envelope and note pitch.
 - A wavetable is a sequence of frames of 2048 samples each (Serum/Vital-compatible WAV). Up to 256 frames.
 - `Position` selects/interpolates between frames.
 - Anti-aliasing: on load, each frame is converted to a set of band-limited mipmaps (one per octave, built with FFT by zeroing harmonics above Nyquist). Playback picks the mipmap for the current frequency and interpolates linearly between samples and between adjacent frames.
 - Loading and mipmap generation happen on a background thread. The finished `WavetableData` is published to the audio thread with an atomic pointer swap; the old one is released on the message thread (see section 6).
-- The source of the user's wavetable (file path and an embedded copy of the audio) is stored in the plugin state so projects survive moving files.
+- A user wavetable is embedded in the plugin state (a `UserWavetable1`/`UserWavetable2` node with the display name and the frames as base64 floats) so projects survive moving files. The file path is deliberately not stored ([wavetable-user](specs/wavetable-user.md), section 12).
 
 ### 4.3 Tock (click layer with optional samples)
 
 - Optional short transient (the "tock") mixed before the amp envelope. Two sources, selected with `Tock Mode`:
   - **Synth:** a generated click (short noise burst or pitched blip) with its own decay and filter.
   - **Sample:** a factory tock or a user-loaded WAV. User samples are embedded in the plugin state like wavetables, and loading follows the same background-load and atomic-publish pattern.
-- Parameters: `Tock On`, `Tock Mode`, `Tock Sample`, `Tock Level`, `Tock Tune`, `Tock Start`, `Tock Decay`, `Tock Tone`.
+- Parameters: `Tock On`, `Tock Mode`, `Tock Sample`, `Tock Level`, `Tock Tune`, `Tock Start`, `Tock Decay`, `Tock Tone` (details, ranges and the choices made in [tock](specs/tock.md)). The Tock is added to the oscillator sum before the amp envelope, and the selected sample is published to the voice like a wavetable ([ADR 0008](decisions/0008-wavetable-selection-and-publishing.md)).
 
 ### 4.4 Envelopes
 
@@ -141,15 +140,14 @@ Both envelopes use the same `BreakpointEnvelope` model:
 - Shape presets (`EnvelopePresets`) are a data table per envelope kind; the first is the default.
 - **Tempo sync** ([ADR 0007](decisions/0007-envelope-tempo-sync.md)): a shape may remember the tempo its times were written at (`syncRefBpm`); at each note-on the voice plays it scaled by reference / current tempo. The current tempo is the host tempo in a plugin, the audition strip's BPM in the Standalone, 120 otherwise; it reaches the engine in `EngineParameters` and the editor through `core::TempoState`. Knobs show musical figures (`MusicalTime`) while synced.
 
-### 4.5 Punch / Tail balance
+### 4.5 Punch / Tail split and levels
 
 Details and tests in [voice-punch-tail](specs/voice-punch-tail.md).
 
 - Splits the voice output in time into a **punch** region (from note-on to the split point) and a **tail** region (after it).
-- `Punch Tail Balance` (-100 to +100): negative favours the punch, positive the tail, 0 leaves both untouched. Implemented as two gains (`1 - |balance|` on the region that is cut) applied after the amp envelope.
 - `Punch Tail Split` (ms after note-on, default 80): where the punch ends and the tail begins, shown as a dashed vertical marker on the amp envelope display. The gain changes with a 4 ms smoothstep centred on the split, counted from each kick's own note-on.
-- `Punch Level` and `Tail Level` (dB, default 0) multiply the two region gains on top of the balance.
-- All four are automatable parameters and are smoothed over 10 ms.
+- `Punch Level` and `Tail Level` (dB, default 0) are the gains of the two regions, applied after the amp envelope.
+- All three are automatable parameters and are smoothed over 10 ms.
 
 ### 4.6 FX chain (main extension point)
 
@@ -157,33 +155,33 @@ The effects system follows the "one slot per effect type" model used by Serum: e
 
 Why this model: every effect has a fixed set of parameters with fixed IDs, so host automation and presets stay valid no matter how the user reorders the chain. See [ADR 0003](decisions/0003-fx-chain-model.md).
 
-Building blocks:
+Building blocks (the code is in `src/dsp/fx/`; the full description is [fx-chain](specs/fx-chain.md), the decisions are [ADR 0003](decisions/0003-fx-chain-model.md) and [ADR 0009](decisions/0009-effect-parameters-and-chain-latency.md)):
 
 ```cpp
-// src/dsp/fx/Effect.h  (illustrative, not final code)
-struct EffectDescriptor {
-    std::string_view id;          // stable, never changes: "distortion", "eq", "stereo"
-    std::string_view displayName;
-    int version;                  // bumps when parameters change, for migrations
-};
+// src/dsp/fx/Effect.h (shortened)
+struct ParameterSpec { /* idSuffix, name, kind (toggle/choice/integer/number), range, step, default, skew, unit, choices */ };
+struct EffectDescriptor { std::string_view id; std::string_view displayName; int version; };
 
 class Effect {
 public:
-    virtual ~Effect() = default;
-    virtual const EffectDescriptor& descriptor() const = 0;
-    virtual void prepare(const juce::dsp::ProcessSpec&) = 0;   // may allocate
-    virtual void reset() = 0;                                  // no allocation
-    virtual void process(juce::dsp::ProcessContextReplacing<float>&) = 0; // real-time safe
-    virtual int latencySamples() const { return 0; }
+    virtual const EffectDescriptor& descriptor() const = 0;      // stable id: "distortion", "eq", "stereo"
+    virtual std::span<const ParameterSpec> parameters() const = 0; // plain data, no APVTS in fcm_dsp
+    virtual void prepare(const EffectSpec&) = 0;                  // may allocate
+    virtual void reset() noexcept = 0;
+    virtual void setParameters(std::span<const float> values) noexcept = 0; // once per block
+    virtual void setOversampling(int factor) noexcept;            // when Quality changes
+    virtual void process(juce::AudioBuffer<float>&) noexcept = 0; // real-time safe, in place
+    virtual int latencySamples(int oversamplingFactor) const noexcept;
 };
 ```
 
-- **`EffectRegistry`** holds one factory function per effect type plus its parameter-layout function. Each effect registers itself with a single line in `src/dsp/fx/RegisterEffects.cpp`. Nothing else in the codebase lists effects by name.
-- **Parameters** for an effect are declared by the effect's own `createParameters()` function and are prefixed with the effect ID (`distortion.drive`, `eq.low.gain`). `fcm_core` asks the registry for all parameter groups when building the layout.
-- **`EffectChain`** owns one instance of every registered effect and an order array. The order is stored as a lock-free packed value (e.g. up to 16 slot indices in an atomic) written by the message thread and read once per block by the audio thread. Reordering never allocates and never pauses audio.
-- **Per-slot common controls** are added automatically by the chain for every effect: `<id>.enabled`, `<id>.mix` (dry/wet), and the slot's position.
-- **Latency:** the chain reports the sum of enabled effects' latency to the host whenever it changes.
-- **Oversampling:** effects that create harmonics (distortion) run inside `juce::dsp::Oversampling`. The factor (1x/2x/4x/8x, 2x default) is one global `Quality` parameter in the Global panel; each effect owns its oversampler and reads that factor in `prepare()`.
+- **`EffectRegistry`** holds one factory function per effect type. Each effect registers itself with a single line in `src/dsp/fx/RegisterEffects.cpp`, whose order is the default chain order and the effect's index. Nothing else in the codebase lists effects by name.
+- **Parameters** for an effect are described by its `parameters()` (plain data) and prefixed with the effect ID (`distortion.drive`, `eq.low.gain`). `fcm_core` turns the specs of every registered effect into APVTS parameters when it builds the layout, and `EngineParameterReader` hands the values to the chain as a flat array in spec order.
+- **`EffectChain`** owns one instance of every registered effect and an order. The order is a packed value (4 bits per position, up to 16 effects) in one `std::atomic<uint64_t>`, written by the message thread (`core::FxOrderState`, also saved as the `FxChain` node) and read once per block by the audio thread. Reordering never allocates and never pauses audio.
+- **Per-slot common controls** are added by the layout code for every effect: `<id>.enabled` (default off) and `<id>.mix` (dry/wet, default 100 %). A slot that is off and faded out is skipped.
+- **Latency:** every slot delays its dry signal by the effect's latency for the current Quality whether it is on, bypassed or mixed, so timing never changes when something is toggled, mixed or reordered. The chain reports the sum over all registered effects to the host whenever Quality changes.
+- **Oversampling:** effects that create harmonics (distortion) run inside `juce::dsp::Oversampling`. The factor (1x/2x/4x/8x, 2x default) is one global `Quality` parameter in the Global panel (`global.quality`); the chain tells each effect through `setOversampling`.
+- **Where it runs:** the voice renders mono, which is copied to the output channels; the chain runs on the whole block; then the output gain and the safety limiter run per sample on every channel.
 
 Adding an effect is documented step by step in [ADDING_AN_EFFECT.md](ADDING_AN_EFFECT.md).
 
@@ -192,7 +190,7 @@ MVP effects:
 | ID | Effect | Key parameters |
 |---|---|---|
 | `distortion` | Distortion with selectable type: soft clip (tanh), hard clip, overdrive (asymmetric), foldback, bitcrush (bit depth + sample-rate reduction) | Type, Drive, Pre-gain, Post-gain, Tone |
-| `eq` | 3-band parametric EQ: low shelf, peak, high shelf | Freq, Gain, Q per band |
+| `eq` | 4-band parametric EQ: each band a bell, shelf or cut | On, Type, Freq, Gain, Q per band |
 | `stereo` | Multiband stereo: 3 bands split by Linkwitz-Riley crossovers, mid/side width per band | Crossover 1/2, Width per band, Mono-below toggle |
 
 ### 4.7 Output stage
@@ -208,12 +206,14 @@ MVP effects:
 
 - **Automatable parameters** live in a `juce::AudioProcessorValueTreeState` (APVTS). Parameter IDs are defined in one place (`src/core/ParameterIds.h` plus each effect's own parameter function) and are **never renamed or reused** once released.
 - **Non-parameter state** lives in child nodes of the same `ValueTree`:
-  - `Wavetable`: source name, embedded audio (base64 or binary blob).
+  - `UserWavetable1`, `UserWavetable2`: display name and embedded frames (base64), see [wavetable-user](specs/wavetable-user.md).
+  - `UserTockSample`: display name, sample rate and the embedded sample (base64), see [tock](specs/tock.md).
   - `AmpEnvelope`, `PitchEnvelope`: point lists.
   - `FxChain`: order of effect IDs.
 - **Versioning:** the root state node carries `stateVersion`, always written on save (`core::kStateVersion`, currently 1). A missing or damaged value counts as version 1. Loading older state runs the steps of `stateMigrations()` in `src/core/StateMigrations.cpp` in order (the list is empty while only version 1 exists); a state whose version is newer than this build is still loaded: the controls this build knows are applied and the rest is ignored. Each effect also carries its descriptor `version`.
+- **One load path** (`core::ProjectState`, [project-state](specs/project-state.md)): it gathers the parameter tree, both envelopes, the effect order and the user wavetable and Tock nodes, and offers `capture()` and `restore()` (and the XML form). The processor, the presets and the tests all use it. A saved state describes everything: a parameter it does not mention becomes its default.
 - **Loading is always sanitized** (`core::loadState` in `src/core/StateLoader.cpp`, spec [state-safe-loading](specs/state-safe-loading.md)): the root type must match; unknown or value-less `PARAM` entries are dropped; every parameter value that is not a plain finite number becomes the parameter's default, and every other value is clamped to the parameter's range and snapped to its step. `EngineParameterReader` and the oscillator repeat these guards as a second layer, so a bad value can never index outside memory on the audio thread. State blobs above `core::kMaxStateBytes` (32 MiB) are rejected before parsing.
-- **Presets** are the same state serialized to an `.fcmpreset` XML file. Factory presets are embedded. User presets go to the platform's user documents folder (`Frenchcore Machine/Presets`).
+- **Presets** ([presets](specs/presets.md)) are the same state wrapped in a small XML file with a name and a `presetFormat` version (`.fcmpreset`, `core::PresetFile`). Factory presets are a table in code (`core::FactoryPresets`: parameter overrides plus envelope shape names) applied over the defaults, so they follow new controls and need no embedded files. User presets go to the platform's user documents folder (`Frenchcore Machine/Presets`) through `core::PresetLibrary`; `core::PresetManager` presents factory then user presets as one list with next/previous and save. Preset files are untrusted input (§12): size cap, nesting-depth scan before XML parsing, strict file-name whitelist.
 - Unknown effect IDs or parameters in a preset (e.g. a preset made with a newer version) are ignored with a warning, never a crash.
 
 ## 6. Threading and real-time rules
@@ -236,8 +236,8 @@ Patterns used:
 ## 7. User interface
 
 - Functional first; visual design will be done later and must not require structural changes. All drawing goes through a custom `LookAndFeel` so restyling is a separate task.
-- Resizable editor with a fixed aspect ratio, laid out with `juce::FlexBox`/`Grid` relative to the window size.
-- Main areas, as agreed in [UI_LAYOUT.md](UI_LAYOUT.md): preset bar, two oscillator panels, amp and pitch envelope panels, tock, punch/tail balance, global, and the FX rack. LFOs (post-MVP) and "Other" have reserved space.
+- Resizable editor with a fixed aspect ratio. The editor is drawn on one fixed design grid (1500 points wide) and scaled as a whole to the window, so it never rearranges ([ui-grid-layout](specs/ui-grid-layout.md)). Styling lives in `ui/Style.h` and `ui::FcmLookAndFeel`.
+- Main areas, as agreed in [UI_LAYOUT.md](UI_LAYOUT.md): preset bar, two oscillator panels, amp and pitch envelope panels, tock, punch/tail levels, global, and the FX rack. LFOs (post-MVP) and "Other" have reserved space.
 - The UI never calls DSP code. It changes parameters through APVTS attachments and non-parameter state through `fcm_core` APIs.
 - A JUCE 9 WebView-based UI is a possible future option for the visual redesign. It is not used in the MVP.
 - **Standalone-only audition strip** (on-screen keyboard and auto-play loop, [spec](specs/standalone-audition.md)). It exists only when `AudioProcessor::wrapperType` is `wrapperType_Standalone`. Its settings are not parameters and not state: `core::AuditionState` holds atomics and a lock-free `dsp::NoteQueue` (message thread to audio thread), and the audio thread turns them into MIDI events (`dsp::AuditionSequencer` for the loop) inside a pre-allocated MIDI buffer. `MidiKeyboardState` (which locks) stays on the message thread.

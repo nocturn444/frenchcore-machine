@@ -24,7 +24,7 @@ Plain-language explanations of the technical terms used in this project's docume
 | **Oversampling** | Processing audio internally at a higher sample rate to reduce aliasing from distortion. |
 | **pluginval** | A tool that stress-tests a plugin the way DAWs use it, to catch crashes before users do. |
 | **PR (pull request)** | A proposed change to the code, reviewed before it is merged into the main branch. |
-| **Punch / Tail** | The first moments of a kick (the hit) and the bass that rings after it. The Punch/Tail control balances them. |
+| **Punch / Tail** | The first moments of a kick (the hit) and the bass that rings after it. The Split time divides the kick between them, and a Punch Level and a Tail Level set the volume of each. |
 | **Release (envelope)** | The part of a sound that happens after you let go of the key. Here it is a short fade-out, so the length of the MIDI note decides how long the kick's tail rings. |
 | **Semitone** | One step on a piano: 12 semitones make an octave. The pitch envelope's Amount is measured in semitones. |
 | **Spec** | A short document describing a feature before it is built. |

@@ -6,8 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The editor follows the layout you drew: preset bar on top, the two oscillators at the top left, the envelopes under them, the Effects in a tall box on the right, and a bottom row with the LFO box (free for later), Tock, Punch / Tail, Global and a free box. It is wider than tall (1500 by about 770 points) and the whole thing scales with the window, so nothing rearranges or gets squeezed at any size. See `docs/specs/ui-grid-layout.md`.
+- The Effects are now strips from top to bottom (drag the bar up or down to reorder) in their own box instead of a tab. The EQ shows its response curve with four draggable dots. See `docs/specs/fx-rack.md`.
+- The envelope's Time Scale is a knob in the same row as the shape knobs. Messages about loading a wavetable or a sample appear in the preset bar. Continuous knobs show two decimals instead of seven, and frequencies from 1000 Hz show as kHz.
+
+### Removed
+
+- The **Punch/Tail Balance** knob (parameter `punchTail.balance`): it changed the character of the sound too much. **Split** now only divides the kick between the **Punch Level** and **Tail Level** controls, which stay. See `docs/specs/voice-punch-tail.md`.
+
 ### Added
 
+- **Presets**: a preset bar at the top of the window with a menu of factory presets (Init, Classic Punch, Rumble Kick, Hardcore Crunch, Gabber Fold) and your own, previous/next buttons, and a name field with Save. Your presets are `.fcmpreset` files in Documents/Frenchcore Machine/Presets. Unusable files are refused with a message and nothing changes; file names are restricted to safe characters. See `docs/specs/presets.md` and `docs/specs/preset-browser.md`.
+- A saved project now describes everything: a control that a saved state does not mention (an older project, a partial state) goes back to its default instead of keeping its previous value. The code that saves and loads the whole state (parameters, envelopes, effect order, your wavetables and Tock sample) is gathered in one place and covered by round-trip tests. See `docs/specs/project-state.md`.
+- The **Effects** tab (next to Envelopes in the lower area): one column per effect with its On switch, Mix and controls, and a handle bar to drag an effect to another position in the chain. The effects' controls no longer appear in the general controls at the top. See `docs/specs/fx-rack.md`.
+- **Stereo**, a multiband stereo effect: three bands split by Linkwitz-Riley crossovers with a stereo width for each (0 % mono to 200 % very wide), and a Mono Below switch that keeps the low end mono. Width above 100 % adds a decorrelated copy so it widens even the mono kick. Off by default, no delay. See `docs/specs/fx-stereo.md`.
+- **EQ**, a 4-band parametric equaliser effect: each band has its own On switch, Type (Bell, Low Shelf, High Shelf, Low Cut, High Cut), Freq (20 Hz to 20 kHz), Gain (-18 to +18 dB) and Q. With every Gain at 0 and no cut in use it changes nothing, bit for bit, and it adds no delay. Off by default. See `docs/specs/fx-eq.md`.
+- **Distortion**, the first effect: Soft Clip, Hard Clip, Overdrive, Foldback and Bitcrush, with Drive, Pre-gain, Post-gain, Tone and (for Bitcrush) Bits and Rate. The four clipping types are oversampled by the global Quality setting; Bitcrush is not, on purpose. Off by default. With the effects registered the plugin always reports a few samples of latency at the default Quality (2x), which your DAW compensates. See `docs/specs/fx-distortion.md`.
+- The FX chain machinery (no effect yet): the `Effect` interface, a registry where adding an effect is one line, and a reorderable chain that crossfades on/off, keeps timing constant and reports its latency to the host. Each effect will get an On switch (off by default) and a Mix control, there is a global **Quality** setting (oversampling 1x to 8x, default 2x) and the effect order is saved with the project. The plugin now processes two channels through the chain before the output gain and limiter; with no effect on the sound is unchanged. See `docs/specs/fx-chain.md` and ADR 0009.
+- Load your own Tock sample from a WAV (up to 2 seconds, any sample rate from 8 to 192 kHz), saved inside the project; unusable files are refused with a message.
+- The Tock, an optional click layer at the start of every kick: Synth mode (a generated click) or Sample mode with four built-in tock sounds (Click, Knock, Snap, Tick), with Level, Tune, Start, Decay and Tone. Off by default. See `docs/specs/tock.md`.
+- A wavetable display for each oscillator: the name, a faint stack of the waveforms and the waveform at the current Position, live. See `docs/specs/wavetable-display.md`.
+- Load your own wavetable from a WAV file (whole 2048-sample frames up to 256, or a single cycle) onto each oscillator, with clear refusal messages for unusable files. The wavetable is saved inside the project; only its name is kept, never the path. See `docs/specs/wavetable-user.md`.
+- Nine factory wavetables for the oscillators (Sine, Soft Triangle, Warm Drive, Hard Clip, Wave Fold, Odd Stack, Saw Rise, Hardcore Punch, Rumble Core) and a Wavetable choice on each oscillator. Generated by code, so they are original. See `docs/specs/wavetable-factory.md` and ADR 0008.
 - `docs/STATUS.md`: a living summary for the product owner (state of the phases, open pull requests in merge order, decisions taken, what needs their attention).
 - Initial project documentation: plan, architecture, MVP scope, ADRs, spec template, contributing guide, bilingual README.
 - AGPL-3.0 license.

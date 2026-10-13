@@ -31,6 +31,7 @@ void Engine::prepare(const juce::dsp::ProcessSpec& spec)
         sineTable = WavetableData::makeSine();
 
     voice.prepare(sampleRate, sineTable.get());
+    fx.prepare({sampleRate, static_cast<int>(maxBlockSize), static_cast<int>(numChannels)});
     glide.prepare(sampleRate);
     outputGain.reset(sampleRate, kOutputGainSmoothSeconds);
 
@@ -41,6 +42,7 @@ void Engine::prepare(const juce::dsp::ProcessSpec& spec)
 
 void Engine::reset() noexcept
 {
+    fx.reset();
     notes.allNotesOff();
     glide.reset();
     voice.reset();
@@ -131,16 +133,7 @@ void Engine::handleMidi(const juce::MidiMessageMetadata& event) noexcept
 void Engine::renderSegment(float* output, int numSamples) noexcept
 {
     for (int i = 0; i < numSamples; ++i)
-    {
-        const float settleNote = glide.next();
-        const float gain = outputGain.getNextValue();
-        const float sample = voice.process(settleNote) * gain;
-
-        if (parameters.limiterOn)
-            output[i] = SafetyLimiter::process(sample);
-        else
-            output[i] = std::isfinite(sample) ? sample : 0.0f;
-    }
+        output[i] = voice.process(glide.next());
 }
 
 void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& midi) noexcept
@@ -153,6 +146,13 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
     // The envelope shapes are fixed for the whole block.
     voice.setShapes(ampSource != nullptr ? ampSource->acquire() : nullptr,
                     pitchSource != nullptr ? pitchSource->acquire() : nullptr);
+
+    // Likewise the wavetables.
+    std::array<const WavetableData*, kNumOscillators> tables{};
+    for (size_t i = 0; i < kNumOscillators; ++i)
+        tables[i] = wavetableSources[i] != nullptr ? wavetableSources[i]->acquire() : nullptr;
+    voice.setWavetables(tables);
+    voice.setTockSample(tockSource != nullptr ? tockSource->acquire() : nullptr);
 
     // The voice is mono: render into the first channel and copy it to the others.
     float* output = buffer.getWritePointer(0);
@@ -169,6 +169,29 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
 
     for (int channel = 1; channel < channels; ++channel)
         buffer.copyFrom(channel, 0, buffer, 0, 0, numSamples);
+
+    // The effects see the whole block, on every channel.
+    fx.setParameters(parameters.effects, parameters.oversamplingFactor);
+    fx.process(buffer);
+
+    // The chain handles two channels; any further channel (not offered by the plugin's layouts, but
+    // harmless to cover) repeats the first.
+    for (int channel = 2; channel < channels; ++channel)
+        buffer.copyFrom(channel, 0, buffer, 0, 0, numSamples);
+
+    // Last of all, on every channel: the output gain and the safety limiter, so the limiter always
+    // protects what leaves the plugin.
+    for (int i = 0; i < numSamples; ++i)
+    {
+        const float gain = outputGain.getNextValue();
+        for (int channel = 0; channel < channels; ++channel)
+        {
+            float* data = buffer.getWritePointer(channel);
+            const float sample = data[i] * gain;
+            data[i] = parameters.limiterOn ? SafetyLimiter::process(sample)
+                                           : (std::isfinite(sample) ? sample : 0.0f);
+        }
+    }
 }
 
 } // namespace fcm::dsp

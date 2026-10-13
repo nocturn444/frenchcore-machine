@@ -38,19 +38,37 @@ int toInt(const std::atomic<float>* value, int fallback) noexcept
 }
 } // namespace
 
-EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState& state)
-    : outputGain(lookup(state, ParameterIds::kOutputGain)),
+EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState& state,
+                                             const dsp::EffectRegistry& registry)
+    : quality(lookup(state, ParameterIds::kQuality)), outputGain(lookup(state, ParameterIds::kOutputGain)),
       limiterOn(lookup(state, ParameterIds::kLimiterOn)), keyTrack(lookup(state, ParameterIds::kKeyTrack)),
       rootNote(lookup(state, ParameterIds::kRootNote)), glideOn(lookup(state, ParameterIds::kGlideOn)),
       glideTime(lookup(state, ParameterIds::kGlideTime)),
       velocitySensitivity(lookup(state, ParameterIds::kVelocitySensitivity)),
+      tockOn(lookup(state, ParameterIds::kTockOn)), tockMode(lookup(state, ParameterIds::kTockMode)),
+      tockLevel(lookup(state, ParameterIds::kTockLevel)), tockTune(lookup(state, ParameterIds::kTockTune)),
+      tockStart(lookup(state, ParameterIds::kTockStart)), tockDecay(lookup(state, ParameterIds::kTockDecay)),
+      tockTone(lookup(state, ParameterIds::kTockTone)),
       ampTimeScale(lookup(state, ParameterIds::kAmpEnvTimeScale)),
       pitchTimeScale(lookup(state, ParameterIds::kPitchEnvTimeScale)),
       pitchAmount(lookup(state, ParameterIds::kPitchEnvAmount)),
-      punchBalance(lookup(state, ParameterIds::kPunchTailBalance)),
       punchSplit(lookup(state, ParameterIds::kPunchTailSplit)),
       punchLevel(lookup(state, ParameterIds::kPunchLevel)), tailLevel(lookup(state, ParameterIds::kTailLevel))
 {
+    for (int index = 0; index < registry.count(); ++index)
+    {
+        const auto& descriptor = *registry.descriptor(index);
+        EffectPointers pointers;
+        pointers.enabled = lookup(state, ParameterIds::effect(descriptor.id, ParameterIds::kEffectEnabled));
+        pointers.mix = lookup(state, ParameterIds::effect(descriptor.id, ParameterIds::kEffectMix));
+        for (const auto& spec : registry.parameters(index))
+        {
+            pointers.values.push_back(lookup(state, ParameterIds::effect(descriptor.id, spec.idSuffix)));
+            pointers.defaults.push_back(spec.defaultValue);
+        }
+        effects.push_back(std::move(pointers));
+    }
+
     namespace Osc = ParameterIds::Oscillator;
     for (int index = 0; index < dsp::kNumOscillators; ++index)
     {
@@ -82,10 +100,30 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.ampTimeScale = finiteOr(ampTimeScale, defaults.ampTimeScale);
     result.pitchTimeScale = finiteOr(pitchTimeScale, defaults.pitchTimeScale);
     result.pitchAmount = finiteOr(pitchAmount, defaults.pitchAmount);
-    result.punchBalance = finiteOr(punchBalance, defaults.punchBalance * 100.0f) * 0.01f;
     result.punchSplitMs = finiteOr(punchSplit, defaults.punchSplitMs);
     result.punchLevel = juce::Decibels::decibelsToGain(finiteOr(punchLevel, 0.0f), -48.0f);
     result.tailLevel = juce::Decibels::decibelsToGain(finiteOr(tailLevel, 0.0f), -48.0f);
+
+    // The Tock's level is in dB (-12 by default), like the other levels.
+    result.tock.on = toBool(tockOn, defaults.tock.on);
+    result.tock.sampleMode = toInt(tockMode, 0) >= 1;
+    result.tock.level = juce::Decibels::decibelsToGain(finiteOr(tockLevel, -12.0f), -48.0f);
+    result.tock.tuneSemitones = static_cast<float>(toInt(tockTune, 0));
+    result.tock.startMs = finiteOr(tockStart, defaults.tock.startMs);
+    result.tock.decayMs = finiteOr(tockDecay, defaults.tock.decayMs);
+    result.tock.tone = finiteOr(tockTone, defaults.tock.tone);
+
+    // The FX chain: a value that is not a finite number becomes the effect's default.
+    for (size_t i = 0; i < effects.size() && i < result.effects.size(); ++i)
+    {
+        const auto& source = effects[i];
+        auto& target = result.effects[i];
+        target.enabled = toBool(source.enabled, false);
+        target.mix = juce::jlimit(0.0f, 1.0f, finiteOr(source.mix, 100.0f) * 0.01f);
+        for (size_t p = 0; p < source.values.size() && p < target.values.size(); ++p)
+            target.values[p] = finiteOr(source.values[p], source.defaults[p]);
+    }
+    result.oversamplingFactor = 1 << juce::jlimit(0, 3, toInt(quality, 1));
 
     for (size_t i = 0; i < oscillators.size(); ++i)
     {

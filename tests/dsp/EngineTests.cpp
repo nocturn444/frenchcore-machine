@@ -83,7 +83,7 @@ struct EngineFixture
 
     double sampleRate;
     int blockSize;
-    Engine engine;
+    Engine engine{fcm::test::noEffects()};
 };
 
 EngineParameters quietParameters()
@@ -104,7 +104,7 @@ TEST_CASE("Engine is silent until a note is played", "[dsp][engine]")
 
 TEST_CASE("Engine keeps the prepared sample rate", "[dsp][engine]")
 {
-    Engine engine;
+    Engine engine{fcm::test::noEffects()};
     engine.prepare({96000.0, 256, 2});
     REQUIRE(juce::exactlyEqual(engine.getSampleRate(), 96000.0));
 }

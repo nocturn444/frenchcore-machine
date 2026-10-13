@@ -43,10 +43,14 @@ Two layers, so a mistake in one does not matter.
 
 ### 4.1 Envelopes, tempo and tail length (Phase 3 data)
 
-- The seven envelope and Punch/Tail parameters (`ampEnv.timeScale`, `pitchEnv.timeScale`, `pitchEnv.amount`, `punchTail.balance`, `punchTail.split`, `punchTail.punchLevel`, `punchTail.tailLevel`) are ordinary parameters, so `loadState` sanitizes them like the rest, and `EngineParameterReader` falls back to the engine defaults if one still holds a non-finite value.
+- The six envelope and Punch/Tail parameters (`ampEnv.timeScale`, `pitchEnv.timeScale`, `pitchEnv.amount`, `punchTail.split`, `punchTail.punchLevel`, `punchTail.tailLevel`) are ordinary parameters, so `loadState` sanitizes them like the rest, and `EngineParameterReader` falls back to the engine defaults if one still holds a non-finite value.
 - The `AmpEnvelope` and `PitchEnvelope` child nodes are restored by `EnvelopeState::restoreFrom` after `loadState` accepted the state (not when it rejected it). A damaged node gives the default shape.
 - The tempo that synced envelopes follow is not trusted either: the plugin keeps the last good tempo when the host gives 0, a negative number or a NaN, and `Voice` ignores a tempo or time scale that is not finite. `EnvelopeRenderer::start` treats a non-finite time scale as 1, because `std::max` and `std::clamp` pass a NaN through.
 - `getTailLengthSeconds` goes through `core::tailLengthSeconds`, which never returns a non-finite or negative time to the host.
+
+### 4.2 Missing controls
+
+A saved state describes everything: `core::loadState` adds an entry with the default value for every parameter the saved tree does not mention (`addMissingParameters`), so an older project, a partial state or a preset that mentions only some controls gives the same result whatever was set before ([project-state](project-state.md)).
 
 ## 5. Tests
 

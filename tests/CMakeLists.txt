@@ -4,16 +4,24 @@ include(Catch)
 # DSP tests link only juce_dsp, which enforces that fcm_dsp never depends on UI or plugin code.
 juce_add_console_app(fcm_dsp_tests PRODUCT_NAME "fcm_dsp_tests")
 target_sources(fcm_dsp_tests PRIVATE
+    dsp/AllocationCounter.cpp
     dsp/AuditionTests.cpp
     dsp/BreakpointEnvelopeTests.cpp
+    dsp/EffectChainTests.cpp
+    dsp/fx/DistortionTests.cpp
+    dsp/fx/EqTests.cpp
+    dsp/fx/StereoTests.cpp
+    dsp/fx/RegisteredEffectsTests.cpp
     dsp/EngineTests.cpp
     dsp/EnvelopeEngineTests.cpp
     dsp/EnvelopeRendererTests.cpp
     dsp/EnvelopeRobustnessTests.cpp
+    dsp/FactoryWavetablesTests.cpp
     dsp/MusicalTimeTests.cpp
     dsp/NoteHandlingTests.cpp
     dsp/PublishedPointerTests.cpp
     dsp/PunchTailTests.cpp
+    dsp/TockTests.cpp
     dsp/OscillatorRobustnessTests.cpp
     dsp/VoiceTests.cpp
     dsp/WavetableTests.cpp
@@ -33,20 +41,31 @@ juce_add_console_app(fcm_core_tests PRODUCT_NAME "fcm_core_tests")
 target_sources(fcm_core_tests PRIVATE
     core/AuditionStateTests.cpp
     core/EnvelopeStateTests.cpp
+    core/EqResponseTests.cpp
+    core/FxCoreTests.cpp
     core/ParameterTests.cpp
+    core/PresetTests.cpp
+    core/ProjectStateTests.cpp
     core/TempoStateTests.cpp
     core/BoundedMidiCopyTests.cpp
-    core/ParameterTests.cpp
     core/StateLoaderTests.cpp
     core/TailLengthTests.cpp
+    core/TockImportTests.cpp
+    core/TockSelectorTests.cpp
+    core/WavetableImportTests.cpp
+    core/WavetableSelectorTests.cpp
+    core/WavetableShapeTests.cpp
 )
 target_link_libraries(fcm_core_tests PRIVATE
     fcm_core
+    juce::juce_audio_formats
     juce::juce_audio_processors
     juce::juce_dsp
     Catch2::Catch2WithMain
 )
 fcm_apply_juce_options(fcm_core_tests)
-target_compile_definitions(fcm_core_tests PRIVATE JUCE_STANDALONE_APPLICATION=1)
+# The loader tests wait for the message thread with runDispatchLoopUntil, which JUCE only offers
+# when modal loops are permitted.
+target_compile_definitions(fcm_core_tests PRIVATE JUCE_STANDALONE_APPLICATION=1 JUCE_MODAL_LOOPS_PERMITTED=1)
 
 catch_discover_tests(fcm_core_tests)

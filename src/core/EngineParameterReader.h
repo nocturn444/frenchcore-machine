@@ -2,9 +2,11 @@
 #pragma once
 
 #include "dsp/engine/EngineParameters.h"
+#include "dsp/fx/EffectRegistry.h"
 
 #include <array>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <vector>
 
 namespace fcm::core
 {
@@ -14,7 +16,8 @@ namespace fcm::core
 class EngineParameterReader
 {
   public:
-    explicit EngineParameterReader(juce::AudioProcessorValueTreeState& state);
+    explicit EngineParameterReader(juce::AudioProcessorValueTreeState& state,
+                                   const dsp::EffectRegistry& registry = dsp::defaultEffectRegistry());
 
     dsp::EngineParameters read() const noexcept;
 
@@ -30,6 +33,17 @@ class EngineParameterReader
         std::atomic<float>* phase;
     };
 
+    // One per registered effect: its on switch, its mix and the values of its own parameters.
+    struct EffectPointers
+    {
+        std::atomic<float>* enabled;
+        std::atomic<float>* mix;
+        std::vector<std::atomic<float>*> values;
+        std::vector<float> defaults;
+    };
+
+    std::vector<EffectPointers> effects;
+    std::atomic<float>* quality;
     std::atomic<float>* outputGain;
     std::atomic<float>* limiterOn;
     std::atomic<float>* keyTrack;
@@ -37,10 +51,16 @@ class EngineParameterReader
     std::atomic<float>* glideOn;
     std::atomic<float>* glideTime;
     std::atomic<float>* velocitySensitivity;
+    std::atomic<float>* tockOn;
+    std::atomic<float>* tockMode;
+    std::atomic<float>* tockLevel;
+    std::atomic<float>* tockTune;
+    std::atomic<float>* tockStart;
+    std::atomic<float>* tockDecay;
+    std::atomic<float>* tockTone;
     std::atomic<float>* ampTimeScale;
     std::atomic<float>* pitchTimeScale;
     std::atomic<float>* pitchAmount;
-    std::atomic<float>* punchBalance;
     std::atomic<float>* punchSplit;
     std::atomic<float>* punchLevel;
     std::atomic<float>* tailLevel;
