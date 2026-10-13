@@ -26,4 +26,17 @@ Run in at least Ableton Live, FL Studio and Reaper, on Windows and macOS where a
 - [ ] Resize the editor to minimum and maximum sizes: everything scales together, nothing is cut or overlaps, and the window keeps its shape.
 - [ ] EQ display: drag each dot, turn the wheel over one for Q, double-click one to switch the band; the curve and the knobs below follow, and the sound follows too.
 - [ ] Sample rates 44.1, 48, 96 kHz; buffer sizes 32 to 2048.
-- [ ] CPU usage reasonable with one instance at max oversampling.
+- [x] CPU usage reasonable with one instance at max oversampling. Measured by the agent on 2026-10-13 (see below); the owner did not measure it in a DAW and considers 8x an unusual setting anyway.
+
+### CPU measurement (engine only, no DAW)
+
+A kick about every 0.3 s for 10 s of audio at 48 kHz in blocks of 512, rendered offline on a 2.8 GHz Intel Xeon, one thread, Release build. The numbers are the share of one core that real-time playback would need.
+
+| Quality | Effects off | Distortion, EQ with gains, and Stereo all on |
+|---|---|---|
+| 1x | 0.3 % | 1.3 % |
+| 2x (default) | 0.3 % | 1.6 % |
+| 4x | 0.3 % | 2.1 % |
+| 8x | 0.3 % | 3.4 % |
+
+Even at 8x with every effect on, one instance needs about 3 % of one core. This is the engine alone: the DAW's own work and the editor are not included, and other CPUs will differ, so treat it as an order of magnitude.
