@@ -1,11 +1,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# Builds the plugin for the three systems when a version tag is pushed and attaches the zips to a DRAFT
-# GitHub Release. Nothing is published until the owner presses Publish (docs/RELEASING.md).
+# Builds the plugin for the three systems and attaches the zips to a DRAFT GitHub Release. Nothing is
+# published until the owner presses Publish (docs/RELEASING.md). It starts in one of two ways:
+#  - a version tag is pushed (v0.1.0), or
+#  - the owner presses "Run workflow" in the Actions tab and types the version: the draft is created
+#    against the current main, and the tag itself is created when the draft is published.
 name: Release
 
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version to release, for example v0.1.0'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -13,7 +22,7 @@ permissions:
 env:
   BUILD_TYPE: Release
   CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
-  TAG: ${{ github.ref_name }}
+  TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:
   create-release:
@@ -21,8 +30,14 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write # the only job that creates the release
+    outputs:
+      exists: ${{ steps.draft.outputs.exists }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Check the tag has the form v1.2.3
+        run: |
+          echo "${TAG}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Bad version: ${TAG}"; exit 1; }
 
       # A tag that does not match the project version would publish binaries that say another version.
       - name: Check the tag against the project version
@@ -31,16 +46,30 @@ jobs:
           grep -q "project(FrenchcoreMachine VERSION ${version} " CMakeLists.txt || {
             echo "Tag ${TAG} does not match the VERSION in CMakeLists.txt"; exit 1; }
 
+      # Publishing a draft that was started by hand creates the tag, which starts this workflow again;
+      # when the release already exists nothing more is built.
       - name: Create the draft
+        id: draft
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${TAG}" --draft --verify-tag --title "Frenchcore Machine ${TAG}" \
-            --notes "First notes are in CHANGELOG.md. The plugins are not signed: see the Installation section of the user guide for the one-time steps on macOS and Windows."
+          if gh release view "${TAG}" > /dev/null 2>&1; then
+            echo "A release for ${TAG} already exists; nothing to do."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+          notes="First notes are in CHANGELOG.md. The plugins are not signed: see the Installation section of the user guide for the one-time steps on macOS and Windows."
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            gh release create "${TAG}" --draft --verify-tag --title "Frenchcore Machine ${TAG}" --notes "${notes}"
+          else
+            gh release create "${TAG}" --draft --target "${GITHUB_SHA}" --title "Frenchcore Machine ${TAG}" --notes "${notes}"
+          fi
 
   build:
     name: ${{ matrix.name }}
     needs: create-release
+    if: needs.create-release.outputs.exists != 'true'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write # uploads this system's zip to the draft
