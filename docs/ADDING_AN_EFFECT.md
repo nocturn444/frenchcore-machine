@@ -1,6 +1,6 @@
 # Adding an Effect
 
-The FX section is designed so that a new effect touches only its own folder, one registration line, its tests and its docs. If you find yourself editing the chain, the UI rack or the parameter layout code to add an effect, stop: that is an architecture problem and should be raised as an issue.
+The FX section is designed so that a new effect touches only its own folder, one registration line, its tests and its docs. If you find yourself editing the chain, the rack code or the parameter layout code to add an effect, stop: that is an architecture problem and should be raised as an issue.
 
 This guide was validated by adding Distortion, the EQ and Stereo with it ([fx-distortion](specs/fx-distortion.md), [fx-eq](specs/fx-eq.md), [fx-stereo](specs/fx-stereo.md)); none of them needed a change in the chain, the layout code, the reader or the rack. Background: [fx-chain](specs/fx-chain.md), [ADR 0003](decisions/0003-fx-chain-model.md), [ADR 0009](decisions/0009-effect-parameters-and-chain-latency.md).
 
@@ -28,7 +28,8 @@ This guide was validated by adding Distortion, the EQ and Stereo with it ([fx-di
    - constant, non-negative latency, zero at 1x.
    Your own tests cover what the effect does (responses, shapes, aliasing, latency matching `latencySamples`). Also add the effect's parameter IDs (`<id>.enabled`, `<id>.mix` and its own) to the released-ID list in `tests/core/ParameterTests.cpp`.
 5. **Update docs:** the effect's section in `docs/USER_GUIDE.md`, `CHANGELOG.md` under `Unreleased`, the status in `docs/PLAN.md`, and the spec's status.
-6. **Open a PR** using the template. The effect appears in the Effects tab, saves and restores with the project, and takes part in the chain order without any further work.
+6. **Optional: grouping and a picture.** The rack ([fx-rack](specs/fx-rack.md)) lays out your controls by itself. To get one column per group (like the EQ's bands) give the suffixes a dot ("b1.freq") and name the parameters "<Group> <Control>" ("Band 1 Freq"). To show a picture above the controls, add one entry for your effect ID in `src/ui/EffectDecorations.cpp`; the rack code does not change.
+7. **Open a PR** using the template. The effect appears in the Effects box, saves and restores with the project, and takes part in the chain order without any further work.
 
 ## Rules
 

@@ -3,6 +3,7 @@
 
 #include "core/PresetManager.h"
 
+#include <functional>
 #include <juce_gui_basics/juce_gui_basics.h>
 
 namespace fcm::ui
@@ -15,7 +16,10 @@ class PresetBar : public juce::Component, private juce::ChangeListener
   public:
     static constexpr int kHeight = 32;
 
-    explicit PresetBar(core::PresetManager& manager);
+    // `extraMessage` is shown when the presets have nothing to say (the wavetable loader's messages);
+    // `extraChanges` announces when it may have changed.
+    PresetBar(core::PresetManager& manager, std::function<juce::String()> extraMessage,
+              juce::ChangeBroadcaster& extraChanges);
     ~PresetBar() override;
 
     void resized() override;
@@ -29,6 +33,8 @@ class PresetBar : public juce::Component, private juce::ChangeListener
     void showCurrent();
 
     core::PresetManager& presets;
+    std::function<juce::String()> extraMessage;
+    juce::ChangeBroadcaster& extraBroadcaster;
     juce::TextButton previousButton{"<"};
     juce::TextButton menuButton;
     juce::TextButton nextButton{">"};

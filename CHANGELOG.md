@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The editor follows the layout you drew: preset bar on top, the two oscillators at the top left, the envelopes under them, the Effects in a tall box on the right, and a bottom row with the LFO box (free for later), Tock, Punch / Tail, Global and a free box. It is wider than tall (1500 by about 770 points) and the whole thing scales with the window, so nothing rearranges or gets squeezed at any size. See `docs/specs/ui-grid-layout.md`.
+- The Effects are now strips from top to bottom (drag the bar up or down to reorder) in their own box instead of a tab. The EQ shows its response curve with four draggable dots. See `docs/specs/fx-rack.md`.
+- The envelope's Time Scale is a knob in the same row as the shape knobs. Messages about loading a wavetable or a sample appear in the preset bar. Continuous knobs show two decimals instead of seven, and frequencies from 1000 Hz show as kHz.
+
 ### Removed
 
 - The **Punch/Tail Balance** knob (parameter `punchTail.balance`): it changed the character of the sound too much. **Split** now only divides the kick between the **Punch Level** and **Tail Level** controls, which stay. See `docs/specs/voice-punch-tail.md`.

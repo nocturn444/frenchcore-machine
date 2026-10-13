@@ -236,7 +236,7 @@ Patterns used:
 ## 7. User interface
 
 - Functional first; visual design will be done later and must not require structural changes. All drawing goes through a custom `LookAndFeel` so restyling is a separate task.
-- Resizable editor with a fixed aspect ratio, laid out with `juce::FlexBox`/`Grid` relative to the window size.
+- Resizable editor with a fixed aspect ratio. The editor is drawn on one fixed design grid (1500 points wide) and scaled as a whole to the window, so it never rearranges ([ui-grid-layout](specs/ui-grid-layout.md)). Styling lives in `ui/Style.h` and `ui::FcmLookAndFeel`.
 - Main areas, as agreed in [UI_LAYOUT.md](UI_LAYOUT.md): preset bar, two oscillator panels, amp and pitch envelope panels, tock, punch/tail levels, global, and the FX rack. LFOs (post-MVP) and "Other" have reserved space.
 - The UI never calls DSP code. It changes parameters through APVTS attachments and non-parameter state through `fcm_core` APIs.
 - A JUCE 9 WebView-based UI is a possible future option for the visual redesign. It is not used in the MVP.

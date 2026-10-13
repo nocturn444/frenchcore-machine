@@ -21,7 +21,7 @@ The Tock is part of the kick: it follows the velocity, the Punch/Tail gain and t
 
 ### Your own tock sample
 
-A **Load Tock Sample...** button (next to the wavetable buttons) opens a WAV file. If it is usable, **Tock Sample** switches to the **User** entry and the Tock plays it in Sample mode.
+A **Load sample...** button in the Tock box opens a WAV file. If it is usable, **Tock Sample** switches to the **User** entry and the Tock plays it in Sample mode.
 
 - Any WAV works as long as it is short: **at most 2 seconds** and 384000 samples, **at least 16 samples**, at any sample rate from 8 kHz to 192 kHz (it plays at the right pitch whatever the rate). Only the first channel is used.
 - It is centred (no DC offset), scaled so its loudest point is full scale, and given a 2 ms fade-out at the end so it never ends with a click.

@@ -44,6 +44,10 @@ class EqEffect : public Effect
     // The magnitude of a design at `hz`, in dB (the response curve of the display).
     static double magnitudeDb(const Coefficients& coefficients, double sampleRate, double hz) noexcept;
 
+    // Whether a band changes the sound: a bell or shelf needs some gain, a cut always acts. A band that
+    // is off never does.
+    static bool isActive(bool on, Shape shape, double gainDb) noexcept;
+
     // Number of bands, and how many parameter values one band takes, in the order of parameters():
     // on, type, frequency, gain, Q.
     static constexpr int kBands = 4;

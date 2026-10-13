@@ -22,7 +22,7 @@ Defaults: Osc 1 on at full level, Osc 2 off at full level. A fresh instance is a
 
 ## 2. User interface
 
-Phase 2: generic parameter panel. Later: the oscillator panels in [UI_LAYOUT.md](../UI_LAYOUT.md) (header with On/Pitch/Octave/Fine, wavetable display, knobs for Position/Level/Phase).
+The oscillator panels of [UI_LAYOUT.md](../UI_LAYOUT.md): a header with On, the Wavetable menu and Load; a strip with Pitch, Octave and Fine; the wavetable display; knobs for Position, Level and Phase ([ui-grid-layout](ui-grid-layout.md)).
 
 ## 3. Parameters
 

@@ -22,9 +22,7 @@ The bands start as a low shelf at 80 Hz, bells at 400 Hz and 2.5 kHz and a high 
 
 ## 2. User interface
 
-(The display is built in the next change, the UI layout rework, together with the new Effects area; until then the eq controls appear as the generic list of the rack.)
-
-In the Effects rack the EQ shows a **response display**: the combined curve of the four bands over 20 Hz to 20 kHz (-18 to +18 dB), one numbered dot per band. Drag a dot sideways to change its Freq and up or down to change its Gain; turn the mouse wheel over a dot to change its Q; double-click a dot to switch the band on or off. Under the display the controls of each band are in a column: On, Type, Freq, Gain, Q. See [fx-rack](fx-rack.md).
+The EQ strip of the Effects box shows a **response display**: the combined curve of the four bands over 20 Hz to 20 kHz (-18 to +18 dB), one numbered dot per band. Drag a dot sideways to change its Freq and up or down to change its Gain; turn the mouse wheel over a dot to change its Q; double-click a dot to switch the band on or off. Under the display the controls of each band are in a column: On, Type, Freq, Gain, Q. See [fx-rack](fx-rack.md).
 
 ## 3. Parameters
 
@@ -72,6 +70,7 @@ Catch2, in `tests/dsp/fx/EqTests.cpp` (the generic tests of `RegisteredEffectsTe
 - A band that is off does nothing, even a cut.
 - Combined bands add up (in dB) away from each other's influence.
 - `magnitudeDb` agrees with the measured response for every type.
+- Display (`core::EqResponse`, `tests/core/EqResponseTests.cpp`): the frequency and gain axes map the ends and the middle, clamp, invert each other and never produce a non-finite number; the bands are read from the parameters (defaults flat, a bell and a low cut are active and shape the curve, a band that is off does not count).
 - Stability: extreme settings (Q at both ends and beyond, frequencies at both ends and beyond Nyquist, NaN, gains at both ends, every type, at 44.1, 48 and 96 kHz) give finite, bounded output for noise and for a loud kick-like sine burst.
 - Changing parameters block by block (random types, on/off, frequency, gain, Q) does not blow up.
 - Mono (one channel) buffers work.

@@ -140,6 +140,12 @@ EqEffect::Coefficients EqEffect::design(Shape shape, double rate, double frequen
     return c;
 }
 
+bool EqEffect::isActive(bool on, Shape shape, double gainDb) noexcept
+{
+    const bool isCut = shape == Shape::lowCut || shape == Shape::highCut;
+    return on && (isCut || (std::isfinite(gainDb) && std::abs(gainDb) >= kInactiveGainDb));
+}
+
 double EqEffect::magnitudeDb(const Coefficients& k, double rate, double hz) noexcept
 {
     // |H(e^jw)| from the coefficients, evaluated with z^-1 = e^-jw.
@@ -168,9 +174,8 @@ void EqEffect::setParameters(std::span<const float> values) noexcept
         const double gain = finiteOrZero(values[base + 3]);
 
         auto& band = bands[static_cast<size_t>(i)];
-        // A bell or shelf with no gain does nothing, so it is skipped: flat is bit-exact. A cut always acts.
-        const bool isCut = shape == Shape::lowCut || shape == Shape::highCut;
-        band.active = on && (isCut || std::abs(gain) >= kInactiveGainDb);
+        // A bell or shelf with no gain does nothing, so it is skipped: flat is bit-exact.
+        band.active = isActive(on, shape, gain);
         if (band.active)
             band.coefficients = design(shape, sampleRate, finiteOrZero(values[base + 2]),
                                        finiteOrZero(values[base + 4]), gain);

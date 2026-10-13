@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "ui/PresetBar.h"
 
+#include "ui/Style.h"
+
 namespace fcm::ui
 {
 
-PresetBar::PresetBar(core::PresetManager& manager) : presets(manager)
+PresetBar::PresetBar(core::PresetManager& manager, std::function<juce::String()> extra,
+                     juce::ChangeBroadcaster& extraChanges)
+    : presets(manager), extraMessage(std::move(extra)), extraBroadcaster(extraChanges)
 {
     for (auto* button : {&previousButton, &menuButton, &nextButton, &saveButton})
         addAndMakeVisible(*button);
@@ -20,21 +24,24 @@ PresetBar::PresetBar(core::PresetManager& manager) : presets(manager)
     addAndMakeVisible(nameField);
 
     messageLabel.setJustificationType(juce::Justification::centredLeft);
-    messageLabel.setColour(juce::Label::textColourId, juce::Colour(0xffe0a050));
+    messageLabel.setColour(juce::Label::textColourId, style::kWarning);
+    messageLabel.setMinimumHorizontalScale(0.8f);
     addAndMakeVisible(messageLabel);
 
     presets.addChangeListener(this);
+    extraBroadcaster.addChangeListener(this);
     showCurrent();
 }
 
 PresetBar::~PresetBar()
 {
     presets.removeChangeListener(this);
+    extraBroadcaster.removeChangeListener(this);
 }
 
 void PresetBar::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xff1b1c21));
+    g.fillAll(style::kHeader);
 }
 
 void PresetBar::resized()
@@ -61,7 +68,11 @@ void PresetBar::changeListenerCallback(juce::ChangeBroadcaster*)
 void PresetBar::showCurrent()
 {
     menuButton.setButtonText(presets.currentName());
-    messageLabel.setText(presets.lastMessage(), juce::dontSendNotification);
+    // A preset message wins; otherwise the loader's last message (a refused wavetable, for example).
+    auto message = presets.lastMessage();
+    if (message.isEmpty() && extraMessage)
+        message = extraMessage();
+    messageLabel.setText(message, juce::dontSendNotification);
 }
 
 void PresetBar::showMenu()

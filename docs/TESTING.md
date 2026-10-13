@@ -21,6 +21,7 @@ Run in at least Ableton Live, FL Studio and Reaper, on Windows and macOS where a
 - [ ] Automate a parameter of each effect, reorder the chain, automation still controls the same effect.
 - [ ] Save the project, close the DAW, reopen: sound is identical, including the user wavetable and FX order.
 - [ ] Save, load and browse presets.
-- [ ] Resize the editor to minimum and maximum sizes.
+- [ ] Resize the editor to minimum and maximum sizes: everything scales together, nothing is cut or overlaps, and the window keeps its shape.
+- [ ] EQ display: drag each dot, turn the wheel over one for Q, double-click one to switch the band; the curve and the knobs below follow, and the sound follows too.
 - [ ] Sample rates 44.1, 48, 96 kHz; buffer sizes 32 to 2048.
 - [ ] CPU usage reasonable with one instance at max oversampling.

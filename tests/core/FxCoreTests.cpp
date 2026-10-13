@@ -305,3 +305,25 @@ TEST_CASE("Dragging an effect across the row reorders and publishes the chain", 
     REQUIRE(order.ids() == kRegistration);
     REQUIRE(packed.load() == fcm::dsp::EffectChain::registrationOrder(3));
 }
+
+TEST_CASE("The position under a point in a stack of slots of different sizes", "[core][fx][rack]")
+{
+    const std::vector<double> sizes{130.0, 290.0, 130.0};
+    REQUIRE(FxOrderState::positionIn(sizes, 0.0) == 0);
+    REQUIRE(FxOrderState::positionIn(sizes, 129.9) == 0);
+    REQUIRE(FxOrderState::positionIn(sizes, 130.0) == 1); // each boundary belongs to the next slot
+    REQUIRE(FxOrderState::positionIn(sizes, 419.9) == 1);
+    REQUIRE(FxOrderState::positionIn(sizes, 420.0) == 2);
+    REQUIRE(FxOrderState::positionIn(sizes, 549.0) == 2);
+
+    // Outside the stack the first or last slot.
+    REQUIRE(FxOrderState::positionIn(sizes, -30.0) == 0);
+    REQUIRE(FxOrderState::positionIn(sizes, 5000.0) == 2);
+
+    // Unusable input is safe.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    REQUIRE(FxOrderState::positionIn(sizes, nan) == 0);
+    REQUIRE(FxOrderState::positionIn({}, 10.0) == 0);
+    REQUIRE(FxOrderState::positionIn({100.0}, 900.0) == 0);
+    REQUIRE(FxOrderState::positionIn({nan, 100.0, -5.0}, 50.0) == 1); // bad sizes count as 0
+}

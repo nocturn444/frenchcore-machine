@@ -47,6 +47,11 @@ class FxOrderState : public juce::ChangeBroadcaster
     // effect is dragged).
     static int positionAt(double x, double slotWidth, int count) noexcept;
 
+    // The same for slots of different sizes laid out one after the other (the vertical rack): the
+    // position whose span holds `offset`, clamped to the first and last. Sizes that are not finite
+    // positive numbers count as 0; anything unusable gives 0.
+    static int positionIn(const std::vector<double>& sizes, double offset) noexcept;
+
   private:
     void publish();
 

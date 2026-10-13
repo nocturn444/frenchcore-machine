@@ -33,7 +33,7 @@ Behaviour:
 
 ## 2. User interface
 
-Phase 4 still uses the generic parameter panel, where the Wavetable choice appears as a menu at the top of each oscillator column. The final oscillator panel (wavetable display, frame name) comes in a later part of this phase and with the real panels of [UI_LAYOUT.md](../UI_LAYOUT.md).
+The Wavetable choice is the menu in each oscillator's header ([ui-grid-layout](ui-grid-layout.md)).
 
 ## 3. Parameters
 

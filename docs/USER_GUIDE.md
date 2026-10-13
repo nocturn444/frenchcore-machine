@@ -15,7 +15,20 @@ _The full quick start is written when the MVP features land. What works today:_
 3. Play a lower or higher note to retune the kick, or turn **Key Track** off to make every note play the same pitch (the **Root Note**).
 4. Make the note longer or shorter in the piano roll to control how long the tail rings.
 
-The controls are a plain list for now; the real layout comes later.
+Everything is on one screen (see [The window](#the-window)).
+
+## The window
+
+The whole plugin is one screen, laid out like this:
+
+- **Top strip**: the preset bar (see [Presets](#presets)).
+- **Left, top**: the two oscillators side by side. Each has a header (On, the Wavetable menu, a Load button), Pitch, Octave and Fine, the wavetable display, and the Position, Level and Phase knobs.
+- **Left, middle**: the Amp Envelope and the Pitch Envelope side by side, each with its display, five knobs for the shape and a Time Scale knob.
+- **Right**: the Effects, one strip each from top to bottom in the order of the sound.
+- **Bottom row**: the LFO box (kept free for a later version), the Tock, Punch / Tail, Global, and a free box.
+- **Standalone only**: the keyboard and Auto-play strip at the very bottom.
+
+You can resize the window. Everything scales together, so nothing moves or gets squeezed: the window only gets smaller or bigger, keeping its shape. Double-click any knob to bring it back to its default value.
 
 ## Standalone: playing without a DAW
 
@@ -57,11 +70,11 @@ Harder waves carry more energy than the sine at the same Level, so they sound lo
 
 ### The wavetable display
 
-Above each Load button a small display shows what that oscillator plays: the wavetable's name, a faint stack of its waveforms and, in bright blue, the waveform at the current **Position**. Move the Position knob and the bright line moves with it. It only shows; there is nothing to click.
+Under the Pitch, Octave and Fine strip of each oscillator a display shows what that oscillator plays: the wavetable's name, a faint stack of its waveforms and, in bright blue, the waveform at the current **Position**. Move the Position knob and the bright line moves with it. It only shows; there is nothing to click.
 
 ### Your own wavetable
 
-Under the controls there are two buttons, **Load Osc 1 Wavetable...** and **Load Osc 2 Wavetable...**. Pick a WAV file and, if it is usable, that oscillator switches to the **User** entry of its Wavetable menu and plays it. A line of text next to the buttons says what was loaded, or why a file was refused.
+Each oscillator has a **Load...** button in its header, next to the Wavetable menu. Pick a WAV file and, if it is usable, that oscillator switches to the **User** entry of its Wavetable menu and plays it. A line of text in the preset bar says what was loaded, or why a file was refused.
 
 - A wavetable is a WAV whose length is a whole number of 2048-sample frames (1 to 256 frames, the Serum and Vital format), or a single cycle of 64 to 16384 samples, which is stretched to one frame. Only the first channel is used, and the sample rate does not matter.
 - The sound is centred and scaled so its loudest point is full scale, keeping the level differences between frames.
@@ -88,7 +101,7 @@ The Tock follows the velocity, the Punch and Tail levels and the amp envelope li
 
 ### Your own tock sample
 
-The **Load Tock Sample...** button (at the bottom left of the wavetable area) opens a WAV file. If it is usable, **Tock Sample** switches to its **User** entry and the Tock plays it in Sample mode (remember to switch Tock Mode to Sample).
+The **Load sample...** button in the Tock box opens a WAV file. If it is usable, **Tock Sample** switches to its **User** entry and the Tock plays it in Sample mode (remember to switch Tock Mode to Sample).
 
 - The file must be short: at most 2 seconds, at any sample rate from 8 kHz to 192 kHz. Only the first channel is used.
 - It is centred, scaled to full scale and given a 2 ms fade-out at the end, so it never ends with a click.
@@ -163,11 +176,11 @@ The shapes are saved with your project, so the kick comes back exactly as you le
 
 ## Effects
 
-After the oscillators and the Tock, the kick goes through a row of effects: Distortion, EQ and Stereo. They live in the **Effects** tab, and every one works the same way:
+After the oscillators and the Tock, the kick goes through a row of effects: Distortion, EQ and Stereo. They live in the **Effects** box on the right, and every one works the same way:
 
 - **On**: each effect has its own switch, **off by default**, so the sound does not change until you switch one on.
 - **Mix**: how much of the effect you hear against the untouched sound (0 to 100 %, default 100 %).
-- **Order**: the effects can be dragged into any order in the **Effects** tab (next to Envelopes in the lower half of the window). Each effect is a column, in the order the sound goes through them from left to right; grab the handle bar at the top of a column and drag it left or right, and the others slide to make room. Each effect exists once, and its controls keep working with automation wherever it sits. The order is saved with the project.
+- **Order**: the effects can be dragged into any order. Each effect is a strip, in the order the sound goes through them from top to bottom; grab the handle bar at the top of a strip (the three lines and the name) and drag it up or down, and the others slide to make room. Each effect exists once, and its controls keep working with automation wherever it sits. The order is saved with the project.
 - Switching an effect on or off, changing its Mix or moving it never clicks and never shifts the timing of the kick.
 - The effects work on both channels. They sit before the output gain and the safety limiter, so the limiter always protects the final sound.
 ### Distortion
@@ -201,7 +214,7 @@ Every band is the same and free: you choose what it does, where and how much.
 | **Q** | How wide. For a bell, a high Q is a thin notch and a low Q a wide sweep. 0.71 on a shelf or cut is the plain, flat shape. |
 | **On** | Switches the band off without losing its settings. |
 
-The bands start as a low shelf at 80 Hz, bells at 400 Hz and 2.5 kHz and a high shelf at 8 kHz, all flat. In the Effects tab the display shows the combined curve with one numbered dot per band: drag a dot sideways for Freq and up or down for Gain, turn the mouse wheel over it for Q, and double-click it to switch the band on or off. With every Gain at 0 and no cut in use the EQ changes nothing, and it adds no delay.
+The bands start as a low shelf at 80 Hz, bells at 400 Hz and 2.5 kHz and a high shelf at 8 kHz, all flat. In the EQ strip the display shows the combined curve with one numbered dot per band: drag a dot sideways for Freq and up or down for Gain, turn the mouse wheel over it for Q, and double-click it to switch the band on or off. With every Gain at 0 and no cut in use the EQ changes nothing, and it adds no delay.
 
 ### Stereo
 

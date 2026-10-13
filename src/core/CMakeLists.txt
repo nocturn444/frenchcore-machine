@@ -3,6 +3,7 @@ add_library(fcm_core INTERFACE)
 target_sources(fcm_core INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/BoundedMidiCopy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EngineParameterReader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/EqResponse.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EnvelopeState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FxOrderState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FactoryPresets.cpp

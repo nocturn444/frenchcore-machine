@@ -41,10 +41,8 @@ class EnvelopePanel : public juce::Component, private juce::ChangeListener
     {
         juce::String title;
         std::vector<ShapeKnob> shapeKnobs;
-        std::vector<ParameterKnob> parameterKnobs; // shown first, in the main knob row
-        // Small sliders under the knobs: parameter ID and the short name shown next to it.
-        std::vector<std::pair<juce::String, juce::String>> sliderParameters;
-        std::vector<ParameterKnob> extraKnobs;          // a second knob row under the sliders
+        std::vector<ParameterKnob> parameterKnobs;      // shown first, in the main knob row
+        std::vector<ParameterKnob> trailingKnobs;       // shown after the shape knobs, in the same row
         std::function<std::optional<float>()> markerMs; // see EnvelopeEditor
     };
 
@@ -73,13 +71,6 @@ class EnvelopePanel : public juce::Component, private juce::ChangeListener
         bool configured = false;
     };
 
-    struct ParameterSlider
-    {
-        std::unique_ptr<juce::Slider> slider;
-        std::unique_ptr<juce::Label> label;
-        std::unique_ptr<juce::SliderParameterAttachment> attachment;
-    };
-
     void changeListenerCallback(juce::ChangeBroadcaster*) override;
     void refreshKnobs();
     void showMilliseconds(Knob& knob);
@@ -98,8 +89,6 @@ class EnvelopePanel : public juce::Component, private juce::ChangeListener
     juce::ComboBox presets;
     EnvelopeEditor editor;
     std::vector<Knob> knobs;
-    std::vector<Knob> extraKnobs;
-    std::vector<ParameterSlider> sliders;
     bool refreshing = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EnvelopePanel)

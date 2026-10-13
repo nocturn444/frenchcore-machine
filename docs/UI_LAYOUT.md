@@ -1,6 +1,6 @@
 # UI Layout
 
-- Status: v2, agreed with the product owner (2026-10-11). "Other" is reserved, contents to be defined.
+- Status: v3. Layout agreed with the product owner (2026-10-11); implemented as a fixed design grid on 2026-10-13 ([spec](specs/ui-grid-layout.md)). "Other" is reserved, contents to be defined.
 
 This document describes the functional layout of the editor. Visual styling (colours, fonts, knob graphics) is a separate, later task and is not specified here.
 
@@ -11,7 +11,7 @@ In the original sketch, black areas were mandatory and red areas were to be disc
 ## Principles
 
 - Function first: every MVP feature is reachable from the main window without menus.
-- Resizable with a fixed aspect ratio; all positions are relative to the window size.
+- Resizable with a fixed aspect ratio. The grid is drawn at one design size (1500 points wide) and the whole of it is scaled to the window, so nothing rearranges or squeezes at any size. It is wider than tall so it fits a screen.
 - All styling goes through a custom `LookAndFeel`, so the visual redesign does not move components.
 - Double-click any knob to reset it to default; Ctrl/Cmd-drag for fine adjustment.
 - Each area is its own component (`fcm::ui::<Area>Panel`), so areas can be added, removed or moved without touching the others.
@@ -57,22 +57,22 @@ Only in the Standalone, below the grid: Auto-play toggle, BPM and an on-screen k
 ## Component tree
 
 ```
-FrenchcoreEditor
+PluginEditor                 (scales one fixed grid to the window)
 ├── PresetBar
 ├── OscillatorPanel ×2       (same class, bound to osc1 / osc2)
-│   ├── OscillatorHeader
+│   ├── header: On, Wavetable menu, Load
+│   ├── strip: Pitch, Octave, Fine
 │   ├── WavetableDisplay
-│   └── KnobRow (6)
-├── EnvelopePanel (amp)      (same class for both envelopes)
-├── EnvelopePanel (pitch)
-├── TockPanel
-├── PunchTailPanel
-├── GlobalPanel
-├── FxRackPanel
-│   ├── FxSlotList (drag to reorder)
-│   └── FxDetailPanel (selected effect, auto-generated or custom)
-├── AuditionPanel            (Standalone only)
-└── placeholders: LfoPanel (post-MVP), OtherPanel (reserved)
+│   └── knobs: Position, Level, Phase
+├── EnvelopePanel ×2         (amp and pitch, same class)
+├── FxArea
+│   └── FxRackPanel          (one strip per registered effect; EqDisplay above the EQ's bands)
+├── PlaceholderPanel         (LFO, post-MVP)
+├── TockPanel                (a ControlPanel with a Load button)
+├── ControlPanel             (Punch / Tail)
+├── ControlPanel             (Global)
+├── PlaceholderPanel         (Other)
+└── AuditionPanel            (Standalone only)
 ```
 
 ## Revision history
@@ -81,3 +81,4 @@ FrenchcoreEditor
 |---|---|---|
 | v1 | 2026-10-11 | First layout from the product owner's sketch. |
 | v2 | 2026-10-11 | Red areas decided: two identical oscillators, punch/tail balance with split slider, global panel contents, LFOs after MVP, tock with synth and sample modes. |
+| v3 | 2026-10-13 | Implemented as a fixed design grid scaled to the window; the Punch / Tail balance knob was removed; the FX rack became vertical strips; the EQ gained a response display. |

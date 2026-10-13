@@ -1,102 +1,184 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "plugin/PluginEditor.h"
 
+#include "core/ParameterIds.h"
 #include "plugin/PluginProcessor.h"
+#include "ui/Style.h"
 
 namespace fcm
 {
 
 namespace
 {
-std::vector<juce::String> groupsShownElsewhere()
-{
-    std::vector<juce::String> groups{"ampEnv", "pitchEnv", "punchTail"};
-    const auto& registry = dsp::defaultEffectRegistry();
-    for (int i = 0; i < registry.count(); ++i)
-        groups.emplace_back(std::string(registry.descriptor(i)->id));
-    return groups;
-}
+namespace Ids = core::ParameterIds;
 
-// Default size of the editor (docs/UI_LAYOUT.md). The Standalone adds the audition strip below it;
-// the aspect ratio is fixed for whichever total height applies.
-constexpr int kDefaultWidth = 1100;
-constexpr int kPanelHeight = 860;
-constexpr int kEnvelopeRowHeight = 540;
+// The design grid (docs/UI_LAYOUT.md), in pixels at scale 1.
+constexpr int kMargin = 8;
+constexpr int kGap = ui::style::kGap;
+constexpr int kOscillatorRowHeight = 280;
+constexpr int kEnvelopeRowHeight = 250;
+constexpr int kBottomRowHeight = 180;
+constexpr int kLeftBlockWidth = 912; // the two oscillators and the two envelopes
+constexpr int kLfoWidth = 300;
+constexpr int kTockWidth = 440;
+constexpr int kPunchTailWidth = 250;
+constexpr int kGlobalWidth = 350;
+
+constexpr int kBodyHeight = ui::PresetBar::kHeight + kGap + kOscillatorRowHeight + kGap + kEnvelopeRowHeight +
+                            kGap + kBottomRowHeight + kMargin;
+
+// Smallest and largest window, as shares of the design size.
+constexpr double kMinScale = 0.6;
+constexpr double kMaxScale = 1.6;
 } // namespace
 
-EnvelopeRow::EnvelopeRow(PluginProcessor& owner)
-    : ampPanel(
-          owner.getAmpEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
-          ui::EnvelopePanel::ampConfig(owner.getState())),
-      pitchPanel(
-          owner.getPitchEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
-          ui::EnvelopePanel::pitchConfig())
+TockPanel::TockPanel(juce::AudioProcessorValueTreeState& state, std::function<void(const juce::File&)> onLoad)
+    : ControlPanel(state, "Tock"), loadRequested(std::move(onLoad))
 {
-    addAndMakeVisible(ampPanel);
-    addAndMakeVisible(pitchPanel);
+    const int switches =
+        addRow({{Ids::kTockOn, "On"}, {Ids::kTockMode, "Mode"}, {Ids::kTockSample, "Sample"}});
+    addCustom(switches, loadButton);
+    addRow({{Ids::kTockLevel, "Level"},
+            {Ids::kTockTune, "Tune"},
+            {Ids::kTockStart, "Start"},
+            {Ids::kTockDecay, "Decay"},
+            {Ids::kTockTone, "Tone"}});
+    loadButton.setTooltip("Load a tock sample from a WAV file");
+    loadButton.onClick = [this] { choose(); };
 }
 
-void EnvelopeRow::resized()
+void TockPanel::choose()
 {
-    auto area = getLocalBounds();
-    ampPanel.setBounds(area.removeFromLeft(area.getWidth() / 2));
-    pitchPanel.setBounds(area);
+    chooser = std::make_unique<juce::FileChooser>("Choose a Tock sample (WAV)", juce::File{}, "*.wav");
+    chooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                         [this](const juce::FileChooser& finished)
+                         {
+                             const auto file = finished.getResult();
+                             if (file != juce::File{})
+                                 loadRequested(file);
+                         });
+}
+
+int PluginEditor::designHeight(bool withAudition)
+{
+    return kBodyHeight + (withAudition ? ui::AuditionPanel::kHeight : 0);
+}
+
+PluginEditor::~PluginEditor()
+{
+    setLookAndFeel(nullptr);
 }
 
 PluginEditor::PluginEditor(PluginProcessor& owner)
     : AudioProcessorEditor(owner),
-      // The envelope parameters are shown by the envelope panels and the effects by the FX rack, not by
-      // the generic list.
-      presetBar(owner.getPresets()), parameterPanel(owner.getState(), groupsShownElsewhere()),
-      wavetablePanel(
-          owner.getState(), owner.selectorFor(0), owner.selectorFor(1),
-          [&owner](int oscillator, const juce::File& file) { owner.loadUserWavetable(oscillator, file); },
-          [&owner](const juce::File& file) { owner.loadUserTockSample(file); }, owner.wavetableChanged(),
-          [&owner] { return owner.wavetableMessage(); }),
-      envelopeRow(owner), fxRack(owner.getState(), owner.getFxOrder(), dsp::defaultEffectRegistry())
+      presetBar(
+          owner.getPresets(), [&owner] { return owner.wavetableMessage(); }, owner.wavetableChanged()),
+      osc1(owner.getState(), 0, owner.selectorFor(0),
+           [&owner](const juce::File& file) { owner.loadUserWavetable(0, file); }),
+      osc2(owner.getState(), 1, owner.selectorFor(1),
+           [&owner](const juce::File& file) { owner.loadUserWavetable(1, file); }),
+      ampPanel(
+          owner.getAmpEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
+          ui::EnvelopePanel::ampConfig(owner.getState())),
+      pitchPanel(
+          owner.getPitchEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
+          ui::EnvelopePanel::pitchConfig()),
+      fxRack(owner.getState(), owner.getFxOrder(), dsp::defaultEffectRegistry()), fxArea(fxRack),
+      lfoPanel("LFO", "Reserved for a later version"),
+      tockPanel(owner.getState(), [&owner](const juce::File& file) { owner.loadUserTockSample(file); }),
+      punchTailPanel(owner.getState(), "Punch / Tail"), globalPanel(owner.getState(), "Global"),
+      otherPanel("Other", "Reserved")
 {
-    addAndMakeVisible(presetBar);
-    addAndMakeVisible(parameterPanel);
-    addAndMakeVisible(wavetablePanel);
-    lowerTabs.setTabBarDepth(28);
-    lowerTabs.setOutline(0);
-    lowerTabs.addTab("Envelopes", juce::Colour(0xff15161a), &envelopeRow, false);
-    lowerTabs.addTab("Effects", juce::Colour(0xff15161a), &fxRack, false);
-    addAndMakeVisible(lowerTabs);
+    punchTailPanel.addRow({{Ids::kPunchTailSplit, "Split"},
+                           {Ids::kPunchLevel, "Punch Level"},
+                           {Ids::kTailLevel, "Tail Level"}});
 
-    int totalHeight = kPanelHeight + ui::WavetablePanel::kHeight + ui::PresetBar::kHeight;
+    globalPanel.addRow({{Ids::kOutputGain, "Output"},
+                        {Ids::kRootNote, "Root Note"},
+                        {Ids::kGlideTime, "Glide Time"},
+                        {Ids::kVelocitySensitivity, "Velocity"}});
+    globalPanel.addRow({{Ids::kLimiterOn, "Limiter"},
+                        {Ids::kKeyTrack, "Key Track"},
+                        {Ids::kGlideOn, "Glide"},
+                        {Ids::kQuality, "Quality"}});
+
+    setLookAndFeel(&lookAndFeel);
+    addAndMakeVisible(content);
+    for (auto* child : std::initializer_list<juce::Component*>{&presetBar, &osc1, &osc2, &ampPanel,
+                                                               &pitchPanel, &fxArea, &lfoPanel, &tockPanel,
+                                                               &punchTailPanel, &globalPanel, &otherPanel})
+        content.addAndMakeVisible(*child);
+
     if (owner.isStandalone())
     {
         auditionPanel = std::make_unique<ui::AuditionPanel>(owner.getAuditionState());
-        addAndMakeVisible(*auditionPanel);
-        totalHeight += ui::AuditionPanel::kHeight;
+        content.addAndMakeVisible(*auditionPanel);
     }
 
+    const int height = designHeight(auditionPanel != nullptr);
+    content.setSize(kDesignWidth, height);
+    layoutContent();
+
     setResizable(true, true);
-    setResizeLimits(kDefaultWidth * 2 / 3, totalHeight * 2 / 3, kDefaultWidth * 2, totalHeight * 2);
-    getConstrainer()->setFixedAspectRatio(double(kDefaultWidth) / double(totalHeight));
-    setSize(kDefaultWidth, totalHeight);
+    setResizeLimits(juce::roundToInt(kDesignWidth * kMinScale), juce::roundToInt(height * kMinScale),
+                    juce::roundToInt(kDesignWidth * kMaxScale), juce::roundToInt(height * kMaxScale));
+    getConstrainer()->setFixedAspectRatio(static_cast<double>(kDesignWidth) / static_cast<double>(height));
+    setSize(kDesignWidth, height);
+}
+
+void PluginEditor::layoutContent()
+{
+    // The left block, row by row.
+    const int top = ui::PresetBar::kHeight + kGap;
+    const int oscillatorWidth = (kLeftBlockWidth - kGap) / 2;
+    presetBar.setBounds(0, 0, kDesignWidth, ui::PresetBar::kHeight);
+
+    osc1.setBounds(kMargin, top, oscillatorWidth, kOscillatorRowHeight);
+    osc2.setBounds(kMargin + oscillatorWidth + kGap, top, oscillatorWidth, kOscillatorRowHeight);
+
+    const int envelopeTop = top + kOscillatorRowHeight + kGap;
+    ampPanel.setBounds(kMargin, envelopeTop, oscillatorWidth, kEnvelopeRowHeight);
+    pitchPanel.setBounds(kMargin + oscillatorWidth + kGap, envelopeTop, oscillatorWidth, kEnvelopeRowHeight);
+
+    // The FX box takes the right side of both rows.
+    const int fxLeft = kMargin + kLeftBlockWidth + kGap;
+    fxArea.setBounds(fxLeft, top, kDesignWidth - kMargin - fxLeft,
+                     kOscillatorRowHeight + kGap + kEnvelopeRowHeight);
+
+    // The bottom row.
+    const int bottomTop = envelopeTop + kEnvelopeRowHeight + kGap;
+    int x = kMargin;
+    const auto place = [&](juce::Component& component, int width)
+    {
+        component.setBounds(x, bottomTop, width, kBottomRowHeight);
+        x += width + kGap;
+    };
+    place(lfoPanel, kLfoWidth);
+    place(tockPanel, kTockWidth);
+    place(punchTailPanel, kPunchTailWidth);
+    place(globalPanel, kGlobalWidth);
+    place(otherPanel, kDesignWidth - kMargin - x);
+
+    if (auditionPanel != nullptr)
+        auditionPanel->setBounds(0, kBodyHeight, kDesignWidth, ui::AuditionPanel::kHeight);
+}
+
+void PluginEditor::paint(juce::Graphics& g)
+{
+    g.fillAll(ui::style::kWindow);
 }
 
 void PluginEditor::resized()
 {
-    auto area = getLocalBounds();
-
-    // Every part keeps its share of the height as the window scales.
-    const int designHeight = kPanelHeight + ui::WavetablePanel::kHeight + ui::PresetBar::kHeight +
-                             (auditionPanel != nullptr ? ui::AuditionPanel::kHeight : 0);
-    // The full height, taken before any strip is cut off: `area` shrinks as the strips are removed.
-    const int fullHeight = area.getHeight();
-    const auto scaled = [&](int designPixels) { return fullHeight * designPixels / designHeight; };
-
-    if (auditionPanel != nullptr)
-        auditionPanel->setBounds(area.removeFromBottom(scaled(ui::AuditionPanel::kHeight)));
-
-    presetBar.setBounds(area.removeFromTop(scaled(ui::PresetBar::kHeight)));
-    lowerTabs.setBounds(area.removeFromBottom(scaled(kEnvelopeRowHeight)));
-
-    wavetablePanel.setBounds(area.removeFromBottom(scaled(ui::WavetablePanel::kHeight)));
-    parameterPanel.setBounds(area);
+    // One scale for the whole grid. The window keeps the grid's aspect ratio, but a host may not honour
+    // it, so the smaller of the two scales is used and the grid is centred.
+    const float height = static_cast<float>(content.getHeight());
+    const float scale = juce::jmin(static_cast<float>(getWidth()) / static_cast<float>(kDesignWidth),
+                                   static_cast<float>(getHeight()) / height);
+    content.setTransform(juce::AffineTransform::scale(scale));
+    content.setTopLeftPosition(
+        juce::roundToInt((static_cast<float>(getWidth()) - kDesignWidth * scale) / 2.0f),
+        juce::roundToInt((static_cast<float>(getHeight()) - height * scale) / 2.0f));
 }
 
 } // namespace fcm

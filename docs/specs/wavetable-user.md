@@ -18,7 +18,7 @@ Each oscillator can play a wavetable from a WAV file of your own, as well as the
 
 ## 2. User interface
 
-In the generic panel of Phase 4: a **Load Wavetable...** button below each oscillator's controls, and a line of text under the buttons that shows the last message (the name of the loaded file, or the reason a file was refused). The final oscillator panel with the wavetable display comes in the next part of this phase.
+A **Load...** button in each oscillator's header ([ui-grid-layout](ui-grid-layout.md)). The last message (the name of the loaded file, or the reason a file was refused) is shown in the preset bar.
 
 ## 3. Parameters
 

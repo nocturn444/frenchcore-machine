@@ -3,6 +3,7 @@
 
 #include "core/ParameterIds.h"
 #include "dsp/envelope/EnvelopePresets.h"
+#include "ui/Style.h"
 
 namespace fcm::ui
 {
@@ -12,8 +13,6 @@ namespace
 constexpr int kMargin = 8;
 constexpr int kTitleHeight = 28;
 constexpr int kKnobRowHeight = 100;
-constexpr int kSliderRowHeight = 28;
-constexpr int kSlidersPerRow = 2;
 constexpr int kValueBoxHeight = 18;
 constexpr int kSyncButtonWidth = 64;
 
@@ -49,10 +48,7 @@ EnvelopePanel::Config EnvelopePanel::ampConfig(juce::AudioProcessorValueTreeStat
                          knob("Release", BreakpointEnvelope::kMinReleaseMs, 2000.0, 1.0, 120.0, " ms", 1.0,
                               true, AmpKnob::release)};
 
-    config.sliderParameters = {{core::ParameterIds::kAmpEnvTimeScale, "Time Scale"},
-                               {core::ParameterIds::kPunchTailSplit, "Split"}};
-    config.extraKnobs = {{"Punch Level", core::ParameterIds::kPunchLevel},
-                         {"Tail Level", core::ParameterIds::kTailLevel}};
+    config.trailingKnobs = {{"Time Scale", core::ParameterIds::kAmpEnvTimeScale}};
 
     // The Punch / Tail split is in real milliseconds; the display is in envelope time, which the
     // time scale stretches.
@@ -88,7 +84,7 @@ EnvelopePanel::Config EnvelopePanel::pitchConfig()
                          knob("Curve", -1.0, 1.0, 0.01, 0.0, "", 1.0, false, PitchKnob::curve),
                          knob("End", 0.0, 1.0, 0.001, 0.0, " %", 100.0, false, PitchKnob::end)};
 
-    config.sliderParameters = {{core::ParameterIds::kPitchEnvTimeScale, "Time Scale"}};
+    config.trailingKnobs = {{"Time Scale", core::ParameterIds::kPitchEnvTimeScale}};
     return config;
 }
 
@@ -159,29 +155,8 @@ EnvelopePanel::EnvelopePanel(core::EnvelopeState& envelopeState,
         knobs.push_back(std::move(knob));
     }
 
-    for (const auto& spec : config.extraKnobs)
-        addParameterKnob(extraKnobs, spec, parameters);
-
-    for (const auto& [id, shortName] : config.sliderParameters)
-    {
-        auto* ranged = dynamic_cast<juce::RangedAudioParameter*>(parameters.getParameter(id));
-        if (ranged == nullptr)
-            continue;
-
-        ParameterSlider entry;
-        entry.label = std::make_unique<juce::Label>(juce::String(), shortName);
-        entry.label->setFont(juce::FontOptions(13.0f));
-        entry.slider =
-            std::make_unique<juce::Slider>(juce::Slider::LinearHorizontal, juce::Slider::TextBoxRight);
-        entry.slider->setTitle(ranged->getName(32));
-        entry.slider->setTextBoxStyle(juce::Slider::TextBoxRight, false, 62, 20);
-        if (ranged->getLabel().isNotEmpty())
-            entry.slider->setTextValueSuffix(" " + ranged->getLabel());
-        entry.attachment = std::make_unique<juce::SliderParameterAttachment>(*ranged, *entry.slider);
-        addAndMakeVisible(*entry.label);
-        addAndMakeVisible(*entry.slider);
-        sliders.push_back(std::move(entry));
-    }
+    for (const auto& spec : config.trailingKnobs)
+        addParameterKnob(knobs, spec, parameters);
 
     state.addChangeListener(this);
     refreshKnobs();
@@ -332,7 +307,11 @@ void EnvelopePanel::refreshKnobs()
 
 void EnvelopePanel::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xff1d1f25));
+    const auto bounds = getLocalBounds().toFloat();
+    g.setColour(style::kPanel);
+    g.fillRoundedRectangle(bounds, style::kCornerSize);
+    g.setColour(style::kPanelBorder);
+    g.drawRoundedRectangle(bounds.reduced(0.5f), style::kCornerSize, 1.0f);
 }
 
 void EnvelopePanel::resized()
@@ -354,32 +333,6 @@ void EnvelopePanel::resized()
             knob.slider->setBounds(cell);
         }
     };
-
-    // The second knob row sits at the very bottom, with the same cell width as the main row.
-    if (!extraKnobs.empty())
-    {
-        auto extraRow = area.removeFromBottom(kKnobRowHeight);
-        layoutKnobs(extraKnobs, extraRow,
-                    area.getWidth() / static_cast<int>(juce::jmax<size_t>(1, knobs.size())));
-    }
-
-    // The small sliders go in rows of two under the knobs.
-    const int numSliders = static_cast<int>(sliders.size());
-    const int sliderRows = (numSliders + kSlidersPerRow - 1) / kSlidersPerRow;
-    auto bottom = area.removeFromBottom(sliderRows * kSliderRowHeight);
-    for (int row = 0; row < sliderRows; ++row)
-    {
-        auto rowArea = bottom.removeFromTop(kSliderRowHeight);
-        const int inRow = juce::jmin(kSlidersPerRow, numSliders - row * kSlidersPerRow);
-        const int each = rowArea.getWidth() / kSlidersPerRow;
-        for (int i = 0; i < inRow; ++i)
-        {
-            auto& entry = sliders[static_cast<size_t>(row * kSlidersPerRow + i)];
-            auto cell = rowArea.removeFromLeft(each).reduced(4, 2);
-            entry.label->setBounds(cell.removeFromLeft(78));
-            entry.slider->setBounds(cell);
-        }
-    }
 
     auto knobRow = area.removeFromBottom(kKnobRowHeight);
     if (!knobs.empty())

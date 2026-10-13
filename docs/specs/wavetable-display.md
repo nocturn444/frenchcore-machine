@@ -6,7 +6,7 @@
 
 ## 1. What it does for the user
 
-Above each oscillator's **Load Wavetable...** button there is a small display that shows what the oscillator plays:
+Between each oscillator's Pitch / Octave / Fine strip and its knobs there is a display that shows what the oscillator plays:
 
 - the **name** of the wavetable (a factory name, or "User: <file name>"; "User (empty, plays the Sine)" when User is chosen with nothing loaded);
 - a faint **stack of its waveforms** (up to 12, evenly spread across the table), so you see how the wave changes from the first to the last;

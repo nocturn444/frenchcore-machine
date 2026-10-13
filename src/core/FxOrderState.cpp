@@ -41,6 +41,21 @@ int FxOrderState::positionAt(double x, double slotWidth, int count) noexcept
     return std::clamp(static_cast<int>(std::floor(x / slotWidth)), 0, count - 1);
 }
 
+int FxOrderState::positionIn(const std::vector<double>& sizes, double offset) noexcept
+{
+    if (sizes.size() <= 1 || !std::isfinite(offset))
+        return 0;
+
+    double end = 0.0;
+    for (size_t i = 0; i < sizes.size(); ++i)
+    {
+        end += std::isfinite(sizes[i]) && sizes[i] > 0.0 ? sizes[i] : 0.0;
+        if (offset < end)
+            return static_cast<int>(i);
+    }
+    return static_cast<int>(sizes.size()) - 1;
+}
+
 void FxOrderState::publish()
 {
     std::vector<int> indices;
