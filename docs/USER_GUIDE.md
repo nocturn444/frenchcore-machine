@@ -1,14 +1,30 @@
 # User Guide
 
-> This guide grows with each feature. Sections are filled in by the pull request that implements the feature.
+> This guide describes the plugin as it is. Each feature's section is kept up to date by the change that touches it.
 
 ## Installation
 
-_Filled in with the first release._
+Download the zip for your system from the [Releases page](https://github.com/nocturn444/frenchcore-machine/releases), unzip it and copy the plugin into the folder your DAW scans. There is no installer.
+
+| System | Format | Copy it to |
+|---|---|---|
+| Windows | VST3 (`Frenchcore Machine.vst3`) | `C:\Program Files\Common Files\VST3` |
+| macOS | VST3 | `/Library/Audio/Plug-Ins/VST3` (all users) or `~/Library/Audio/Plug-Ins/VST3` (only you) |
+| macOS | AU (`Frenchcore Machine.component`) | `/Library/Audio/Plug-Ins/Components` or `~/Library/Audio/Plug-Ins/Components` |
+| Linux | VST3 | `~/.vst3` |
+
+The **Standalone** app (the version that runs by itself) needs no installing: unzip it and open it from wherever you like.
+
+Then rescan plugins in your DAW. The plugin is an **instrument**: put it on a MIDI track.
+
+The plugins are **not signed** yet, so your system warns you the first time:
+
+- **macOS** says the developer cannot be verified. Open System Settings, Privacy & Security, scroll down and press **Open Anyway** for it. If the DAW still refuses the plugin, open Terminal and run `xattr -dr com.apple.quarantine "/Library/Audio/Plug-Ins/VST3/Frenchcore Machine.vst3"` (and the same for the AU and the Standalone you installed), then rescan.
+- **Windows** (SmartScreen) shows "Windows protected your PC" when you open the Standalone: press **More info**, then **Run anyway**. If a DLL such as `VCRUNTIME140.dll` is reported missing, install the "Microsoft Visual C++ Redistributable" (x64) from Microsoft.
+
+Your own presets live in `Documents/Frenchcore Machine/Presets` (see [Presets](#presets)).
 
 ## Quick start: a kick in one minute
-
-_The full quick start is written when the MVP features land. What works today:_
 
 1. Load Frenchcore Machine as an instrument on a MIDI track, or open the Standalone app and use its on-screen keyboard (see [Standalone](#standalone-playing-without-a-daw)).
 2. Play a MIDI note. You hear a kick: a sine (or the wavetable you choose) that starts four octaves higher and falls to the pitch of your note in a fraction of a second, with a punch and a bass body that you can reshape in the envelopes. That fast fall is what gives the kick its punch.

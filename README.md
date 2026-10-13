@@ -6,9 +6,9 @@ A wavetable synthesizer plugin built for one job: making frenchcore kicks quickl
 
 Frenchcore Machine sits between dragging in a sample and building a kick from scratch in a full synth. It gives you two wavetable oscillators, an envelope that already has the classic kick + bass shape, a click layer (the "tock") and a reorderable chain of the effects frenchcore kicks actually need. Think of it as a heavily simplified Serum or Vital, focused on kicks.
 
-> **Status:** early development. A MIDI note already plays a pitched sine kick, and its volume and pitch envelopes can be drawn and tuned; wavetables, tock, effects and presets are still to come. See the [plan](docs/PLAN.md) for progress.
+> **Status:** all the features of the first version (0.1.0) are built and have been tried in a DAW; what is left is the release itself. See the [plan](docs/PLAN.md) for progress.
 
-## Features (planned for v0.1.0)
+## Features of v0.1.0
 
 - Two wavetable oscillators with factory kick wavetables, plus loading your own (Serum/Vital-compatible WAV).
 - Editable amplitude envelope (default kick + bass shape) and pitch envelope, with points and knobs.
@@ -16,14 +16,14 @@ Frenchcore Machine sits between dragging in a sample and building a kick from sc
 - Separate punch and tail levels with an adjustable split point.
 - Monophonic with optional glide; the MIDI note tunes the kick's tail.
 - Effects you can drag into any order: distortion (soft clip, hard clip, overdrive, foldback, bitcrush), 4-band parametric EQ, multiband stereo.
-- Presets.
+- Presets: five factory ones, and save your own.
 - VST3, AU and Standalone for Windows, macOS and Linux.
 
 The full list is in [MVP scope](docs/MVP_SCOPE.md).
 
 ## Download
 
-No releases yet. Once available they will be on the [Releases page](https://github.com/nocturn444/frenchcore-machine/releases). Development builds are attached to each run in the Actions tab.
+No release yet. When there is one it will be on the [Releases page](https://github.com/nocturn444/frenchcore-machine/releases), with installation steps in the [user guide](docs/USER_GUIDE.md#installation). Development builds are attached to each run in the Actions tab.
 
 ## Building from source
 

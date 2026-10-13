@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Builds the plugin for the three systems when a version tag is pushed and attaches the zips to a DRAFT
+# GitHub Release. Nothing is published until the owner presses Publish (docs/RELEASING.md).
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: read
+
+env:
+  BUILD_TYPE: Release
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
+  TAG: ${{ github.ref_name }}
+
+jobs:
+  create-release:
+    name: Create draft release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # the only job that creates the release
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # A tag that does not match the project version would publish binaries that say another version.
+      - name: Check the tag against the project version
+        run: |
+          version="${TAG#v}"
+          grep -q "project(FrenchcoreMachine VERSION ${version} " CMakeLists.txt || {
+            echo "Tag ${TAG} does not match the VERSION in CMakeLists.txt"; exit 1; }
+
+      - name: Create the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${TAG}" --draft --verify-tag --title "Frenchcore Machine ${TAG}" \
+            --notes "First notes are in CHANGELOG.md. The plugins are not signed: see the Installation section of the user guide for the one-time steps on macOS and Windows."
+
+  build:
+    name: ${{ matrix.name }}
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write # uploads this system's zip to the draft
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-24.04
+            asset: FrenchcoreMachine-Linux.zip
+          - name: macOS
+            os: macos-14
+            asset: FrenchcoreMachine-macOS.zip
+            extra-cmake-args: '"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13'
+          - name: Windows
+            os: windows-latest
+            asset: FrenchcoreMachine-Windows.zip
+            extra-cmake-args: -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build xvfb zip \
+            libasound2-dev libjack-jackd2-dev libfreetype-dev libfontconfig1-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+            libxrandr-dev libxrender-dev libxi-dev libglu1-mesa-dev mesa-common-dev
+
+      - name: Install Ninja (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Set up MSVC environment
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $root = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $root) { throw 'Visual Studio with the C++ x64 tools was not found' }
+          $vcvars = Join-Path $root 'VC\Auxiliary\Build\vcvarsall.bat'
+          cmd /c "`"$vcvars`" x64 > nul && set" | ForEach-Object {
+            if ($_ -match '^([^=]+)=(.*)$') { Add-Content -Path $env:GITHUB_ENV -Value "$($Matches[1])=$($Matches[2])" }
+          }
+
+      - name: Configure
+        shell: bash
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${{ matrix.extra-cmake-args }}
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --parallel
+
+      # The same tests as every pull request: a release is never built from a red tree.
+      - name: Unit tests
+        shell: bash
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Package
+        shell: bash
+        run: |
+          cd "build/src/plugin/FrenchcoreMachine_artefacts/${BUILD_TYPE}"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            7z a -tzip "${GITHUB_WORKSPACE}/${{ matrix.asset }}" VST3 Standalone
+          else
+            # -y keeps the symbolic links inside macOS bundles.
+            zip -r -y "${GITHUB_WORKSPACE}/${{ matrix.asset }}" $(ls -d VST3 AU Standalone 2>/dev/null)
+          fi
+
+      - name: Attach to the draft
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${TAG}" "${{ matrix.asset }}" --clobber

@@ -6,9 +6,9 @@ Un sintetizador wavetable en formato plugin con un solo objetivo: hacer kicks de
 
 Frenchcore Machine está a mitad de camino entre arrastrar un sample y construir un kick desde cero en un synth completo. Trae dos osciladores wavetable, una envolvente que ya tiene la forma clásica de kick + bass, una capa de click (el "tock") y una cadena de efectos reordenable con lo que un kick de frenchcore realmente necesita. Pensalo como un Serum o un Vital muy simplificado, enfocado en kicks.
 
-> **Estado:** desarrollo inicial. Una nota MIDI ya toca un kick de seno afinado y se pueden dibujar y ajustar sus envolventes de volumen y de pitch; todavía faltan las wavetables, el tock, los efectos y los presets. El avance está en el [plan](docs/PLAN.md) (en inglés).
+> **Estado:** todas las funciones de la primera versión (0.1.0) están hechas y se probaron en un DAW; lo que falta es la publicación. El avance está en el [plan](docs/PLAN.md) (en inglés).
 
-## Funciones (previstas para v0.1.0)
+## Funciones de la v0.1.0
 
 - Dos osciladores wavetable con wavetables de fábrica para kicks, y carga de wavetables propias (WAV compatible con Serum/Vital).
 - Envolvente de amplitud editable (forma kick + bass por defecto) y envolvente de pitch, con puntos y perillas.
@@ -16,14 +16,14 @@ Frenchcore Machine está a mitad de camino entre arrastrar un sample y construir
 - Niveles separados para el punch y la cola, con punto de división ajustable.
 - Monofónico con glide opcional; la nota MIDI afina la cola del kick.
 - Efectos que podés ordenar arrastrándolos: distorsión (soft clip, hard clip, overdrive, foldback, bitcrush), EQ paramétrico de 4 bandas y stereo multibanda.
-- Presets.
+- Presets: cinco de fábrica, y guardás los tuyos.
 - VST3, AU y Standalone para Windows, macOS y Linux.
 
 La lista completa está en el [MVP scope](docs/MVP_SCOPE.md).
 
 ## Descarga
 
-Todavía no hay versiones publicadas. Cuando las haya van a estar en la [página de Releases](https://github.com/nocturn444/frenchcore-machine/releases). Las versiones de desarrollo se adjuntan a cada ejecución en la pestaña Actions.
+Todavía no hay una versión publicada. Cuando la haya va a estar en la [página de Releases](https://github.com/nocturn444/frenchcore-machine/releases), con los pasos de instalación en la [guía de usuario](docs/USER_GUIDE.md#installation) (en inglés). Las versiones de desarrollo se adjuntan a cada ejecución en la pestaña Actions.
 
 ## Compilar desde el código
 
