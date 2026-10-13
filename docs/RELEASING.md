@@ -9,7 +9,13 @@ How a version goes out. The agent prepares everything; **the owner decides when*
 3. `CHANGELOG.md`: rename `Unreleased` to the version and date, and add a new empty `Unreleased` above it. `docs/PLAN.md` Phase 7 is ticked.
 4. The `VERSION` in the top-level `CMakeLists.txt` is the version being released. The release workflow refuses a tag that does not match it.
 
-## The tag
+## Starting the release
+
+There are two ways; both end in the same **draft** release with three zips.
+
+**A. By hand from GitHub (no terminal needed).** Open the Actions tab, choose **Release** on the left, press **Run workflow**, keep the branch `main`, type the version (`v0.1.0`) and run it. The workflow creates the draft against the current `main`; the tag itself is created when you publish the draft.
+
+**B. With a tag from a terminal.**
 
 ```bash
 git checkout main && git pull
@@ -17,15 +23,17 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-Pushing a tag like `v0.1.0` starts `.github/workflows/release.yml`. It builds Linux, macOS (arm64 and Intel in one) and Windows, runs the unit tests, and attaches three zips to a **draft** release:
+Either way `.github/workflows/release.yml` builds Linux, macOS (arm64 and Intel in one) and Windows, runs the unit tests, and attaches three zips to a **draft** release:
 
 - `FrenchcoreMachine-Windows.zip`: VST3 and Standalone.
 - `FrenchcoreMachine-macOS.zip`: VST3, AU and Standalone.
 - `FrenchcoreMachine-Linux.zip`: VST3 and Standalone.
 
+Publishing a draft that was started by hand creates the tag, which starts the workflow once more; it notices the release already exists and builds nothing. Run it once per version: starting it again before the first draft is published would make a second draft.
+
 ## Publishing
 
-Open the draft on the Releases page, check the three files are there, write the notes (start from the changelog) and press **Publish release**. Only then is it public. To cancel, delete the draft and the tag (`git push origin :refs/tags/v0.1.0`).
+Open the draft on the Releases page, check the three files are there, write the notes (start from the changelog) and press **Publish release**. Only then is it public. To cancel, delete the draft (and the tag, if you made one with B).
 
 ## What is not done yet
 
