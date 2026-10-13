@@ -98,7 +98,7 @@ Done when:
 
 ## Phase 7: MVP hardening and release
 
-- [ ] UI layout matches `UI_LAYOUT.md`
+- [x] UI layout matches `UI_LAYOUT.md` ([spec](specs/ui-grid-layout.md); pending the product owner's eyes)
 - [ ] Manual test pass in at least: Ableton Live, FL Studio, Reaper (see [TESTING.md](TESTING.md))
 - [ ] CPU profiling; no allocation on the audio thread (debug guard clean)
 - [ ] User guide complete
