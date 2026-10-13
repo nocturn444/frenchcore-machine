@@ -15,7 +15,7 @@ Last updated: 2026-10-13.
 | 5 FX system (distortion, parametric EQ, multiband stereo, rack with drag and drop) | Done and merged |
 | 6 State and presets (project state, preset files, five factory presets, preset bar) | Done and merged |
 | Feedback round 2026-10-13 (Punch/Tail balance removed, EQ made parametric, window rebuilt on the agreed grid and scaled to the window) | Done and merged |
-| 7 Hardening and release | In progress. The owner tried the plugin in a DAW on 2026-10-13: it works well and uses a reasonable amount of RAM (which DAWs and systems still to be written down). The release workflow, installation steps and release checklist are ready (`docs/RELEASING.md`). Left: the rest of the DAW passes, CPU profiling, and the tag, which the owner decides |
+| 7 Hardening and release | In progress. The owner tried the plugin in FL Studio only (no other DAW planned): it works well, RAM use is reasonable, saving a project and the presets work, and presets stay compatible between versions. Not tried: automation, other sample rates, the Quality setting. The release workflow, installation steps and release checklist are ready (`docs/RELEASING.md`). Left: CPU profiling and the tag, which the owner decides |
 
 ## 2. Open pull requests
 
@@ -61,7 +61,7 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 Things only the owner can do in GitHub (the agent cannot):
 
 - Decide when to release: the tag `v0.1.0` starts the release workflow and creates a **draft** release; nothing is public until you press Publish ([RELEASING](RELEASING.md)).
-- Say in which DAW(s) and system(s) the plugin was tried, and whether the other items of the manual checklist ([TESTING](TESTING.md)) were also done, so they can be written down. CPU use at the highest Quality is the one measurement still missing.
+- Optional: CPU use at the highest Quality (8x) is the one measurement still missing; the monitor of your DAW shows it.
 
 - Protect `main` (Settings, Branches): require the CI checks and a pull request before merging, and optionally "Require review from Code Owners".
 - Enable "Private vulnerability reporting" (Settings, Security), because `SECURITY.md` sends reporters there.
