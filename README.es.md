@@ -15,7 +15,7 @@ Frenchcore Machine está a mitad de camino entre arrastrar un sample y construir
 - Tock: una capa opcional de click, sintetizada o con tocks de fábrica o tus propios samples.
 - Niveles separados para el punch y la cola, con punto de división ajustable.
 - Monofónico con glide opcional; la nota MIDI afina la cola del kick.
-- Efectos que podés ordenar arrastrándolos: distorsión (soft clip, hard clip, overdrive, foldback, bitcrush), EQ de 3 bandas y stereo multibanda.
+- Efectos que podés ordenar arrastrándolos: distorsión (soft clip, hard clip, overdrive, foldback, bitcrush), EQ paramétrico de 4 bandas y stereo multibanda.
 - Presets.
 - VST3, AU y Standalone para Windows, macOS y Linux.
 

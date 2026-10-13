@@ -189,15 +189,19 @@ The clipping types are oversampled according to **Quality** to avoid harsh alias
 
 ### EQ
 
-A three-band equaliser to shape the kick after (or before) the distortion. Switch it on with **EQ On**.
+A parametric equaliser with four bands to shape the kick after (or before) the distortion. Switch it on with **EQ On**.
 
-| Band | What it does |
+Every band is the same and free: you choose what it does, where and how much.
+
+| Control | What it does |
 |---|---|
-| **Low** | A low shelf: boosts or cuts everything below its frequency (20 to 500 Hz). Adds or tames the sub weight. |
-| **Mid** | A bell: boosts or cuts a region around its frequency (60 Hz to 8 kHz). **Q** sets how narrow it is: a high Q is a thin notch, a low Q a wide sweep. |
-| **High** | A high shelf: boosts or cuts everything above its frequency (1 to 20 kHz). Adds click and air. |
+| **Type** | **Bell** boosts or cuts around a frequency. **Low Shelf** and **High Shelf** boost or cut everything below or above it. **Low Cut** and **High Cut** remove everything below or above it (12 dB per octave). |
+| **Freq** | Where the band acts, from 20 Hz to 20 kHz. |
+| **Gain** | How much, from -18 to +18 dB. 0 does nothing. Not used by the two cuts. |
+| **Q** | How wide. For a bell, a high Q is a thin notch and a low Q a wide sweep. 0.71 on a shelf or cut is the plain, flat shape. |
+| **On** | Switches the band off without losing its settings. |
 
-Each band has **Freq**, **Gain** (-18 to +18 dB; 0 does nothing) and **Q**. With every Gain at 0 the EQ changes nothing, and it adds no delay.
+The bands start as a low shelf at 80 Hz, bells at 400 Hz and 2.5 kHz and a high shelf at 8 kHz, all flat. In the Effects tab the display shows the combined curve with one numbered dot per band: drag a dot sideways for Freq and up or down for Gain, turn the mouse wheel over it for Q, and double-click it to switch the band on or off. With every Gain at 0 and no cut in use the EQ changes nothing, and it adds no delay.
 
 ### Stereo
 

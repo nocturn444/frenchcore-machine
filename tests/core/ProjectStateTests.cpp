@@ -83,7 +83,7 @@ void personalise(Rig& rig)
     rig.setParameter(Ids::oscillator(0, Ids::Oscillator::kPhase), 90.0f);
     rig.setParameter("distortion.enabled", 1.0f);
     rig.setParameter("distortion.drive", 77.0f);
-    rig.setParameter("eq.low.gain", 4.5f);
+    rig.setParameter("eq.b1.gain", 4.5f);
     rig.setParameter(Ids::kQuality, 3.0f);
 
     rig.amp.edit(

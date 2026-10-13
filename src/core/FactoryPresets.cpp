@@ -74,7 +74,7 @@ const std::vector<Definition>& definitions()
           {"distortion.drive", 55},
           {"distortion.postgain", -8},
           {"eq.enabled", 1},
-          {"eq.low.gain", 4.0}},
+          {"eq.b1.gain", 4.0}},
          "Long Tail",
          "Long Tail"},
 

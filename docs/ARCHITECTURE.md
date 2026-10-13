@@ -190,7 +190,7 @@ MVP effects:
 | ID | Effect | Key parameters |
 |---|---|---|
 | `distortion` | Distortion with selectable type: soft clip (tanh), hard clip, overdrive (asymmetric), foldback, bitcrush (bit depth + sample-rate reduction) | Type, Drive, Pre-gain, Post-gain, Tone |
-| `eq` | 3-band parametric EQ: low shelf, peak, high shelf | Freq, Gain, Q per band |
+| `eq` | 4-band parametric EQ: each band a bell, shelf or cut | On, Type, Freq, Gain, Q per band |
 | `stereo` | Multiband stereo: 3 bands split by Linkwitz-Riley crossovers, mid/side width per band | Crossover 1/2, Width per band, Mono-below toggle |
 
 ### 4.7 Output stage

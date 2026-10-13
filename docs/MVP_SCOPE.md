@@ -29,7 +29,7 @@ The MVP is done when all of the following are true:
 | Punch/Tail | A level for the punch and one for the tail, with a split-time slider that divides the kick | |
 | Envelopes | Shape presets for both envelopes | e.g. "Kick + Bass", "Short Punch", "Long Tail". |
 | FX | Distortion: soft clip, hard clip, overdrive, foldback, bitcrush | Oversampled per the global quality setting. |
-| FX | 3-band parametric EQ | |
+| FX | 4-band parametric EQ (each band: bell, shelf or cut) | Reworked from fixed bands on 2026-10-13 |
 | FX | Multiband stereo width (3 bands) | Mono-below option. |
 | FX | User-reorderable chain (drag and drop), per-slot enable and mix | Serum-style, one slot per effect type. |
 | Global | Output gain, safety limiter, quality (oversampling), glide, velocity, key track | |

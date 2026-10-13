@@ -26,25 +26,33 @@ const EffectDescriptor& EqEffect::descriptor() const
 
 std::span<const ParameterSpec> EqEffect::parameters() const
 {
+    static constexpr std::string_view kTypeNames[] = {"Bell", "Low Shelf", "High Shelf", "Low Cut",
+                                                      "High Cut"};
+    // The first number of each band is the entry of its default Type.
     static const ParameterSpec specs[] = {
-        {"low.freq", "Low Freq", ParameterKind::number, 20.0f, 500.0f, 1.0f, 100.0f, 100.0f, "Hz", {}},
-        {"low.gain", "Low Gain", ParameterKind::number, -18.0f, 18.0f, 0.1f, 0.0f, 0.0f, "dB", {}},
-        {"low.q", "Low Q", ParameterKind::number, 0.3f, 2.0f, 0.01f, 0.71f, 0.0f, "", {}},
-        {"mid.freq", "Mid Freq", ParameterKind::number, 60.0f, 8000.0f, 1.0f, 500.0f, 500.0f, "Hz", {}},
-        {"mid.gain", "Mid Gain", ParameterKind::number, -18.0f, 18.0f, 0.1f, 0.0f, 0.0f, "dB", {}},
-        {"mid.q", "Mid Q", ParameterKind::number, 0.2f, 10.0f, 0.01f, 1.0f, 1.0f, "", {}},
-        {"high.freq",
-         "High Freq",
-         ParameterKind::number,
-         1000.0f,
-         20000.0f,
-         10.0f,
-         8000.0f,
-         6000.0f,
-         "Hz",
-         {}},
-        {"high.gain", "High Gain", ParameterKind::number, -18.0f, 18.0f, 0.1f, 0.0f, 0.0f, "dB", {}},
-        {"high.q", "High Q", ParameterKind::number, 0.3f, 2.0f, 0.01f, 0.71f, 0.0f, "", {}},
+        {"b1.on", "Band 1 On", ParameterKind::toggle, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, "", {}},
+        {"b1.type", "Band 1 Type", ParameterKind::choice, 0.0f, 4.0f, 1.0f, 1.0f, 0.0f, "", kTypeNames},
+        {"b1.freq", "Band 1 Freq", ParameterKind::number, 20.0f, 20000.0f, 1.0f, 80.0f, 1000.0f, "Hz", {}},
+        {"b1.gain", "Band 1 Gain", ParameterKind::number, -18.0f, 18.0f, 0.1f, 0.0f, 0.0f, "dB", {}},
+        {"b1.q", "Band 1 Q", ParameterKind::number, 0.1f, 10.0f, 0.01f, 0.71f, 1.0f, "", {}},
+
+        {"b2.on", "Band 2 On", ParameterKind::toggle, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, "", {}},
+        {"b2.type", "Band 2 Type", ParameterKind::choice, 0.0f, 4.0f, 1.0f, 0.0f, 0.0f, "", kTypeNames},
+        {"b2.freq", "Band 2 Freq", ParameterKind::number, 20.0f, 20000.0f, 1.0f, 400.0f, 1000.0f, "Hz", {}},
+        {"b2.gain", "Band 2 Gain", ParameterKind::number, -18.0f, 18.0f, 0.1f, 0.0f, 0.0f, "dB", {}},
+        {"b2.q", "Band 2 Q", ParameterKind::number, 0.1f, 10.0f, 0.01f, 1.0f, 1.0f, "", {}},
+
+        {"b3.on", "Band 3 On", ParameterKind::toggle, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, "", {}},
+        {"b3.type", "Band 3 Type", ParameterKind::choice, 0.0f, 4.0f, 1.0f, 0.0f, 0.0f, "", kTypeNames},
+        {"b3.freq", "Band 3 Freq", ParameterKind::number, 20.0f, 20000.0f, 1.0f, 2500.0f, 1000.0f, "Hz", {}},
+        {"b3.gain", "Band 3 Gain", ParameterKind::number, -18.0f, 18.0f, 0.1f, 0.0f, 0.0f, "dB", {}},
+        {"b3.q", "Band 3 Q", ParameterKind::number, 0.1f, 10.0f, 0.01f, 1.0f, 1.0f, "", {}},
+
+        {"b4.on", "Band 4 On", ParameterKind::toggle, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, "", {}},
+        {"b4.type", "Band 4 Type", ParameterKind::choice, 0.0f, 4.0f, 1.0f, 2.0f, 0.0f, "", kTypeNames},
+        {"b4.freq", "Band 4 Freq", ParameterKind::number, 20.0f, 20000.0f, 1.0f, 8000.0f, 1000.0f, "Hz", {}},
+        {"b4.gain", "Band 4 Gain", ParameterKind::number, -18.0f, 18.0f, 0.1f, 0.0f, 0.0f, "dB", {}},
+        {"b4.q", "Band 4 Q", ParameterKind::number, 0.1f, 10.0f, 0.01f, 0.71f, 1.0f, "", {}},
     };
     return specs;
 }
@@ -96,7 +104,23 @@ EqEffect::Coefficients EqEffect::design(Shape shape, double rate, double frequen
         a1 = 2.0 * ((A - 1.0) - (A + 1.0) * cosW);
         a2 = (A + 1.0) - (A - 1.0) * cosW - twoSqrtAAlpha;
         break;
-    case Shape::peak:
+    case Shape::lowCut: // 2nd-order high-pass
+        b0 = (1.0 + cosW) / 2.0;
+        b1 = -(1.0 + cosW);
+        b2 = (1.0 + cosW) / 2.0;
+        a0 = 1.0 + alpha;
+        a1 = -2.0 * cosW;
+        a2 = 1.0 - alpha;
+        break;
+    case Shape::highCut: // 2nd-order low-pass
+        b0 = (1.0 - cosW) / 2.0;
+        b1 = 1.0 - cosW;
+        b2 = (1.0 - cosW) / 2.0;
+        a0 = 1.0 + alpha;
+        a1 = -2.0 * cosW;
+        a2 = 1.0 - alpha;
+        break;
+    case Shape::bell:
     default:
         b0 = 1.0 + alpha * A;
         b1 = -2.0 * cosW;
@@ -116,21 +140,40 @@ EqEffect::Coefficients EqEffect::design(Shape shape, double rate, double frequen
     return c;
 }
 
+double EqEffect::magnitudeDb(const Coefficients& k, double rate, double hz) noexcept
+{
+    // |H(e^jw)| from the coefficients, evaluated with z^-1 = e^-jw.
+    const double w = 2.0 * std::numbers::pi * std::clamp(hz, 1.0, 0.5 * rate) / rate;
+    const double c1 = std::cos(w), s1 = std::sin(w), c2 = std::cos(2.0 * w), s2 = std::sin(2.0 * w);
+    const double numRe = k.b0 + k.b1 * c1 + k.b2 * c2;
+    const double numIm = -(k.b1 * s1 + k.b2 * s2);
+    const double denRe = 1.0 + k.a1 * c1 + k.a2 * c2;
+    const double denIm = -(k.a1 * s1 + k.a2 * s2);
+    const double num = numRe * numRe + numIm * numIm;
+    const double den = std::max(denRe * denRe + denIm * denIm, 1.0e-30);
+    return 10.0 * std::log10(std::max(num / den, 1.0e-30));
+}
+
 void EqEffect::setParameters(std::span<const float> values) noexcept
 {
-    if (values.size() < 9)
+    if (values.size() < static_cast<size_t>(kBands * kValuesPerBand))
         return;
 
-    constexpr Shape shapes[kBands] = {Shape::lowShelf, Shape::peak, Shape::highShelf};
     for (int i = 0; i < kBands; ++i)
     {
-        const auto base = static_cast<size_t>(i) * 3;
-        const double gain = finiteOrZero(values[base + 1]);
+        const auto base = static_cast<size_t>(i * kValuesPerBand);
+        const bool on = finiteOrZero(values[base]) >= 0.5f;
+        const int type = std::clamp(static_cast<int>(std::lround(finiteOrZero(values[base + 1]))), 0, 4);
+        const auto shape = static_cast<Shape>(type);
+        const double gain = finiteOrZero(values[base + 3]);
+
         auto& band = bands[static_cast<size_t>(i)];
-        band.active = std::abs(gain) >= kInactiveGainDb;
+        // A bell or shelf with no gain does nothing, so it is skipped: flat is bit-exact. A cut always acts.
+        const bool isCut = shape == Shape::lowCut || shape == Shape::highCut;
+        band.active = on && (isCut || std::abs(gain) >= kInactiveGainDb);
         if (band.active)
-            band.coefficients = design(shapes[i], sampleRate, finiteOrZero(values[base]),
-                                       finiteOrZero(values[base + 2]), gain);
+            band.coefficients = design(shape, sampleRate, finiteOrZero(values[base + 2]),
+                                       finiteOrZero(values[base + 4]), gain);
     }
 }
 

@@ -8,16 +8,19 @@
 namespace fcm::dsp
 {
 
-// Three-band EQ: low shelf, peak, high shelf (docs/specs/fx-eq.md). Biquads from the Audio EQ
-// Cookbook by Robert Bristow-Johnson.
+// Four-band parametric EQ (docs/specs/fx-eq.md): every band has its own type, frequency, gain and Q.
+// Biquads from the Audio EQ Cookbook by Robert Bristow-Johnson.
 class EqEffect : public Effect
 {
   public:
+    // The order is the order of the Type choice (saved as the entry number).
     enum class Shape
     {
+        bell,
         lowShelf,
-        peak,
-        highShelf
+        highShelf,
+        lowCut,
+        highCut
     };
 
     // Normalised biquad coefficients (a0 = 1): y = b0 x + s1; s1 = b1 x - a1 y + s2; s2 = b2 x - a2 y.
@@ -33,12 +36,20 @@ class EqEffect : public Effect
     void setParameters(std::span<const float> values) noexcept override;
     void process(juce::AudioBuffer<float>& buffer) noexcept override;
 
-    // The cookbook design, exposed for tests. The frequency and Q are brought into a stable range.
+    // The cookbook design, exposed for tests and for the response display. The frequency and Q are
+    // brought into a stable range. The gain is ignored by the two cuts.
     static Coefficients design(Shape shape, double sampleRate, double frequencyHz, double q,
                                double gainDb) noexcept;
 
+    // The magnitude of a design at `hz`, in dB (the response curve of the display).
+    static double magnitudeDb(const Coefficients& coefficients, double sampleRate, double hz) noexcept;
+
+    // Number of bands, and how many parameter values one band takes, in the order of parameters():
+    // on, type, frequency, gain, Q.
+    static constexpr int kBands = 4;
+    static constexpr int kValuesPerBand = 5;
+
   private:
-    static constexpr int kBands = 3;
     static constexpr int kMaxChannels = 2;
 
     struct Band
