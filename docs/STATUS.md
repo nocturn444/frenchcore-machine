@@ -14,6 +14,7 @@ Last updated: 2026-10-11.
 | 4 Wavetables and Tock | Done in pull requests: factory wavetables (#12), load your own wavetable (#13), wavetable display (#15), Tock (#16), user tock sample (#17) |
 | 5 FX system | Done in pull requests: machinery (#18), distortion (#19), EQ (#20), multiband stereo (#21), rack UI with drag and drop and an Effects tab (#22) |
 | 6 State and presets | Done in pull requests: one project state (#23), then preset files, five factory presets, your own presets and the preset bar (#24) |
+| Feedback round 2026-10-13 | After the owner tried the Standalone: Punch/Tail balance removed (#25), EQ made parametric (#26), the window rebuilt on the agreed grid and scaled to the window (#27) |
 | 7 Hardening and release | Not started (mostly manual: DAW passes, CPU profiling, release tag) |
 
 ## 2. Open pull requests, in merge order
@@ -36,9 +37,12 @@ Nothing in this list is merged by the agent; the owner merges.
 | 12 | #22 | Phase 5 part 5: FX rack UI (stacked on #21) | see PR |
 | 13 | #23 | Phase 6 part 1: project state (stacked on #22) | see PR |
 | 14 | #24 | Phase 6 parts 2 and 3: presets and preset bar (stacked on #23) | Green on all three systems (includes the macOS fix) |
+| 15 | #25 | Removes the Punch/Tail balance (stacked on #24) | see PR |
+| 16 | #26 | Parametric EQ with four free bands (stacked on #25) | see PR |
+| 17 | #27 | Agreed grid layout scaled to the window, vertical FX strips, EQ display (stacked on #26) | see PR |
 | any | Dependabot #10, #9, #8 | Version bumps of the GitHub actions (independent) | Green |
 
-The stacked pull requests (#13, #15 to #24) point at the branch of the one before them: merge them in the order above, and GitHub retargets each to `main` when the previous one is merged.
+The stacked pull requests (#13, #15 to #27) point at the branch of the one before them: merge them in the order above, and GitHub retargets each to `main` when the previous one is merged.
 
 Notes on the Dependabot pull requests: they are independent of each other and of the code, they only touch `.github/workflows/build.yml`. They are major version jumps; CI passed with them on all three systems. Merge them one by one (Dependabot rebases the others), or close them if you prefer to stay on the older pinned versions.
 
@@ -65,6 +69,9 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-11 | The macOS check failed on #18 and the PRs stacked on it because a test compared a stepped value with exact equality (1.9999999 vs 2 on arm64). The test now uses a tolerance; the code was right. | PR #18 |
 | 2026-10-11 | Project state: a saved project describes everything, so a control it does not mention takes its default instead of keeping the current value. | `docs/specs/project-state.md` |
 | 2026-10-11 | Presets: `.fcmpreset` is an XML wrapper with a name and a format version around the project state. User presets only go in Documents/Frenchcore Machine/Presets, with file names limited to letters, numbers, space and `- _ . ( )`. Factory presets are a code table over the defaults. The shown preset name is not saved in the DAW project. | `docs/specs/presets.md` |
+| 2026-10-13 | The Punch/Tail Balance knob is gone; Split only divides the kick for Punch Level and Tail Level (owner's decision). | `docs/specs/voice-punch-tail.md` |
+| 2026-10-13 | The EQ has four identical bands, each Bell, Low Shelf, High Shelf, Low Cut or High Cut (my reading of "parametric"), with a response display and draggable dots. | `docs/specs/fx-eq.md` |
+| 2026-10-13 | The window is one fixed 1500-point-wide grid scaled to the window, so it never rearranges; sizes of the boxes and the contents of the Global box are my choices on the owner's sketch. | `docs/specs/ui-grid-layout.md` |
 | 2026-10-11 | The Punch/Tail Split stays in milliseconds when tempo Sync is on (owner's answer). | `docs/specs/voice-punch-tail.md` |
 
 ## 4. What the owner needs to do or listen to
@@ -74,6 +81,12 @@ Things only the owner can do in GitHub (the agent cannot):
 - Protect `main` (Settings, Branches): require the CI checks and a pull request before merging, and optionally "Require review from Code Owners".
 - Enable "Private vulnerability reporting" (Settings, Security), because `SECURITY.md` sends reporters there.
 - Check Settings, Actions, General: workflow permissions on "Read repository contents".
+
+Things to look at and listen to (feedback round):
+
+- Open #27's build in the Standalone and check the layout against your sketch: box sizes, what is in Global, the free LFO and Other boxes, the EQ display. Resize the window to the smallest and largest and check nothing breaks.
+- The amp envelope: the Punch/Tail balance is gone and the Split only divides the kick for the two levels. If the amp envelope still feels wrong, say what you do and what you hear (for example "I move X and Y happens"); I could not find a difference in the envelope itself between your last tested version and now, so I need the symptom.
+- The EQ: it now has four free bands. Tell me if you wanted something different (more bands, steeper cuts, a spectrum behind the curve).
 
 Things to listen to (sound):
 
