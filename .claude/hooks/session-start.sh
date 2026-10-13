@@ -31,6 +31,13 @@ if [ ${#missing[@]} -gt 0 ]; then
         || echo "[session-start] Warning: some packages failed to install; the build may not configure."
 fi
 
+# Say it loudly when the toolchain is still incomplete, so a session does not fail later with an
+# obscure CMake error. The hook itself still never fails the session start.
+for tool in cmake ninja clang-format; do
+    command -v "$tool" >/dev/null 2>&1 \
+        || echo "[session-start] WARNING: '$tool' is not available. Builds or the format check will fail until it is installed."
+done
+
 # Share the CPM download cache (JUCE, Catch2) across builds in this session.
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
     echo "export CPM_SOURCE_CACHE=\"$HOME/.cache/CPM\"" >> "$CLAUDE_ENV_FILE"
