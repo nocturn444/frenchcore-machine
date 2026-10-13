@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The product owner reviews everything. With branch protection ("Require review from Code Owners")
+# this makes a review from them mandatory, including for changes to CI and security files.
+*                       @nocturn444
+/.github/               @nocturn444
+/SECURITY.md            @nocturn444
+/cmake/Dependencies.cmake @nocturn444
