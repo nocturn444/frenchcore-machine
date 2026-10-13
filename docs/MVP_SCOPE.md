@@ -26,7 +26,7 @@ The MVP is done when all of the following are true:
 | Tock | Optional transient layer, Synth mode (generated click) or Sample mode (factory tocks + user samples) | Level, tune, start, decay, tone. |
 | Envelopes | Amp envelope, breakpoint editor + 5 AHDSR knobs on the same curve, default "kick + bass" shape | Add/move/delete points, segment curvature. |
 | Envelopes | Pitch envelope, breakpoint editor + 5 knobs, amount in semitones | |
-| Punch/Tail | Balance between punch and tail level, with a split-time slider | |
+| Punch/Tail | A level for the punch and one for the tail, with a split-time slider that divides the kick | |
 | Envelopes | Shape presets for both envelopes | e.g. "Kick + Bass", "Short Punch", "Long Tail". |
 | FX | Distortion: soft clip, hard clip, overdrive, foldback, bitcrush | Oversampled per the global quality setting. |
 | FX | 3-band parametric EQ | |

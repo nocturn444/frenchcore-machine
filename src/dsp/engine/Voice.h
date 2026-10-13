@@ -106,7 +106,6 @@ class Voice
     std::array<juce::SmoothedValue<float>, kNumOscillators> semitones;
     std::array<juce::SmoothedValue<float>, kNumOscillators> positions;
     juce::SmoothedValue<float> pitchAmount;
-    juce::SmoothedValue<float> punchBalance;
     juce::SmoothedValue<float> punchSplitMs;
     juce::SmoothedValue<float> punchLevel;
     juce::SmoothedValue<float> tailLevel;

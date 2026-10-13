@@ -50,7 +50,6 @@ EnvelopePanel::Config EnvelopePanel::ampConfig(juce::AudioProcessorValueTreeStat
                               true, AmpKnob::release)};
 
     config.sliderParameters = {{core::ParameterIds::kAmpEnvTimeScale, "Time Scale"},
-                               {core::ParameterIds::kPunchTailBalance, "Punch/Tail"},
                                {core::ParameterIds::kPunchTailSplit, "Split"}};
     config.extraKnobs = {{"Punch Level", core::ParameterIds::kPunchLevel},
                          {"Tail Level", core::ParameterIds::kTailLevel}};

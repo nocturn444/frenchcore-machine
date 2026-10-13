@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Removed
+
+- The **Punch/Tail Balance** knob (parameter `punchTail.balance`): it changed the character of the sound too much. **Split** now only divides the kick between the **Punch Level** and **Tail Level** controls, which stay. See `docs/specs/voice-punch-tail.md`.
+
 ### Added
 
 - **Presets**: a preset bar at the top of the window with a menu of factory presets (Init, Classic Punch, Rumble Kick, Hardcore Crunch, Gabber Fold) and your own, previous/next buttons, and a name field with Save. Your presets are `.fcmpreset` files in Documents/Frenchcore Machine/Presets. Unusable files are refused with a message and nothing changes; file names are restricted to safe characters. See `docs/specs/presets.md` and `docs/specs/preset-browser.md`.

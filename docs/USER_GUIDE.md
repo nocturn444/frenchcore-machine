@@ -84,7 +84,7 @@ The Tock is a very short click or knock played at the start of every kick, on to
 | **Tock Decay** | How fast it fades out, 2 to 200 ms (the time to fall by 60 dB). |
 | **Tock Tone** | Dull to bright: at 0 the Tock is dark, at 1 it is wide open. |
 
-The Tock follows the velocity, the Punch/Tail balance and the amp envelope like the rest of the kick. Start, Tune, Decay, Tone, Mode and Sample are read when a note starts, so changing them affects the next kick; Level changes at once. If the Tock sounds too soft, raise Start a little or shorten the amp envelope's attack, because the amp envelope also shapes the Tock. 
+The Tock follows the velocity, the Punch and Tail levels and the amp envelope like the rest of the kick. Start, Tune, Decay, Tone, Mode and Sample are read when a note starts, so changing them affects the next kick; Level changes at once. If the Tock sounds too soft, raise Start a little or shorten the amp envelope's attack, because the amp envelope also shapes the Tock. 
 
 ### Your own tock sample
 
@@ -96,14 +96,14 @@ The **Load Tock Sample...** button (at the bottom left of the wavetable area) op
 - The sample is saved inside your project; only its name is kept, not the folder.
 - Choosing **User** with nothing loaded plays the first built-in sample (Click).
 
-## Punch / Tail balance
+## Punch / Tail
 
-A frenchcore kick has a **punch** (the hit at the start) and a **tail** (the bass that rings after it). This control balances them without redrawing the envelope. It sits under the knobs of the Amp Envelope panel.
+A frenchcore kick has a **punch** (the hit at the start) and a **tail** (the bass that rings after it). This panel sets the volume of each part on its own, without redrawing the envelope.
 
-- **Punch/Tail** goes from -100 to +100. At 0 nothing changes. Towards -100 the tail gets quieter, down to silence at -100 (the punch is favoured). Towards +100 the punch gets quieter, down to silence at +100 (the tail is favoured).
-- **Split** is the time, in milliseconds after the note starts, where the punch ends and the tail begins (default 80 ms). A dashed red line on the Amp Envelope display shows it.
-- **Punch Level** and **Tail Level** (two knobs under the Split slider) set the volume of each part on its own, from -48 dB (silence) to +12 dB, at 0 dB by default. They add to the Punch/Tail balance: for example, you can raise the tail 3 dB and still use the balance to trade between the two parts.
-- The change from one part to the other takes about 4 ms, so it never clicks, and the split is counted from the start of each kick, also when you retrigger.
+- **Split** is the time, in milliseconds after the note starts, where the punch ends and the tail begins (default 80 ms). It only decides which part each level applies to. A dashed red line on the Amp Envelope display shows it.
+- **Punch Level** sets the volume of the part before the split, from -48 dB (silence) to +12 dB, 0 dB by default.
+- **Tail Level** sets the volume of the part after the split, with the same range.
+- With both levels at 0 dB nothing changes, wherever the split is. The change from one part to the other takes about 4 ms, so it never clicks, and the split is counted from the start of each kick, also when you retrigger.
 
 ## Envelopes
 

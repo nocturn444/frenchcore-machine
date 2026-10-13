@@ -69,7 +69,7 @@ Done when:
 - [x] Envelope editor component (add/move/delete points, curvature)
 - [x] Shape presets including the default "Kick + Bass"
 - [x] AHDSR / pitch knobs bound to the main envelope points
-- [x] Punch/Tail balance with split time, with tests
+- [x] Punch/Tail split and levels, with tests (the Balance knob was removed on 2026-10-13)
 
 ## Phase 4: Wavetables
 

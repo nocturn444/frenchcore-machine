@@ -13,7 +13,7 @@ Frenchcore Machine sits between dragging in a sample and building a kick from sc
 - Two wavetable oscillators with factory kick wavetables, plus loading your own (Serum/Vital-compatible WAV).
 - Editable amplitude envelope (default kick + bass shape) and pitch envelope, with points and knobs.
 - Tock: an optional click layer, synthesized or played from factory tocks or your own samples.
-- Punch/tail balance with an adjustable split point.
+- Separate punch and tail levels with an adjustable split point.
 - Monophonic with optional glide; the MIDI note tunes the kick's tail.
 - Effects you can drag into any order: distortion (soft clip, hard clip, overdrive, foldback, bitcrush), 3-band EQ, multiband stereo.
 - Presets.

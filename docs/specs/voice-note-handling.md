@@ -104,7 +104,7 @@ Manual check (Standalone or a DAW): play a MIDI note, hear the kick; play fast r
 
 - Editable envelopes, sustain and an adjustable release (Phase 3).
 - Polyphony or legato options.
-- Tock, Punch/Tail balance, FX chain, oversampling (later phases).
+- Tock, Punch/Tail levels, FX chain, oversampling (later phases).
 - An on-screen keyboard or "audition" loop: added for the Standalone in [standalone-audition](standalone-audition.md).
 - A look-ahead limiter. The safety limiter is a soft clipper.
 

@@ -56,7 +56,7 @@ Shapes are part of the saved state (presets and projects) but are not automatabl
 
 ## 2. User interface
 
-Phase 3 adds an envelope row under the generic parameter panel in the editor: two `EnvelopePanel`s (amp left, pitch right). Each has the preset menu ("Load shape..."), the display, the five knobs and its global controls (small sliders under the knobs: Time Scale, and on the amp panel Punch/Tail balance and Split). The final layout comes with the visual pass ([UI_LAYOUT.md](../UI_LAYOUT.md)).
+Phase 3 adds an envelope row under the generic parameter panel in the editor: two `EnvelopePanel`s (amp left, pitch right). Each has the preset menu ("Load shape..."), the display, the five knobs and its global controls (small sliders under the knobs: Time Scale). The final layout comes with the visual pass ([UI_LAYOUT.md](../UI_LAYOUT.md)).
 
 ## 3. Parameters
 

@@ -29,7 +29,7 @@ In the original sketch, black areas were mandatory and red areas were to be disc
 ├────────────────┼────────────────┤                                    │
 │ Amp envelope   │ Pitch envelope │                                    │
 ├────────────────┼────────────────┼───────────────────┬────────────────┤
-│ LFO 1/2        │ Tock           │ Punch/Tail balance│ Global         │
+│ LFO 1/2        │ Tock           │ Punch / Tail     │ Global         │
 │ (after MVP,    ├────────────────┴───────────────────┤                │
 │  space kept)   │ Other (reserved)                   │                │
 └────────────────┴────────────────────────────────────┴────────────────┘
@@ -44,7 +44,7 @@ In the original sketch, black areas were mandatory and red areas were to be disc
 | **Amp envelope** | Editable display (drag, add, delete points) + 5 knobs: Attack, Hold, Decay, Sustain, Release. Knobs move the main points of the same curve. Shows the punch/tail split marker. Default shape: kick + bass | Yes | Envelopes (§4.4) |
 | **Pitch envelope** | Editable display + 5 knobs: Amount (st), Attack, Decay, Curve, End | Yes | Envelopes (§4.4) |
 | **Tock** | Mode switch (Synth / Sample), sample selector (factory list + load file), Level, Tune, Start, Decay, Tone | Yes | Tock (§4.3) |
-| **Punch / Tail balance** | Balance knob (punch ↔ tail) and a Split slider for the time where the punch ends and the tail starts | Yes | Punch/Tail (§4.5) |
+| **Punch / Tail** | A Split control for the time where the punch ends and the tail starts, and a Punch Level and a Tail Level knob. There is no balance knob (removed 2026-10-13) | Yes | Punch/Tail (§4.5) |
 | **Global** | Output gain, safety limiter on/off, Quality (oversampling 1x/2x/4x/8x), Glide on + time, Velocity sensitivity, Key track | Yes | Voice (§4.1), Output (§4.7) |
 | **FX rack** | Reorderable list of effect slots (drag handle, enable, mix) with the selected effect's panel below | Yes | FX chain (§4.6) |
 | **LFO 1 / LFO 2** | Display, 3 knobs, 2 toggles, LFO1/LFO2 tabs (from the sketch) | After MVP. The space is kept empty so adding it does not move other panels | Requires a modulation system |

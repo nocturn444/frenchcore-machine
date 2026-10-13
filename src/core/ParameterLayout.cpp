@@ -88,11 +88,6 @@ void addEnvelopeParameters(juce::AudioProcessorValueTreeState::ParameterLayout& 
                                                     juce::NormalisableRange<float>{0.0f, 96.0f, 0.1f}, 48.0f,
                                                     juce::AudioParameterFloatAttributes{}.withLabel("st")));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        id(ParameterIds::kPunchTailBalance), "Punch Tail Balance",
-        juce::NormalisableRange<float>{-100.0f, 100.0f, 1.0f}, 0.0f,
-        juce::AudioParameterFloatAttributes{}.withLabel("%")));
-
     juce::NormalisableRange<float> splitRange{5.0f, 500.0f, 1.0f};
     splitRange.setSkewForCentre(80.0f);
     layout.add(std::make_unique<juce::AudioParameterFloat>(

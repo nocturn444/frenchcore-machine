@@ -85,7 +85,7 @@ MIDI ──► NoteHandler (mono, last-note priority, optional glide)
         │  + Oscillator 2 (wavetable)  │
         │  + Tock (optional)           │
         │  × Amp envelope              │
-        │  × Punch/Tail balance        │
+        │  × Punch/Tail levels         │
         └──────────────┬───────────────┘
                        ▼
         FX chain (user-ordered slots, each with bypass and mix)
@@ -140,15 +140,14 @@ Both envelopes use the same `BreakpointEnvelope` model:
 - Shape presets (`EnvelopePresets`) are a data table per envelope kind; the first is the default.
 - **Tempo sync** ([ADR 0007](decisions/0007-envelope-tempo-sync.md)): a shape may remember the tempo its times were written at (`syncRefBpm`); at each note-on the voice plays it scaled by reference / current tempo. The current tempo is the host tempo in a plugin, the audition strip's BPM in the Standalone, 120 otherwise; it reaches the engine in `EngineParameters` and the editor through `core::TempoState`. Knobs show musical figures (`MusicalTime`) while synced.
 
-### 4.5 Punch / Tail balance
+### 4.5 Punch / Tail split and levels
 
 Details and tests in [voice-punch-tail](specs/voice-punch-tail.md).
 
 - Splits the voice output in time into a **punch** region (from note-on to the split point) and a **tail** region (after it).
-- `Punch Tail Balance` (-100 to +100): negative favours the punch, positive the tail, 0 leaves both untouched. Implemented as two gains (`1 - |balance|` on the region that is cut) applied after the amp envelope.
 - `Punch Tail Split` (ms after note-on, default 80): where the punch ends and the tail begins, shown as a dashed vertical marker on the amp envelope display. The gain changes with a 4 ms smoothstep centred on the split, counted from each kick's own note-on.
-- `Punch Level` and `Tail Level` (dB, default 0) multiply the two region gains on top of the balance.
-- All four are automatable parameters and are smoothed over 10 ms.
+- `Punch Level` and `Tail Level` (dB, default 0) are the gains of the two regions, applied after the amp envelope.
+- All three are automatable parameters and are smoothed over 10 ms.
 
 ### 4.6 FX chain (main extension point)
 
@@ -238,7 +237,7 @@ Patterns used:
 
 - Functional first; visual design will be done later and must not require structural changes. All drawing goes through a custom `LookAndFeel` so restyling is a separate task.
 - Resizable editor with a fixed aspect ratio, laid out with `juce::FlexBox`/`Grid` relative to the window size.
-- Main areas, as agreed in [UI_LAYOUT.md](UI_LAYOUT.md): preset bar, two oscillator panels, amp and pitch envelope panels, tock, punch/tail balance, global, and the FX rack. LFOs (post-MVP) and "Other" have reserved space.
+- Main areas, as agreed in [UI_LAYOUT.md](UI_LAYOUT.md): preset bar, two oscillator panels, amp and pitch envelope panels, tock, punch/tail levels, global, and the FX rack. LFOs (post-MVP) and "Other" have reserved space.
 - The UI never calls DSP code. It changes parameters through APVTS attachments and non-parameter state through `fcm_core` APIs.
 - A JUCE 9 WebView-based UI is a possible future option for the visual redesign. It is not used in the MVP.
 - **Standalone-only audition strip** (on-screen keyboard and auto-play loop, [spec](specs/standalone-audition.md)). It exists only when `AudioProcessor::wrapperType` is `wrapperType_Standalone`. Its settings are not parameters and not state: `core::AuditionState` holds atomics and a lock-free `dsp::NoteQueue` (message thread to audio thread), and the audio thread turns them into MIDI events (`dsp::AuditionSequencer` for the loop) inside a pre-allocated MIDI buffer. `MidiKeyboardState` (which locks) stays on the message thread.

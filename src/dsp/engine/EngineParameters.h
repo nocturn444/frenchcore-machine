@@ -53,10 +53,9 @@ struct EngineParameters
     float ampTimeScale = 1.0f;
     float pitchTimeScale = 1.0f;
     float pitchAmount = 48.0f;  // semitones above the settling pitch at envelope level 1
-    float punchBalance = 0.0f;  // -1 (punch only) .. +1 (tail only)
     float punchSplitMs = 80.0f; // where the punch ends and the tail begins, after note-on
-    float punchLevel = 1.0f;    // linear gain of the punch region, on top of the balance
-    float tailLevel = 1.0f;     // linear gain of the tail region, on top of the balance
+    float punchLevel = 1.0f;    // linear gain of the punch region (before the split)
+    float tailLevel = 1.0f;     // linear gain of the tail region (after the split)
 
     TockParameters tock;
 

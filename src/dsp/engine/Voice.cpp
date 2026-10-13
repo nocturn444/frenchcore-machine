@@ -56,7 +56,6 @@ void Voice::prepare(double newSampleRate, const WavetableData* wavetable)
     }
 
     pitchAmount.reset(sampleRate, kPitchAmountSmoothSeconds);
-    punchBalance.reset(sampleRate, kPunchTailSmoothSeconds);
     punchSplitMs.reset(sampleRate, kPunchTailSmoothSeconds);
     punchLevel.reset(sampleRate, kPunchTailSmoothSeconds);
     tailLevel.reset(sampleRate, kPunchTailSmoothSeconds);
@@ -95,7 +94,6 @@ void Voice::reset() noexcept
         positions[i].setCurrentAndTargetValue(positions[i].getTargetValue());
     }
     pitchAmount.setCurrentAndTargetValue(pitchAmount.getTargetValue());
-    punchBalance.setCurrentAndTargetValue(punchBalance.getTargetValue());
     punchSplitMs.setCurrentAndTargetValue(punchSplitMs.getTargetValue());
     punchLevel.setCurrentAndTargetValue(punchLevel.getTargetValue());
     tailLevel.setCurrentAndTargetValue(tailLevel.getTargetValue());
@@ -178,7 +176,6 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
     {
         tockLevel.setCurrentAndTargetValue(tockGain);
         pitchAmount.setCurrentAndTargetValue(parameters.pitchAmount);
-        punchBalance.setCurrentAndTargetValue(parameters.punchBalance);
         punchSplitMs.setCurrentAndTargetValue(parameters.punchSplitMs);
         punchLevel.setCurrentAndTargetValue(parameters.punchLevel);
         tailLevel.setCurrentAndTargetValue(parameters.tailLevel);
@@ -187,7 +184,6 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
     {
         tockLevel.setTargetValue(tockGain);
         pitchAmount.setTargetValue(parameters.pitchAmount);
-        punchBalance.setTargetValue(parameters.punchBalance);
         punchSplitMs.setTargetValue(parameters.punchSplitMs);
         punchLevel.setTargetValue(parameters.punchLevel);
         tailLevel.setTargetValue(parameters.tailLevel);
@@ -272,11 +268,10 @@ float Voice::process(float settleNote) noexcept
     // Smoothers always advance so a parameter change is never left half-done while the voice is idle.
     Frame frame;
     frame.pitchAmount = pitchAmount.getNextValue();
-    const float balance = punchBalance.getNextValue();
     frame.punchSplitMs = punchSplitMs.getNextValue();
     frame.tockLevel = tockLevel.getNextValue();
-    frame.punchGain = (balance > 0.0f ? 1.0f - balance : 1.0f) * punchLevel.getNextValue();
-    frame.tailGain = (balance < 0.0f ? 1.0f + balance : 1.0f) * tailLevel.getNextValue();
+    frame.punchGain = punchLevel.getNextValue();
+    frame.tailGain = tailLevel.getNextValue();
     for (size_t i = 0; i < kNumOscillators; ++i)
     {
         frame.level[i] = levels[i].getNextValue();

@@ -39,7 +39,6 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
         "ampEnv.timeScale",
         "pitchEnv.timeScale",
         "pitchEnv.amount",
-        "punchTail.balance",
         "punchTail.split",
         "punchTail.punchLevel",
         "punchTail.tailLevel",
@@ -136,7 +135,6 @@ TEST_CASE("Default parameters map to the default EngineParameters", "[core][para
     REQUIRE_THAT(read.pitchTimeScale,
                  Catch::Matchers::WithinAbs(defaults.pitchTimeScale, kRoundingTolerance));
     REQUIRE_THAT(read.pitchAmount, Catch::Matchers::WithinAbs(defaults.pitchAmount, kRoundingTolerance));
-    REQUIRE_THAT(read.punchBalance, Catch::Matchers::WithinAbs(defaults.punchBalance, kRoundingTolerance));
     REQUIRE_THAT(read.punchSplitMs, Catch::Matchers::WithinAbs(defaults.punchSplitMs, 1.0e-2));
     REQUIRE_THAT(read.punchLevel, Catch::Matchers::WithinAbs(defaults.punchLevel, kRoundingTolerance));
     REQUIRE_THAT(read.tailLevel, Catch::Matchers::WithinAbs(defaults.tailLevel, kRoundingTolerance));
@@ -182,7 +180,6 @@ TEST_CASE("Parameter values are converted to DSP units", "[core][parameters]")
     setValue(processor.state, Ids::kAmpEnvTimeScale, 2.0f);
     setValue(processor.state, Ids::kPitchEnvTimeScale, 0.5f);
     setValue(processor.state, Ids::kPitchEnvAmount, 36.0f);
-    setValue(processor.state, Ids::kPunchTailBalance, -25.0f);
     setValue(processor.state, Ids::kPunchTailSplit, 120.0f);
     setValue(processor.state, Ids::kPunchLevel, -6.0f);
     setValue(processor.state, Ids::kTailLevel, 3.0f);
@@ -213,7 +210,6 @@ TEST_CASE("Parameter values are converted to DSP units", "[core][parameters]")
     REQUIRE_THAT(read.ampTimeScale, Catch::Matchers::WithinAbs(2.0, 1.0e-2));
     REQUIRE_THAT(read.pitchTimeScale, Catch::Matchers::WithinAbs(0.5, 1.0e-2));
     REQUIRE_THAT(read.pitchAmount, Catch::Matchers::WithinAbs(36.0, 0.06));
-    REQUIRE_THAT(read.punchBalance, Catch::Matchers::WithinAbs(-0.25, 1.0e-3)); // percent to -1..+1
     REQUIRE_THAT(read.punchSplitMs, Catch::Matchers::WithinAbs(120.0, 1.0));
     REQUIRE_THAT(read.punchLevel, Catch::Matchers::WithinAbs(0.5012, 1.0e-3)); // -6 dB
     REQUIRE_THAT(read.tailLevel, Catch::Matchers::WithinAbs(1.4125, 1.0e-3));  // +3 dB
@@ -261,7 +257,6 @@ TEST_CASE("Parameter ranges match the spec", "[core][parameters]")
     expectRange(Ids::kAmpEnvTimeScale, 0.25f, 4.0f);
     expectRange(Ids::kPitchEnvTimeScale, 0.25f, 4.0f);
     expectRange(Ids::kPitchEnvAmount, 0.0f, 96.0f);
-    expectRange(Ids::kPunchTailBalance, -100.0f, 100.0f);
     expectRange(Ids::kPunchTailSplit, 5.0f, 500.0f);
     expectRange(Ids::kPunchLevel, -48.0f, 12.0f);
     expectRange(Ids::kTailLevel, -48.0f, 12.0f);

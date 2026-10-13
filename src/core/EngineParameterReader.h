@@ -61,7 +61,6 @@ class EngineParameterReader
     std::atomic<float>* ampTimeScale;
     std::atomic<float>* pitchTimeScale;
     std::atomic<float>* pitchAmount;
-    std::atomic<float>* punchBalance;
     std::atomic<float>* punchSplit;
     std::atomic<float>* punchLevel;
     std::atomic<float>* tailLevel;

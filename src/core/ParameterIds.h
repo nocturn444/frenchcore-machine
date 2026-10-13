@@ -34,7 +34,6 @@ inline constexpr const char* kEffectMix = "mix";
 inline constexpr const char* kAmpEnvTimeScale = "ampEnv.timeScale";
 inline constexpr const char* kPitchEnvTimeScale = "pitchEnv.timeScale";
 inline constexpr const char* kPitchEnvAmount = "pitchEnv.amount";
-inline constexpr const char* kPunchTailBalance = "punchTail.balance";
 inline constexpr const char* kPunchTailSplit = "punchTail.split";
 inline constexpr const char* kPunchLevel = "punchTail.punchLevel";
 inline constexpr const char* kTailLevel = "punchTail.tailLevel";
