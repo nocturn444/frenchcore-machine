@@ -19,13 +19,9 @@ Last updated: 2026-10-13.
 
 ## 2. Open pull requests
 
-Everything from the feature phases is merged into `main` (the whole stack, #11 to #27, went in on 2026-10-13). What is still open:
+None. Everything is merged into `main`: the feature stack (#11 to #27), the release preparation (#29, which carried #28) and the three Dependabot bumps of the GitHub actions (#8, #9, #10, merged on 2026-10-13 on the owner's instruction).
 
-| PR | What |
-|---|---|
-| Dependabot #10, #9, #8 | Version bumps of the GitHub actions. Independent of each other and of the code, they only touch `.github/workflows/build.yml`. They are major version jumps; CI passed with them on all three systems. Merge them one by one (Dependabot rebases the others), or close them to stay on the older pinned versions. |
-
-The agent merges nothing; the owner does.
+Merge rule (decided by the owner on 2026-10-13, written in `CLAUDE.md`): features and important changes are reviewed and merged by the owner; documentation-only pull requests and minor fixes may be merged by the agent once CI is green.
 
 ## 3. Decisions taken by the agent
 
