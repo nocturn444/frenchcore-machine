@@ -70,6 +70,7 @@ ctest --test-dir build --output-on-failure
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `build:`, `ci:`, `chore:`).
 - One feature or fix per PR. Fill in `.github/pull_request_template.md` completely. CI must be green before asking for review.
 - Never skip, disable or weaken a test to make CI pass.
+- **Who merges** (decided by the product owner on 2026-10-13): new features and important changes (behaviour, sound, the interface, the state format, build and release machinery) are reviewed and merged by the product owner; never merge them yourself. Pull requests that only change documentation, and minor fixes (a typo, a flaky or wrong test, a small bug with no change in behaviour), you may merge yourself once CI is green on the current head. When in doubt, it is not minor: leave it for the owner and say so. Never publish a release or push a version tag without being told to.
 
 ## Licensing
 
