@@ -99,10 +99,10 @@ Done when:
 ## Phase 7: MVP hardening and release
 
 - [x] UI layout matches `UI_LAYOUT.md` ([spec](specs/ui-grid-layout.md); pending the product owner's eyes)
-- [ ] Manual test pass in at least: Ableton Live, FL Studio, Reaper (see [TESTING.md](TESTING.md))
+- [x] Manual test pass: done in FL Studio only (owner's decision, 2026-10-13: no other DAW will be tried). Not tried: parameter automation, other sample rates, the Quality setting. See [TESTING.md](TESTING.md) and the status of the checks
 - [ ] CPU profiling; no allocation on the audio thread (debug guard clean)
-- [ ] User guide complete
-- [ ] Tag `v0.1.0`, GitHub Release with binaries for all platforms
+- [x] User guide complete (installation added; every feature has its section)
+- [ ] Tag `v0.1.0`, GitHub Release with binaries for all platforms (the workflow and the steps are ready: [RELEASING](RELEASING.md); the owner decides when to tag)
 
 ## After the MVP (not scheduled)
 
