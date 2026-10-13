@@ -2,7 +2,7 @@
 
 Living summary for the product owner (nocturn4). Updated by the agent in every PR that changes something listed here. It is in English like the rest of the repository; the agent explains the important parts in Spanish in the chat.
 
-Last updated: 2026-10-11.
+Last updated: 2026-10-13.
 
 ## 1. Where the project is
 
@@ -11,40 +11,21 @@ Last updated: 2026-10-11.
 | 0 Foundation, 1 Skeleton, 2 First sound | Done and merged |
 | 3 Envelopes (editable amp/pitch, Punch/Tail, tempo sync, level knobs) | Done and merged |
 | Security hardening (safe state loading, CI and supply chain, Standalone MIDI) | Done and merged |
-| 4 Wavetables and Tock | Done in pull requests: factory wavetables (#12), load your own wavetable (#13), wavetable display (#15), Tock (#16), user tock sample (#17) |
-| 5 FX system | Done in pull requests: machinery (#18), distortion (#19), EQ (#20), multiband stereo (#21), rack UI with drag and drop and an Effects tab (#22) |
-| 6 State and presets | Done in pull requests: one project state (#23), then preset files, five factory presets, your own presets and the preset bar (#24) |
-| Feedback round 2026-10-13 | After the owner tried the Standalone: Punch/Tail balance removed (#25), EQ made parametric (#26), the window rebuilt on the agreed grid and scaled to the window (#27) |
+| 4 Wavetables and Tock | Done and merged |
+| 5 FX system (distortion, parametric EQ, multiband stereo, rack with drag and drop) | Done and merged |
+| 6 State and presets (project state, preset files, five factory presets, preset bar) | Done and merged |
+| Feedback round 2026-10-13 (Punch/Tail balance removed, EQ made parametric, window rebuilt on the agreed grid and scaled to the window) | Done and merged |
 | 7 Hardening and release | Not started (mostly manual: DAW passes, CPU profiling, release tag) |
 
-## 2. Open pull requests, in merge order
+## 2. Open pull requests
 
-Nothing in this list is merged by the agent; the owner merges.
+Everything from the feature phases is merged into `main` (the whole stack, #11 to #27, went in on 2026-10-13). What is still open:
 
-| Order | PR | What | CI |
-|---|---|---|---|
-| 1 | #11 | `docs/STATUS.md`, `CODEOWNERS`, toolchain warning in the session hook | Green |
-| 2 | #14 | Fixes a test that failed at random on busy machines (it had turned #11's macOS check red once) | Green |
-| 3 | #12 | Phase 4 part 1: nine factory wavetables and the Wavetable choice | Green |
-| 4 | #13 | Phase 4 part 2: load your own wavetable from a WAV (stacked on #12) | Green |
-| 5 | #15 | Phase 4 part 3: wavetable display (stacked on #13) | Green |
-| 6 | #16 | Phase 4 part 4: Tock with four factory samples (stacked on #15) | Green |
-| 7 | #17 | Phase 4 part 5: load your own Tock sample (stacked on #16) | Green |
-| 8 | #18 | Phase 5 part 1: the FX chain machinery (stacked on #17) | Green after the macOS test fix |
-| 9 | #19 | Phase 5 part 2: distortion (stacked on #18) | see PR |
-| 10 | #20 | Phase 5 part 3: EQ (stacked on #19) | see PR |
-| 11 | #21 | Phase 5 part 4: multiband stereo (stacked on #20) | see PR |
-| 12 | #22 | Phase 5 part 5: FX rack UI (stacked on #21) | see PR |
-| 13 | #23 | Phase 6 part 1: project state (stacked on #22) | see PR |
-| 14 | #24 | Phase 6 parts 2 and 3: presets and preset bar (stacked on #23) | Green on all three systems (includes the macOS fix) |
-| 15 | #25 | Removes the Punch/Tail balance (stacked on #24) | see PR |
-| 16 | #26 | Parametric EQ with four free bands (stacked on #25) | see PR |
-| 17 | #27 | Agreed grid layout scaled to the window, vertical FX strips, EQ display (stacked on #26) | see PR |
-| any | Dependabot #10, #9, #8 | Version bumps of the GitHub actions (independent) | Green |
+| PR | What |
+|---|---|
+| Dependabot #10, #9, #8 | Version bumps of the GitHub actions. Independent of each other and of the code, they only touch `.github/workflows/build.yml`. They are major version jumps; CI passed with them on all three systems. Merge them one by one (Dependabot rebases the others), or close them to stay on the older pinned versions. |
 
-The stacked pull requests (#13, #15 to #27) point at the branch of the one before them: merge them in the order above, and GitHub retargets each to `main` when the previous one is merged.
-
-Notes on the Dependabot pull requests: they are independent of each other and of the code, they only touch `.github/workflows/build.yml`. They are major version jumps; CI passed with them on all three systems. Merge them one by one (Dependabot rebases the others), or close them if you prefer to stay on the older pinned versions.
+The agent merges nothing; the owner does.
 
 ## 3. Decisions taken by the agent
 
@@ -61,7 +42,7 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-11 | User wavetables: WAV only, first channel, whole 2048-sample frames up to 256 or a single cycle of 64 to 16384 samples. Only the file name is saved in the project, never the path. | `docs/specs/wavetable-user.md` |
 | 2026-10-11 | The FX chain: every effect starts off with Mix 100 %; the order is a packed value in one atomic; the chain adds a constant latency (reported to the host, only when Quality changes) so toggling or mixing never shifts timing; effects describe their parameters as plain data so the layout code never changes when an effect is added. | `docs/specs/fx-chain.md`, ADR 0009 |
 | 2026-10-11 | Distortion: five types, Bitcrush deliberately not oversampled, IIR oversampling with integer latency, Post-gain defaults to -6 dB. | `docs/specs/fx-distortion.md` |
-| 2026-10-11 | EQ: three bands (low shelf, peak, high shelf), flat is bit-exact, no latency. | `docs/specs/fx-eq.md` |
+| 2026-10-11 | EQ: flat is bit-exact, no latency (the first three-band version was replaced on 2026-10-13, see below). | `docs/specs/fx-eq.md` |
 | 2026-10-11 | Stereo: because the kick is mono, width above 100 % adds a decorrelated copy so it really widens; Mono Below is on by default. | `docs/specs/fx-stereo.md` |
 | 2026-10-11 | Tock: off by default; Synth mode (tone burst plus noise) or four generated samples (Click, Knock, Snap, Tick); added before the amp envelope; most controls read at note-on. | `docs/specs/tock.md` |
 | 2026-10-11 | The wavetable display shows the name, a faint stack of frames and the waveform at the current Position. | `docs/specs/wavetable-display.md` |
@@ -72,6 +53,7 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-13 | The Punch/Tail Balance knob is gone; Split only divides the kick for Punch Level and Tail Level (owner's decision). | `docs/specs/voice-punch-tail.md` |
 | 2026-10-13 | The EQ has four identical bands, each Bell, Low Shelf, High Shelf, Low Cut or High Cut (my reading of "parametric"), with a response display and draggable dots. | `docs/specs/fx-eq.md` |
 | 2026-10-13 | The window is one fixed 1500-point-wide grid scaled to the window, so it never rearranges; sizes of the boxes and the contents of the Global box are my choices on the owner's sketch. | `docs/specs/ui-grid-layout.md` |
+| 2026-10-13 | The EQ shifts the phase like any normal EQ, which can sound like a flanger on a kick with a pitch drop (more with a high Q and strong boosts in the low end). The owner decided to leave it as it is; a linear-phase mode was offered and declined. | `docs/specs/fx-eq.md` |
 | 2026-10-11 | The Punch/Tail Split stays in milliseconds when tempo Sync is on (owner's answer). | `docs/specs/voice-punch-tail.md` |
 
 ## 4. What the owner needs to do or listen to
@@ -84,16 +66,16 @@ Things only the owner can do in GitHub (the agent cannot):
 
 Things to look at and listen to (feedback round):
 
-- Open #27's build in the Standalone and check the layout against your sketch: box sizes, what is in Global, the free LFO and Other boxes, the EQ display. Resize the window to the smallest and largest and check nothing breaks.
+- Open the latest build of `main` in the Standalone and check the layout against your sketch: box sizes, what is in Global, the free LFO and Other boxes, the EQ display. Resize the window to the smallest and largest and check nothing breaks.
 - The amp envelope: the Punch/Tail balance is gone and the Split only divides the kick for the two levels. If the amp envelope still feels wrong, say what you do and what you hear (for example "I move X and Y happens"); I could not find a difference in the envelope itself between your last tested version and now, so I need the symptom.
 - The EQ: it now has four free bands. Tell me if you wanted something different (more bands, steeper cuts, a spectrum behind the curve).
 
 Things to listen to (sound):
 
-- The five factory presets once #24 is merged (Init, Classic Punch, Rumble Kick, Hardcore Crunch, Gabber Fold): they are a placeholder built from the plugin's own pieces. Tell the agent which to keep, rename or replace, and what kinds of kick you want as starting points. Also try saving one of your own and loading it back.
+- The five factory presets (Init, Classic Punch, Rumble Kick, Hardcore Crunch, Gabber Fold): they are a placeholder built from the plugin's own pieces. Tell the agent which to keep, rename or replace, and what kinds of kick you want as starting points. Also try saving one of your own and loading it back.
 
-- Once #12 and #13 are merged: pick each factory wavetable on Osc 1, move Position and play; then load a WAV of your own with the new buttons (try a bad file too: it should be refused with a message).
-- The effects once #18 to #21 are merged: switch Distortion on and try each Type with Drive and Tone; try EQ and Stereo (High Width to 200 % on headphones, Mono Below on). Note that with effects in the plugin your DAW is told about a few samples of latency at the default Quality.
-- The Tock once #16 is merged: switch Tock On, try Synth mode and the four samples (Click, Knock, Snap, Tick) with auto-play running; say what to change (levels, lengths, which samples).
+- Pick each factory wavetable on Osc 1, move Position and play; then load a WAV of your own with the new buttons (try a bad file too: it should be refused with a message).
+- The effects: switch Distortion on and try each Type with Drive and Tone; try EQ and Stereo (High Width to 200 % on headphones, Mono Below on). Note that with effects in the plugin your DAW is told about a few samples of latency at the default Quality.
+- The Tock: switch Tock On, try Synth mode and the four samples (Click, Knock, Snap, Tick) with auto-play running; say what to change (levels, lengths, which samples).
 - The nine factory wavetables: pick each one on Osc 1, move Position and play. Tell the agent which ones to drop, rename or replace (cheapest now, before release). Harder ones are louder than the sine at the same Level.
 - The Phase 3 envelopes in a DAW or the Standalone: the default "Kick + Bass" amp shape, the pitch drop, the Punch/Tail balance and the Punch and Tail level knobs. Tell the agent what feels wrong in plain words.
