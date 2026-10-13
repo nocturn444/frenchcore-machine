@@ -6,76 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-### Changed
+## [0.1.0] - 2026-10-13
 
-- The editor follows the layout you drew: preset bar on top, the two oscillators at the top left, the envelopes under them, the Effects in a tall box on the right, and a bottom row with the LFO box (free for later), Tock, Punch / Tail, Global and a free box. It is wider than tall (1500 by about 770 points) and the whole thing scales with the window, so nothing rearranges or gets squeezed at any size. See `docs/specs/ui-grid-layout.md`.
-- The Effects are now strips from top to bottom (drag the bar up or down to reorder) in their own box instead of a tab. The EQ shows its response curve with four draggable dots. See `docs/specs/fx-rack.md`.
-- The envelope's Time Scale is a knob in the same row as the shape knobs. Messages about loading a wavetable or a sample appear in the preset bar. Continuous knobs show two decimals instead of seven, and frequencies from 1000 Hz show as kHz.
-
-### Removed
-
-- The **Punch/Tail Balance** knob (parameter `punchTail.balance`): it changed the character of the sound too much. **Split** now only divides the kick between the **Punch Level** and **Tail Level** controls, which stay. See `docs/specs/voice-punch-tail.md`.
+First release. VST3, AU and Standalone for Windows, macOS and Linux (the plugins are not signed yet; see the installation steps in the user guide).
 
 ### Added
 
-- A release workflow: pushing a version tag such as `v0.1.0` builds Linux, macOS and Windows, runs the tests and attaches the zips to a draft GitHub Release that the owner publishes by hand. The user guide now has the installation steps, including the one-time warnings of unsigned plugins on macOS and Windows. See `docs/RELEASING.md`.
-- **Presets**: a preset bar at the top of the window with a menu of factory presets (Init, Classic Punch, Rumble Kick, Hardcore Crunch, Gabber Fold) and your own, previous/next buttons, and a name field with Save. Your presets are `.fcmpreset` files in Documents/Frenchcore Machine/Presets. Unusable files are refused with a message and nothing changes; file names are restricted to safe characters. See `docs/specs/presets.md` and `docs/specs/preset-browser.md`.
-- A saved project now describes everything: a control that a saved state does not mention (an older project, a partial state) goes back to its default instead of keeping its previous value. The code that saves and loads the whole state (parameters, envelopes, effect order, your wavetables and Tock sample) is gathered in one place and covered by round-trip tests. See `docs/specs/project-state.md`.
-- The **Effects** tab (next to Envelopes in the lower area): one column per effect with its On switch, Mix and controls, and a handle bar to drag an effect to another position in the chain. The effects' controls no longer appear in the general controls at the top. See `docs/specs/fx-rack.md`.
-- **Stereo**, a multiband stereo effect: three bands split by Linkwitz-Riley crossovers with a stereo width for each (0 % mono to 200 % very wide), and a Mono Below switch that keeps the low end mono. Width above 100 % adds a decorrelated copy so it widens even the mono kick. Off by default, no delay. See `docs/specs/fx-stereo.md`.
-- **EQ**, a 4-band parametric equaliser effect: each band has its own On switch, Type (Bell, Low Shelf, High Shelf, Low Cut, High Cut), Freq (20 Hz to 20 kHz), Gain (-18 to +18 dB) and Q. With every Gain at 0 and no cut in use it changes nothing, bit for bit, and it adds no delay. Off by default. See `docs/specs/fx-eq.md`.
-- **Distortion**, the first effect: Soft Clip, Hard Clip, Overdrive, Foldback and Bitcrush, with Drive, Pre-gain, Post-gain, Tone and (for Bitcrush) Bits and Rate. The four clipping types are oversampled by the global Quality setting; Bitcrush is not, on purpose. Off by default. With the effects registered the plugin always reports a few samples of latency at the default Quality (2x), which your DAW compensates. See `docs/specs/fx-distortion.md`.
-- The FX chain machinery (no effect yet): the `Effect` interface, a registry where adding an effect is one line, and a reorderable chain that crossfades on/off, keeps timing constant and reports its latency to the host. Each effect will get an On switch (off by default) and a Mix control, there is a global **Quality** setting (oversampling 1x to 8x, default 2x) and the effect order is saved with the project. The plugin now processes two channels through the chain before the output gain and limiter; with no effect on the sound is unchanged. See `docs/specs/fx-chain.md` and ADR 0009.
-- Load your own Tock sample from a WAV (up to 2 seconds, any sample rate from 8 to 192 kHz), saved inside the project; unusable files are refused with a message.
-- The Tock, an optional click layer at the start of every kick: Synth mode (a generated click) or Sample mode with four built-in tock sounds (Click, Knock, Snap, Tick), with Level, Tune, Start, Decay and Tone. Off by default. See `docs/specs/tock.md`.
-- A wavetable display for each oscillator: the name, a faint stack of the waveforms and the waveform at the current Position, live. See `docs/specs/wavetable-display.md`.
-- Load your own wavetable from a WAV file (whole 2048-sample frames up to 256, or a single cycle) onto each oscillator, with clear refusal messages for unusable files. The wavetable is saved inside the project; only its name is kept, never the path. See `docs/specs/wavetable-user.md`.
-- Nine factory wavetables for the oscillators (Sine, Soft Triangle, Warm Drive, Hard Clip, Wave Fold, Odd Stack, Saw Rise, Hardcore Punch, Rumble Core) and a Wavetable choice on each oscillator. Generated by code, so they are original. See `docs/specs/wavetable-factory.md` and ADR 0008.
-- `docs/STATUS.md`: a living summary for the product owner (state of the phases, open pull requests in merge order, decisions taken, what needs their attention).
-- Initial project documentation: plan, architecture, MVP scope, ADRs, spec template, contributing guide, bilingual README.
-- AGPL-3.0 license.
-- Agent instructions (`CLAUDE.md`), GitHub issue and PR templates, and a setup hook for Claude Code cloud sessions.
-- Build system (CMake + CPM, JUCE 9.0.3, Catch2) producing VST3, AU and Standalone targets.
-- Plugin skeleton: silent engine, output gain parameter, resizable editor showing the agreed layout grid.
-- CI on Linux, macOS and Windows: build, unit tests, pluginval at strictness 10, clang-format check, downloadable builds.
-- First sound: a MIDI note plays a monophonic kick. It starts with a fast pitch drop (+48 semitones in 90 ms) and settles on the note's pitch, with an exponential amplitude decay. Letting go of the last key fades the kick out in 30 ms, so the note length sets the tail length. Retriggering and releasing do not click.
-- Voice controls: Key Track with a fixed Root Note, optional Glide with Glide Time, Velocity Sensitivity (0 % by default, so every kick is equally loud).
-- Two wavetable oscillators (On, Level, Pitch, Octave, Fine, Position, Phase) using band-limited mipmapped wavetables; the only wavetable for now is a built-in sine.
-- Safety Limiter (soft clipper, on by default) after Output Gain; the output never goes above 0 dBFS while it is on.
-- Generic parameter panel in the editor (one control per parameter) until the real panels land.
-- Standalone only: an on-screen keyboard (also playable with the computer keyboard, `Z`/`X` shift the octave) and an Auto-play loop with a BPM control (default 200) to hear the kick without a DAW. Not shown in VST3/AU. See `docs/specs/standalone-audition.md`.
-- Specs for voice and note handling and for the wavetable oscillator, and ADR 0005 (engine parameter hand-off).
-- `fcm_core_tests`: tests for the parameter layout (including a guard on released parameter IDs) and the parameter-to-engine mapping.
+- **Kick voice**: monophonic, a MIDI note plays a pitched kick whose tail follows the note, with Key Track and a fixed Root Note, optional Glide, Velocity Sensitivity (0 % by default), a safety limiter on the output and retrigger and release without clicks.
+- **Two wavetable oscillators** (On, Wavetable, Level, Pitch, Octave, Fine, Position, Phase) with nine factory wavetables (Sine, Soft Triangle, Warm Drive, Hard Clip, Wave Fold, Odd Stack, Saw Rise, Hardcore Punch, Rumble Core), a wavetable display, and loading your own wavetable from a WAV (Serum and Vital format), saved inside the project. See `docs/specs/oscillator-wavetable.md`, `wavetable-factory.md`, `wavetable-user.md`, `wavetable-display.md`.
+- **Editable amp and pitch envelopes** with a default Kick + Bass shape: drag points, add and delete extra points, bend segments, five knobs per envelope, ready-made shapes, a Time Scale knob and tempo Sync (host tempo, or the BPM control in the Standalone). See `docs/specs/envelope-breakpoint.md`.
+- **Punch / Tail**: a Split time that divides the kick in two and a Punch Level and a Tail Level (-48 to +12 dB) for each part. See `docs/specs/voice-punch-tail.md`.
+- **Tock**, an optional click layer at the start of every kick: Synth mode or Sample mode with four built-in sounds (Click, Knock, Snap, Tick) or your own WAV (up to 2 seconds), with Level, Tune, Start, Decay and Tone. See `docs/specs/tock.md`.
+- **Effects** you can drag into any order, each with On (off by default) and Mix, never clicking and never shifting the kick's timing: **Distortion** (Soft Clip, Hard Clip, Overdrive, Foldback, Bitcrush, oversampled by the Quality setting), a 4-band **parametric EQ** (each band a Bell, Low or High Shelf, Low or High Cut, with a response display and draggable dots) and a multiband **Stereo** effect with a Mono Below switch. A global **Quality** setting (1x to 8x, default 2x) sets the oversampling. See `docs/specs/fx-*.md`.
+- **Presets**: five factory presets (Init, Classic Punch, Rumble Kick, Hardcore Crunch, Gabber Fold), your own saved as `.fcmpreset` files, previous and next buttons, and a name field with Save. A project or preset stores everything, including your own wavetables and Tock sample. See `docs/specs/presets.md` and `project-state.md`.
+- **One-screen editor** that follows the agreed layout and scales with the window without rearranging. See `docs/specs/ui-grid-layout.md`.
+- **Standalone only**: an on-screen keyboard (also playable with the computer keyboard) and an Auto-play loop with a BPM control to hear the kick without a DAW.
+- Saved projects and presets are treated as untrusted input: unusable values are replaced by defaults, a state from a newer version loads as far as it is understood, and damaged files are refused with a message. See `docs/specs/state-safe-loading.md`.
+- Continuous integration on Linux, macOS and Windows (build, unit tests, pluginval at strictness 10, formatting), pinned and verified dependencies, and a release workflow that builds the three systems when a version tag is pushed.
 
-- Editable envelopes for volume (amp) and pitch: a display where you drag points, double-click to add or delete extra points and drag a segment to bend it, five knobs per envelope that move the main points of the same line, and a shape menu (Kick + Bass, Short Punch, Long Tail for the amp; Classic Drop, Short Punch, Long Tail for the pitch). The default amp shape is now Kick + Bass: a punch, a dip and a bass body held while the key is down.
-- New automatable parameters: Amp Env Time Scale, Pitch Env Time Scale, Pitch Env Amount (default +48 semitones), Punch Tail Balance and Punch Tail Split (default 80 ms).
-- Punch / Tail balance: favours the hit or the bass tail with one control, with a marker for the split time on the amp display.
-- Tempo sync for each envelope: with the Sync switch on, the time knobs show musical figures (1/64 to 1 bar, with triplets and dotted values) instead of milliseconds, the display grid is labelled in fractions of a bar, points snap to 1/32 notes, and the envelope keeps its musical lengths when the tempo changes (host tempo in a DAW, the BPM control in the Standalone). The Sync state is saved with the shape. ADR 0007.
-- Punch Level and Tail Level knobs (-48 to +12 dB) under the Punch/Tail sliders, to set the volume of each part independently.
-- Envelope shapes are saved with the project and restored with it; a damaged shape falls back to the default.
-- ADR 0006 (envelope model and lock-free publishing), specs for breakpoint envelopes and for Punch / Tail.
-
-### Fixed
-
-- A test of the lock-free pointer hand-off (`PublishedPointer never shows a torn or freed object across threads`) failed at random on busy machines: its reader thread could start after the writer had finished, so nothing was tested. The writer now waits for the reader. The test still fails 10 of 10 times if the hand-off protection is removed.
-
-### Security
-
-- `.github/CODEOWNERS` (the product owner reviews everything) and a louder warning in the cloud session setup hook when the toolchain is incomplete.
-- Phase 3 data is covered by the safe loading too: the new envelope and Punch/Tail parameters, a host tempo that is 0, negative or NaN, a NaN time scale and the tail length reported to the host can no longer silence the kick, keep a voice alive forever or hand the host a non-finite value.
-- Loading saved state is now safe against damaged or hostile data: values that are not finite numbers (`nan`, `inf`) become the parameter's default, out-of-range values are clamped, unknown entries are ignored, and oversized state is rejected. The oscillator and the parameter reader also guard their inputs, which fixes an out-of-bounds read on the audio thread reachable through a crafted `value="nan"`. See `docs/specs/state-safe-loading.md`.
-- `stateVersion` is now always written, a missing or newer version loads safely, and the migration hook (`StateMigrations`) exists.
-- `docs/ARCHITECTURE.md` has a new "Untrusted input" section with the rules for upcoming wavetable and preset files.
-- CI hardening: every GitHub Action is pinned to a full commit SHA, the workflow token is read-only, the pluginval download is verified against a SHA-256 before it runs, and the Windows build uses its own MSVC setup instead of a third-party action.
-- JUCE and Catch2 are pinned to the commit SHA of their release tags. The pinning policy is in `docs/ARCHITECTURE.md`.
-- Added `.github/dependabot.yml` (weekly GitHub Actions updates) and `SECURITY.md` (report vulnerabilities through GitHub private vulnerability reporting).
-- Standalone: copying the host's MIDI into the audition buffer is now capped to the memory reserved in `prepareToPlay` (excess events are dropped, but note-offs and All Notes Off / All Sound Off are kept first so no note gets stuck), so a huge burst of MIDI can no longer make the audio thread allocate.
-
-### Changed
-
-- The amp Attack knob now goes from 1 ms (it was 0), so a kick cannot start with a click.
-- The editor shows the generic parameter panel instead of the layout placeholder grid; the layout itself stays documented in `docs/UI_LAYOUT.md`.
-- The plugin reports the kick's tail length to the host (the amp release time).
-- The kick now holds its body while the key is down (the default Kick + Bass shape has a sustain level) and fades out on release; the fixed Phase 2 shapes are gone.
-
-[Unreleased]: https://github.com/nocturn444/frenchcore-machine/commits/main
+[Unreleased]: https://github.com/nocturn444/frenchcore-machine/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/nocturn444/frenchcore-machine/releases/tag/v0.1.0

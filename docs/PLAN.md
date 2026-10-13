@@ -100,7 +100,7 @@ Done when:
 
 - [x] UI layout matches `UI_LAYOUT.md` ([spec](specs/ui-grid-layout.md); pending the product owner's eyes)
 - [x] Manual test pass: done in FL Studio only (owner's decision, 2026-10-13: no other DAW will be tried). Not tried: parameter automation, other sample rates, the Quality setting. See [TESTING.md](TESTING.md) and the status of the checks
-- [ ] CPU profiling; no allocation on the audio thread (debug guard clean)
+- [x] CPU profiling (about 3 % of one core at 8x with all effects on, 1.6 % at the default 2x: [TESTING](TESTING.md)); no allocation on the audio thread: checked by unit tests for every effect and for the effect chain; the oscillators, envelopes and voice follow the real-time rules by design but have no allocation test of their own yet
 - [x] User guide complete (installation added; every feature has its section)
 - [ ] Tag `v0.1.0`, GitHub Release with binaries for all platforms (the workflow and the steps are ready: [RELEASING](RELEASING.md); the owner decides when to tag)
 
