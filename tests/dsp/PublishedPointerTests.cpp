@@ -98,7 +98,8 @@ TEST_CASE("PublishedPointer never shows a torn or freed object across threads", 
         std::atomic<bool> done{false};
         std::atomic<bool> allGood{true};
         std::atomic<int> maxSeen{0};
-        long long acquires = 0;
+        std::atomic<long long> acquires{0};
+        std::atomic<bool> readerRunning{false};
 
         // The "audio thread": acquires like once per block and reads the whole object.
         std::thread reader(
@@ -113,12 +114,23 @@ TEST_CASE("PublishedPointer never shows a torn or freed object across threads", 
                     else
                         lastSeen = object->values[0]; // never goes back to an older object
                     ++acquires;
+                    readerRunning = true;
                 }
                 maxSeen = lastSeen;
             });
 
+        // On a busy machine the reader thread may not start until the writer is done, which would
+        // test nothing. Start publishing only once the reader is acquiring, and do not stop before
+        // it has acquired again after the last publish.
+        while (!readerRunning.load())
+            std::this_thread::yield();
+
         for (int i = 1; i <= kPublishes; ++i)
             publisher.publish(std::make_unique<Payload>(i));
+
+        const long long acquiresAfterLastPublish = acquires.load();
+        while (acquires.load() <= acquiresAfterLastPublish)
+            std::this_thread::yield();
 
         done = true;
         reader.join();
