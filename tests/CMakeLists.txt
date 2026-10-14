@@ -39,6 +39,7 @@ catch_discover_tests(fcm_dsp_tests)
 # Core tests need the JUCE parameter classes (APVTS), so they link juce_audio_processors.
 juce_add_console_app(fcm_core_tests PRODUCT_NAME "fcm_core_tests")
 target_sources(fcm_core_tests PRIVATE
+    core/AboutTextTests.cpp
     core/AuditionStateTests.cpp
     core/EnvelopeStateTests.cpp
     core/EqResponseTests.cpp
@@ -52,6 +53,7 @@ target_sources(fcm_core_tests PRIVATE
     core/TailLengthTests.cpp
     core/TockImportTests.cpp
     core/TockSelectorTests.cpp
+    core/UntrustedInputTests.cpp
     core/WavetableImportTests.cpp
     core/WavetableSelectorTests.cpp
     core/WavetableShapeTests.cpp

@@ -6,6 +6,7 @@
 #include "core/ParameterLayout.h"
 #include "core/StateLoader.h"
 #include "core/TailLength.h"
+#include "core/UntrustedXml.h"
 #include "dsp/fx/EffectRegistry.h"
 #include "plugin/PluginEditor.h"
 
@@ -171,12 +172,12 @@ void PluginProcessor::getStateInformation(juce::MemoryBlock& destData)
 
 void PluginProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
-    // The host's bytes are not trusted: too big or not our state means nothing changes, and
-    // everything else goes through the checks of core::ProjectState.
+    // The host's bytes are not trusted: too big, malformed or not our state means nothing changes,
+    // and everything else goes through the checks of core::ProjectState.
     if (data == nullptr || sizeInBytes <= 0 || sizeInBytes > core::kMaxStateBytes)
         return;
 
-    if (auto xml = getXmlFromBinary(data, sizeInBytes))
+    if (auto xml = core::parseHostStateBlob(data, static_cast<size_t>(sizeInBytes)))
         project.restoreFromXml(*xml);
 }
 

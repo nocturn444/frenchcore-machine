@@ -39,7 +39,7 @@ An XML file in UTF-8:
 
 ### 4.2 Safety (presets are untrusted input)
 
-- Files larger than 16 MiB are refused before they are read in full. Reading is capped, and a file that is not valid XML, has the wrong root tag, has no state child, or has a state that the loader rejects, is refused with a message.
+- Files larger than 16 MiB are refused before they are read in full. Reading is capped, and a file that is not valid XML, has the wrong root tag, has no state child, or has a state that the loader rejects, is refused with a message. Before the XML is parsed, a file that declares a DTD or entity, or nests deeper than 64 elements, is refused the same way (`core/UntrustedXml.h`, shared with the host state).
 - The state inside goes through `ProjectState::restore`, which already clamps values and ignores unknown entries ([state-safe-loading](state-safe-loading.md)). Nothing else is read from the file.
 - **Names become file names, so they are sanitised**: only letters, digits, space, `-`, `_`, `.` and `(`/`)` are kept (anything else is dropped, including path separators and control characters), runs of spaces are collapsed, leading and trailing spaces and dots are removed, and the result is cut to 64 characters. A name that is empty after that is refused. Windows reserved device names (`CON`, `NUL`, `COM1`...) get an underscore appended.
 - Saving only ever writes `<sanitised name>.fcmpreset` directly inside the preset folder, and double checks that the final file's parent is that folder. Writing is atomic (temporary file, then replace) so a failed save never leaves half a preset.
@@ -75,7 +75,7 @@ Catch2 (`fcm_core_tests`):
 
 - Name sanitising: path separators and `..` are dropped, control characters are dropped, reserved Windows names are altered, long names are cut, empty results are refused, Unicode is dropped to the allowed set.
 - Encode/decode: a captured state round-trips through preset text; the name is kept; the inner state is equivalent after a second round trip.
-- Untrusted files: empty file, random bytes, truncated XML, wrong root tag, no state child, a state with a wrong root, a newer `presetFormat`, a file over 16 MiB, NaN and huge numbers inside the state. Each is refused or clamped and never changes the previous sound when refused.
+- Untrusted files: empty file, random bytes, truncated XML, wrong root tag, no state child, a state with a wrong root, a newer `presetFormat`, a file over 16 MiB, deep nesting, a DTD or entity, NaN and huge numbers inside the state, and embedded audio with a false size (loads without user audio). Each is refused or clamped and never changes the previous sound when refused.
 - Library: save creates exactly `<name>.fcmpreset` in the folder and nothing outside it (a name like `../../x` stays inside); overwrite replaces; listing ignores other extensions, sub-folders and files that are not regular; listing is sorted, bounded at 1000 and case-insensitive; the save is atomic (no temporary file left behind).
 - Factory presets: all entries valid as listed in 4.3; each loads without being rejected; loading twice gives the same state; after loading one, a control it does not mention is at its default even if it was changed before.
 - Preset manager: next/previous wrap over factory then user presets; loading a user preset restores the sound and the current name; a refused load leaves the previous sound and name.

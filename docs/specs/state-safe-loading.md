@@ -1,6 +1,6 @@
 # Spec: Safe state loading
 
-- Status: Implemented (security hardening, see the audit of `main` at 17a8a0a)
+- Status: Implemented (security hardening, see the audit of `main` at 17a8a0a; host blob and embedded audio checks added in 0.1.1 after the audit of v0.1.0)
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ARCHITECTURE §5 and §12](../ARCHITECTURE.md), [oscillator-wavetable](oscillator-wavetable.md)
 
@@ -12,7 +12,8 @@ A saved project or preset can never crash the plugin or the DAW, even if the fil
 - A saved value outside the control's range is moved to the nearest allowed value.
 - Controls the plugin does not know (for example from a newer version) are ignored.
 - A project saved by a newer version of the plugin still opens: the controls this version knows are loaded and the rest is ignored. Saving it again writes the current format, so anything only the newer version understood is lost.
-- A file that is not a Frenchcore Machine state, or is absurdly large, is ignored and the plugin keeps its current settings.
+- A file that is not a Frenchcore Machine state, or is absurdly large, is ignored and the plugin keeps its current settings. The same goes for a state whose text is not valid UTF-8, declares a DTD or entity, or nests deeper than 64 levels (added in 0.1.1).
+- Audio embedded in a project (a user wavetable or Tock sample) whose stored size does not match its data is dropped; the rest of the project loads (added in 0.1.1).
 
 ## 2. User interface
 
@@ -25,6 +26,8 @@ None. The rules below apply to every parameter without listing them: new paramet
 ## 4. DSP / implementation approach
 
 Two layers, so a mistake in one does not matter.
+
+**Before parsing (`PluginProcessor::setStateInformation`, message thread):** the host's bytes go through `core::parseHostStateBlob` (`core/UntrustedXml.h`), not JUCE's `getXmlFromBinary`. It requires JUCE's magic number, a declared text length between 1 and the bytes present, valid UTF-8 (`juce::CharPointer_UTF8::isValidString`, checked on the raw bytes before any `juce::String` is built: JUCE before 9.0.4 could overrun a heap block when building a string from invalid UTF-8), no `<!DOCTYPE` or `<!ENTITY` in any letter case, and nesting of at most `kMaxUntrustedXmlDepth` (64) elements. Anything else changes nothing.
 
 **On load (`core::loadState`, message thread):**
 
@@ -60,6 +63,8 @@ Catch2:
 - State loading (`fcm_core_tests`): for every float parameter, a state with `nan`, `inf`, `-inf`, text, out-of-range and empty values loads, gives parameters that are finite and inside their range (the default for non-numbers, the nearest bound for out-of-range values), and a note played through the reader and the engine gives only finite samples. At least `osc1.phase`, `osc1.fine`, `osc1.position` and `global.glideTime` are named explicitly.
 - A state without `stateVersion` loads as version 1; a future `stateVersion` loads the known controls and ignores the rest; a non-numeric or negative `stateVersion` counts as 1; `stateVersion` is written back after loading and on saving.
 - Unknown parameter IDs are ignored; a wrong root node, an empty or oversized state is rejected and leaves the current settings alone.
+- Host blob (`UntrustedInputTests.cpp`): a blob written by `copyXmlToBinary` parses back; a wrong magic number, a zero or too-long declared length, overlong UTF-8 (`F0 80 80 80`), lone continuation bytes, a truncated sequence, a surrogate, a DTD or entity in either case, 200000 nested tags, and 65 levels are refused; 64 levels pass; quotes, comments and CDATA cannot hide nesting.
+- Embedded audio (`UntrustedInputTests.cpp`, `ProjectStateTests.cpp`, `PresetTests.cpp`): `decodeStoredFloats` refuses `-1.A`, `0.`, `2000000000.A`, a 20-digit count, a count with a sign, space or exponent, a count that is not whole floats, and counts that disagree with the text; through a project and through a preset, such a wavetable or Tock node gives no user audio while the rest loads.
 - Migrations: `applyMigrations` runs the steps in order from the stored version to the target (tested with injected steps), does nothing when the version is already current, and reports a missing step.
 
 - Envelope robustness (`fcm_dsp_tests`): an engine with a tempo-synced envelope and a host tempo of NaN, infinity, 0, a negative number or an absurd value, and with a NaN or infinite time scale, still plays a finite kick and the voice ends after the release; the renderer treats a NaN time scale as 1.
