@@ -25,7 +25,9 @@ mkdir -p "${stage}/Standalone"
 
 cp LICENSE "${stage}/LICENSE.txt"
 sed "s/{VERSION}/${version}/g" packaging/README.txt > "${stage}/README.txt"
-cp -R "${artefacts}/VST3" "${stage}/"
+# Only the bundle: on Windows the VST3 folder also holds the linker's .lib and .exp leftovers.
+mkdir -p "${stage}/VST3"
+cp -R "${artefacts}/VST3/Frenchcore Machine.vst3" "${stage}/VST3/"
 if [ -d "${artefacts}/AU" ]; then cp -R "${artefacts}/AU" "${stage}/"; fi
 
 case "${RUNNER_OS:-$(uname -s)}" in
