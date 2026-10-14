@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Builds the plugin for the three systems and attaches the zips to a DRAFT GitHub Release. Nothing is
-# published until the owner presses Publish (docs/RELEASING.md). It starts in one of two ways:
-#  - a version tag is pushed (v0.1.0), or
+# published until the owner presses Publish (docs/RELEASING.md). The build jobs only read the
+# repository; a final small job with write access attaches the zips, a SHA256SUMS.txt and a signed
+# build provenance attestation. It starts in one of two ways:
+#  - a version tag is pushed (v0.1.1), or
 #  - the owner presses "Run workflow" in the Actions tab and types the version: the draft is created
 #    against the current main, and the tag itself is created when the draft is published.
 name: Release
@@ -12,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Version to release, for example v0.1.0'
+        description: 'Version to release, for example v0.1.1'
         required: true
         type: string
 
@@ -33,7 +35,10 @@ jobs:
     outputs:
       exists: ${{ steps.draft.outputs.exists }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Check the tag has the form v1.2.3
         run: |
@@ -45,6 +50,14 @@ jobs:
           version="${TAG#v}"
           grep -q "project(FrenchcoreMachine VERSION ${version} " CMakeLists.txt || {
             echo "Tag ${TAG} does not match the VERSION in CMakeLists.txt"; exit 1; }
+
+      # Only reviewed code is released: the commit must be on main (a tag pushed from another
+      # branch, or "Run workflow" on another branch, stops here).
+      - name: Check the commit is on main
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "${GITHUB_SHA}" origin/main || {
+            echo "${GITHUB_SHA} is not on main; releases are only made from main"; exit 1; }
 
       # Publishing a draft that was started by hand creates the tag, which starts this workflow again;
       # when the release already exists nothing more is built.
@@ -59,7 +72,7 @@ jobs:
             exit 0
           fi
           echo "exists=false" >> "$GITHUB_OUTPUT"
-          notes="First notes are in CHANGELOG.md. The plugins are not signed: see the Installation section of the user guide for the one-time steps on macOS and Windows."
+          notes="$(sed "s/{TAG}/${TAG}/g" .github/release-notes.md)"
           if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
             gh release create "${TAG}" --draft --verify-tag --title "Frenchcore Machine ${TAG}" --notes "${notes}"
           else
@@ -71,8 +84,10 @@ jobs:
     needs: create-release
     if: needs.create-release.outputs.exists != 'true'
     runs-on: ${{ matrix.os }}
+    # Read only: configuring and building runs third-party CMake code, which must not hold a token
+    # that can change the release. The zip goes to the attach job as a workflow artifact.
     permissions:
-      contents: write # uploads this system's zip to the draft
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -85,11 +100,13 @@ jobs:
             asset: FrenchcoreMachine-macOS.zip
             extra-cmake-args: '"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13'
           - name: Windows
-            os: windows-latest
+            os: windows-2025
             asset: FrenchcoreMachine-Windows.zip
             extra-cmake-args: -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -129,19 +146,50 @@ jobs:
         shell: bash
         run: ctest --test-dir build --output-on-failure
 
+      # The licence and a read-me go in every zip; see the script for what else is left out.
       - name: Package
         shell: bash
+        run: packaging/package.sh "${BUILD_TYPE}" "${TAG#v}" "${{ matrix.asset }}"
+
+      - name: Hand the zip to the attach job
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+          retention-days: 7
+
+  attach:
+    name: Attach zips, checksums and provenance
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write     # uploads to the draft
+      id-token: write     # signs the provenance attestation
+      attestations: write # stores it with the repository
+    steps:
+      - name: Download the zips
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Write SHA256SUMS.txt
+        working-directory: dist
         run: |
-          cd "build/src/plugin/FrenchcoreMachine_artefacts/${BUILD_TYPE}"
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            7z a -tzip "${GITHUB_WORKSPACE}/${{ matrix.asset }}" VST3 Standalone
-          else
-            # -y keeps the symbolic links inside macOS bundles.
-            zip -r -y "${GITHUB_WORKSPACE}/${{ matrix.asset }}" $(ls -d VST3 AU Standalone 2>/dev/null)
-          fi
+          sha256sum FrenchcoreMachine-*.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      # Lets anyone check a zip came from this repository, this commit and this workflow:
+      # gh attestation verify <zip> --repo nocturn444/frenchcore-machine
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/FrenchcoreMachine-*.zip
 
       - name: Attach to the draft
-        shell: bash
+        working-directory: dist
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${TAG}" "${{ matrix.asset }}" --clobber
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "${TAG}" FrenchcoreMachine-*.zip SHA256SUMS.txt --clobber
