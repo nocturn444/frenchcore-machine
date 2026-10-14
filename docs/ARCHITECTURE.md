@@ -59,6 +59,7 @@ plugin ──► ui ──► core ──► dsp
 - `fcm_dsp` depends only on the standard library and `juce_audio_basics` / `juce_dsp`. It knows nothing about parameters, presets or UI.
 - `fcm_core` owns the parameter layout, the state tree and serialization. It depends on `fcm_dsp` for type definitions (e.g. effect descriptors).
 - `fcm_ui` reads and writes state through `fcm_core`. It never touches DSP objects directly.
+- `plugin` wires everything together and is the only place that knows about the host.
 
 How this is built: the four libraries are CMake `INTERFACE` libraries that carry their sources and include paths. Each final binary (the plugin, each test executable) compiles them together with the JUCE modules it links, because JUCE modules must be linked `PRIVATE` by the final target and must not be compiled twice into one binary. The `fcm_dsp` boundary is enforced by the `fcm_dsp_tests` executable, which links only `juce_dsp`: a dsp file that includes UI, APVTS or plugin headers fails to build there.
 
@@ -66,11 +67,10 @@ How this is built: the four libraries are CMake `INTERFACE` libraries that carry
 
 | Dependency | Version | Licence | Used for |
 |---|---|---|---|
-| JUCE | 9.0.3 | AGPLv3 (or commercial) | Framework, plugin wrappers, UI, DSP helpers |
+| JUCE | 9.0.4 | AGPLv3 (or commercial) | Framework, plugin wrappers, UI, DSP helpers |
 | Catch2 | 3.16.1 | BSL-1.0 | Unit tests (not shipped) |
 | CPM.cmake | 0.43.2 (vendored in `cmake/`) | MIT | Dependency fetching at configure time |
 | pluginval | 1.0.4 | GPLv3 | Plugin validation in CI only (not shipped, not linked) |
-- `plugin` wires everything together and is the only place that knows about the host.
 
 ## 4. Signal flow
 
@@ -283,6 +283,8 @@ Everything that comes from outside the process is untrusted: the state blob a ho
 Rules for any code that reads such data:
 
 - **Size limits first.** Check the byte size before reading or parsing (state blobs: `kMaxStateBytes`). Wavetable WAVs: cap file size, channel count, sample rate and frame count (at most 256 frames of 2048 samples, [oscillator-wavetable](specs/oscillator-wavetable.md)). Presets: cap file size and the number of nodes and properties.
+- **Shape limits before parsing XML.** JUCE's XML parser and `ValueTree::fromXml` recurse once per level and expand DTD entities, so the host state blob and preset files go through `core/UntrustedXml.h` first: no `<!DOCTYPE` or `<!ENTITY`, at most `kMaxUntrustedXmlDepth` (64) levels. The host blob is also read by `parseHostStateBlob` instead of JUCE's `getXmlFromBinary`: JUCE's header, a declared length that fits, and valid UTF-8 are checked before any `juce::String` is built.
+- **Never trust a stored size.** Audio embedded in a state (user wavetables, the user Tock sample) is decoded by `core::decodeStoredFloats`, which checks the byte count written in front of the base64 text against the allowed maximum and the text's real length before anything is allocated (`juce::MemoryBlock::fromBase64Encoding` resizes to whatever the text claims).
 - **Validate every number.** Reject or replace non-finite samples (NaN, infinity) and out-of-range values; never trust a value to be a valid index, size or enum. Parse numbers with the strict reader in `StateLoader.cpp`, not with `getDoubleValue`, which turns `nan` and `inf` into real NaN and infinity.
 - **Decode off the audio thread.** Parsing, decoding and the wavetable mipmap build run on a background or message thread and are published by atomic pointer swap ([section 6](#6-threading-and-real-time-rules)). The audio thread only sees data that has already been validated.
 - **Never write to a path taken from the data.** A preset or state may name a file, but nothing in it decides where we write. User presets are saved only inside the presets folder, with a file name built from sanitized characters (no separators, no `..`, no reserved names) and a length limit; existing files are not overwritten silently.

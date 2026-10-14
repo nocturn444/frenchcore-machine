@@ -7,7 +7,7 @@
 CPMAddPackage(
     NAME JUCE
     GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG be29c81492b6151c8ea8d14c840e1311963b3a83 # 9.0.3
+    GIT_TAG 3fb5cbc0340758596dac39f7c8de47d562b4896e # 9.0.4
     # Shallow clones by SHA are not reliable on every git server, so fetch the history.
     GIT_SHALLOW OFF
 )
