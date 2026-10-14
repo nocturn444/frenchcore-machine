@@ -6,7 +6,7 @@ A wavetable synthesizer plugin built for one job: making frenchcore kicks quickl
 
 Frenchcore Machine sits between dragging in a sample and building a kick from scratch in a full synth. It gives you two wavetable oscillators, an envelope that already has the classic kick + bass shape, a click layer (the "tock") and a reorderable chain of the effects frenchcore kicks actually need. Think of it as a heavily simplified Serum or Vital, focused on kicks.
 
-> **Status:** all the features of the first version (0.1.0) are built and have been tried in a DAW; what is left is the release itself. See the [plan](docs/PLAN.md) for progress.
+> **Status:** version 0.1.0, the first release, is out. It has been tried in FL Studio only. See the [plan](docs/PLAN.md) and the [changelog](CHANGELOG.md).
 
 ## Features of v0.1.0
 
@@ -23,7 +23,7 @@ The full list is in [MVP scope](docs/MVP_SCOPE.md).
 
 ## Download
 
-No release yet. When there is one it will be on the [Releases page](https://github.com/nocturn444/frenchcore-machine/releases), with installation steps in the [user guide](docs/USER_GUIDE.md#installation). Development builds are attached to each run in the Actions tab.
+Version 0.1.0 is on the [Releases page](https://github.com/nocturn444/frenchcore-machine/releases/latest): a zip for Windows, macOS and Linux. Installation steps, including the one-time warnings of unsigned plugins, are in the [user guide](docs/USER_GUIDE.md#installation). Development builds are attached to each run in the Actions tab.
 
 ## Building from source
 
