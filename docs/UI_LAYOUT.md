@@ -48,7 +48,7 @@ In the original sketch, black areas were mandatory and red areas were to be disc
 | **Global** | Output gain, safety limiter on/off, Quality (oversampling 1x/2x/4x/8x), Glide on + time, Velocity sensitivity, Key track | Yes | Voice (§4.1), Output (§4.7) |
 | **FX rack** | Reorderable list of effect slots (drag handle, enable, mix) with the selected effect's panel below | Yes | FX chain (§4.6) |
 | **LFO 1 / LFO 2** | Display, 3 knobs, 2 toggles, LFO1/LFO2 tabs (from the sketch) | After MVP. The space is kept empty so adding it does not move other panels | Requires a modulation system |
-| **Other** | Reserved space | To be defined | |
+| **Other** | Reserved space; shows the licence notice (version, AGPL-3.0, source address) until it gets its own contents ([legal-notice](specs/legal-notice.md)) | To be defined | |
 
 ## Standalone audition strip
 

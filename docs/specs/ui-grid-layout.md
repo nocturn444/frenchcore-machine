@@ -55,7 +55,7 @@ UI components are not unit tested in this project. What can be tested without a 
 
 ## 6. Out of scope
 
-- The LFO and "Other" boxes (kept free).
+- The LFO and "Other" boxes (kept free; since 0.1.1 the Other box shows the licence notice, [legal-notice](legal-notice.md)).
 - A visual redesign, themes, animation.
 - Remembering the window size between sessions.
 

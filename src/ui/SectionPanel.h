@@ -67,7 +67,8 @@ class ControlPanel : public SectionPanel
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ControlPanel)
 };
 
-// A box kept free for a later feature (the LFOs, "Other"): it shows its name faintly.
+// A box kept free for a later feature (the LFOs, "Other"): it shows its name and a short note
+// faintly (for "Other", the licence notice until the box gets its own contents).
 class PlaceholderPanel : public SectionPanel
 {
   public:
