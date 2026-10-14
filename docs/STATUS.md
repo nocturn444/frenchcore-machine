@@ -15,7 +15,7 @@ Last updated: 2026-10-13.
 | 5 FX system (distortion, parametric EQ, multiband stereo, rack with drag and drop) | Done and merged |
 | 6 State and presets (project state, preset files, five factory presets, preset bar) | Done and merged |
 | Feedback round 2026-10-13 (Punch/Tail balance removed, EQ made parametric, window rebuilt on the agreed grid and scaled to the window) | Done and merged |
-| 7 Hardening and release | In progress. The owner tried the plugin in FL Studio only (no other DAW planned): it works well, RAM use is reasonable, saving a project and the presets work, and presets stay compatible between versions. Not tried: automation, other sample rates, the Quality setting. The release workflow, installation steps and release checklist are ready (`docs/RELEASING.md`). CPU measured offline by the agent (3 % of one core at 8x with all effects on). Left: only the tag, which the owner decides |
+| 7 Hardening and release | Done. Version 0.1.0 was published on 2026-10-14 with zips for Windows, macOS and Linux. It was tried in FL Studio only (works well, reasonable RAM, saving and presets fine); not tried: automation, other sample rates, the Quality setting, other DAWs. CPU measured offline (3 % of one core at 8x with all effects on) |
 
 ## 2. Open pull requests
 
@@ -56,7 +56,6 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 
 Things only the owner can do in GitHub (the agent cannot):
 
-- Decide when to release: the tag `v0.1.0` starts the release workflow and creates a **draft** release; nothing is public until you press Publish ([RELEASING](RELEASING.md)).
 
 - Protect `main` (Settings, Branches): require the CI checks and a pull request before merging, and optionally "Require review from Code Owners".
 - Enable "Private vulnerability reporting" (Settings, Security), because `SECURITY.md` sends reporters there.
@@ -76,4 +75,4 @@ Things to listen to (sound):
 - The effects: switch Distortion on and try each Type with Drive and Tone; try EQ and Stereo (High Width to 200 % on headphones, Mono Below on). Note that with effects in the plugin your DAW is told about a few samples of latency at the default Quality.
 - The Tock: switch Tock On, try Synth mode and the four samples (Click, Knock, Snap, Tick) with auto-play running; say what to change (levels, lengths, which samples).
 - The nine factory wavetables: pick each one on Osc 1, move Position and play. Tell the agent which ones to drop, rename or replace (cheapest now, before release). Harder ones are louder than the sine at the same Level.
-- The Phase 3 envelopes in a DAW or the Standalone: the default "Kick + Bass" amp shape, the pitch drop, the Punch/Tail balance and the Punch and Tail level knobs. Tell the agent what feels wrong in plain words.
+- The Phase 3 envelopes in a DAW or the Standalone: the default "Kick + Bass" amp shape, the pitch drop, the Punch and Tail levels and the Punch and Tail level knobs. Tell the agent what feels wrong in plain words.
