@@ -2,6 +2,7 @@
 #include "core/TockSelector.h"
 
 #include "core/ParameterIds.h"
+#include "core/StoredAudio.h"
 #include "core/TockImport.h"
 #include "core/WavetableImport.h"
 #include "dsp/tock/FactoryTocks.h"
@@ -9,7 +10,6 @@
 #include <algorithm>
 #include <bit>
 #include <cmath>
-#include <cstring>
 
 static_assert(std::endian::native == std::endian::little, "saved samples are little-endian floats");
 
@@ -122,14 +122,13 @@ bool TockSelector::restoreFrom(const juce::ValueTree& node)
     if (text.isEmpty() || text.length() > kMaxBase64Characters)
         return restoreNothing();
 
-    juce::MemoryBlock bytes;
-    if (!bytes.fromBase64Encoding(text) || bytes.getSize() % sizeof(float) != 0)
+    auto samples = decodeStoredFloats(text, static_cast<size_t>(kMaxTockSamples));
+    if (!samples.has_value())
         return restoreNothing();
 
     dsp::TockSample sample;
     sample.sampleRate = static_cast<double>(node["sampleRate"]);
-    sample.samples.resize(bytes.getSize() / sizeof(float));
-    std::memcpy(sample.samples.data(), bytes.getData(), bytes.getSize());
+    sample.samples = std::move(*samples);
     if (!loadUser(std::move(sample), node["name"].toString()))
         return restoreNothing();
     return true;

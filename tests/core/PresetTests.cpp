@@ -162,6 +162,12 @@ TEST_CASE("Unusable preset files are refused with a message", "[core][preset][un
                                 juce::String::repeatedString("<a x=\"</</\"><!-- </a> -->", 200);
     refusedWith(sneaky);
 
+    // A DTD or an entity is never written by the plugin.
+    refusedWith("<!DOCTYPE x [<!ENTITY a \"b\">]><FrenchcorePreset presetFormat=\"1\" name=\"&a;\">"
+                "<FrenchcoreMachineState/></FrenchcorePreset>");
+    refusedWith("<FrenchcorePreset presetFormat=\"1\" name=\"x\"><!ENTITY a \"b\">"
+                "<FrenchcoreMachineState/></FrenchcorePreset>");
+
     // Too big.
     const juce::String huge =
         "<FrenchcorePreset presetFormat=\"1\" name=\"" +
@@ -203,6 +209,32 @@ TEST_CASE("A preset with bad numbers loads clamped and a wrong state changes not
     REQUIRE(wrong.ok);
     REQUIRE(rig.project.restore(wrong.state) == fcm::core::StateLoadResult::rejected);
     REQUIRE_THAT(rig.getParameter("distortion.drive"), WithinAbs(33.0, 1.0e-3));
+}
+
+TEST_CASE("A preset with embedded audio of a false size loads without user audio",
+          "[core][preset][untrusted][security]")
+{
+    TempFolder folder;
+    Rig source(folder.presets());
+    REQUIRE(source.wavetable1.loadUser(std::vector<float>(2048, 0.25f), "Mine"));
+    fcm::dsp::TockSample sample;
+    sample.sampleRate = 48000.0;
+    sample.samples.assign(400, 0.5f);
+    REQUIRE(source.tock.loadUser(sample, "my tock"));
+    source.setParameter("distortion.drive", 77.0f);
+    auto state = source.project.capture();
+    state.getChildWithName("UserWavetable1").setProperty("frames", "-1.A", nullptr);
+    state.getChildWithName("UserTockSample").setProperty("samples", "2000000000.A", nullptr);
+
+    const auto parsed = fcm::core::parsePreset(fcm::core::encodePreset("Liar", state));
+    REQUIRE(parsed.ok);
+
+    Rig target(folder.presets());
+    REQUIRE(target.wavetable1.loadUser(std::vector<float>(2048, 0.25f), "Before"));
+    REQUIRE(target.project.restore(parsed.state) == fcm::core::StateLoadResult::loaded);
+    REQUIRE_FALSE(target.wavetable1.hasUser());
+    REQUIRE_FALSE(target.tock.hasUser());
+    REQUIRE_THAT(target.getParameter("distortion.drive"), WithinAbs(77.0, 1.0e-3)); // the rest loaded
 }
 
 TEST_CASE("The library writes only inside its folder, atomically, and lists safely",
