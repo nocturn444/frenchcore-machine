@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "core/NoiseImport.h"
 #include "core/TockImport.h"
 #include "core/WavetableImport.h"
 
@@ -30,6 +31,10 @@ class WavetableLoader
     // The same for a Tock sample (docs/specs/tock.md §4.1), on the same background thread.
     using TockCallback = std::function<void(TockImportResult result, juce::String fileName)>;
     void loadTock(const juce::File& file, TockCallback done);
+
+    // The same for a noise sample (docs/specs/noise-oscillator.md §4).
+    using NoiseCallback = std::function<void(NoiseImportResult result, juce::String fileName)>;
+    void loadNoise(const juce::File& file, NoiseCallback done);
 
   private:
     juce::ThreadPool pool{1};

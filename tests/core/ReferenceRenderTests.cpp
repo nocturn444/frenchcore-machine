@@ -101,11 +101,12 @@ struct Rig
         engine.setEnvelopeSources(&amp.source(), &pitch.source());
         engine.setWavetableSources(&wavetable1.source(), &wavetable2.source());
         engine.setTockSource(&tock.source());
+        engine.setNoiseSource(&noise.source());
     }
 
     fcm::core::ProjectState::Parts parts()
     {
-        return {processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock};
+        return {processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock, noise};
     }
 
     void load(const Case& testCase)
@@ -177,6 +178,7 @@ struct Rig
     fcm::core::WavetableSelector wavetable1{processor.state, 0};
     fcm::core::WavetableSelector wavetable2{processor.state, 1};
     fcm::core::TockSelector tock{processor.state};
+    fcm::core::NoiseSelector noise{processor.state};
     fcm::core::ProjectState project;
 };
 

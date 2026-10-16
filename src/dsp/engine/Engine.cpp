@@ -187,6 +187,7 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
         tables[i] = wavetableSources[i] != nullptr ? wavetableSources[i]->acquire() : nullptr;
     voice.setWavetables(tables);
     voice.setTockSample(tockSource != nullptr ? tockSource->acquire() : nullptr);
+    voice.setNoiseSample(noiseSource != nullptr ? noiseSource->acquire() : nullptr);
 
     // What effects may want to know about the note: the pitch the tail is settling on, now.
     EffectContext context;
