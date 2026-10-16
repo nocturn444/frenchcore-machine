@@ -57,6 +57,10 @@ inline constexpr const char* kTockTune = "tock.tune";
 inline constexpr const char* kTockStart = "tock.start";
 inline constexpr const char* kTockDecay = "tock.decay";
 inline constexpr const char* kTockTone = "tock.tone";
+inline constexpr const char* kTockAmpEnv = "tock.ampEnv";
+inline constexpr const char* kTockTrimStart = "tock.trimStart";
+inline constexpr const char* kTockTrimEnd = "tock.trimEnd";
+inline constexpr const char* kTockPogo = "tock.pogo";
 
 // The mixer and the two buses (docs/specs/mixer-and-buses.md §3). A source is one of the voice's
 // stems; its Level is the source's own level control (osc1.level, osc2.level, tock.level, ...).

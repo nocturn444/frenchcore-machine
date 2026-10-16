@@ -33,19 +33,45 @@ constexpr double kMinScale = 0.6;
 constexpr double kMaxScale = 1.6;
 } // namespace
 
-TockPanel::TockPanel(juce::AudioProcessorValueTreeState& state, std::function<void(const juce::File&)> onLoad)
-    : ControlPanel(state, "Tock"), loadRequested(std::move(onLoad))
+TockPanel::TockPanel(juce::AudioProcessorValueTreeState& state, const core::TockSelector& selector,
+                     std::function<void(const juce::File&)> onLoad)
+    : ControlPanel(state, "Tock"), parameters(state), tockSelector(selector),
+      loadRequested(std::move(onLoad)), waveform(state, selector)
 {
-    const int switches =
-        addRow({{Ids::kTockOn, "On"}, {Ids::kTockMode, "Mode"}, {Ids::kTockSample, "Sample"}});
-    addCustom(switches, loadButton);
+    const int switches = addRow({{Ids::kTockOn, "On"},
+                                 {Ids::kTockMode, "Mode"},
+                                 {Ids::kTockSample, "Sample"},
+                                 {Ids::kTockAmpEnv, "Amp Env"}});
+    addCustom(switches, loadButton, 1.4f);
+    addCustom(switches, detectButton);
+    addWideRow(waveform, 46);
     addRow({{Ids::kTockLevel, "Level"},
             {Ids::kTockTune, "Tune"},
             {Ids::kTockStart, "Start"},
             {Ids::kTockDecay, "Decay"},
-            {Ids::kTockTone, "Tone"}});
-    loadButton.setTooltip("Load a tock sample from a WAV file");
+            {Ids::kTockTone, "Tone"},
+            {Ids::kTockPogo, "Pogo"}});
+    loadButton.setTooltip("Load a tock sample from a WAV file (up to 10 seconds)");
     loadButton.onClick = [this] { choose(); };
+    detectButton.setTooltip("Place the two handles on the hit at the start of the sample");
+    detectButton.onClick = [this] { detect(); };
+}
+
+void TockPanel::detect()
+{
+    // The handles are set as ordinary parameter changes, so the host can automate and undo them.
+    const auto range = tockSelector.detectedRange();
+    const auto set = [this](const char* id, double percent)
+    {
+        if (auto* parameter = parameters.getParameter(id))
+        {
+            parameter->beginChangeGesture();
+            parameter->setValueNotifyingHost(parameter->convertTo0to1(static_cast<float>(percent)));
+            parameter->endChangeGesture();
+        }
+    };
+    set(Ids::kTockTrimStart, range.start * 100.0);
+    set(Ids::kTockTrimEnd, range.end * 100.0);
 }
 
 void TockPanel::choose()
@@ -114,7 +140,8 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
       fxArea(owner.getState(), owner.getFxRacks(), dsp::defaultEffectRegistry(),
              [&owner] { return owner.currentNoteSemitones(); }),
       noisePanel(owner.getState(), [&owner](const juce::File& file) { owner.loadUserNoiseSample(file); }),
-      tockPanel(owner.getState(), [&owner](const juce::File& file) { owner.loadUserTockSample(file); }),
+      tockPanel(owner.getState(), owner.tock(),
+                [&owner](const juce::File& file) { owner.loadUserTockSample(file); }),
       punchTailPanel(owner.getState(), "Punch / Tail"), globalPanel(owner.getState(), "Global"),
       otherPanel("Other", core::legalNotice())
 {

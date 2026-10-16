@@ -87,7 +87,8 @@ const std::vector<Definition>& definitions()
           {"distortion.postgain", -9},
           {"tock.on", 1},
           {"tock.mode", 1},
-          {"tock.sample", tockSampleNamed("Click")}},
+          {"tock.sample", tockSampleNamed("Click")},
+          {"tock.ampEnv", 1}}, // as in 0.1, where the Tock always followed the amp envelope
          "Kick + Bass",
          "Classic Drop"},
 

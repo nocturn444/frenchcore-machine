@@ -59,6 +59,9 @@ void TockSelector::update()
 
     if (sample != nullptr)
     {
+        peaks = waveformPeaks(*sample, kDisplayBins);
+        detected = detectTransient(*sample);
+        ++generationCount;
         published.publish(std::move(sample));
         entry = wanted;
         dirty = false;
@@ -91,7 +94,7 @@ void TockSelector::clearUser()
 namespace
 {
 const juce::Identifier kNodeType{"UserTockSample"};
-constexpr int kMaxBase64Characters = 2'100'000; // 384000 float32 samples, plus padding
+constexpr int kMaxBase64Characters = 2'600'000; // 480000 float32 samples, plus padding
 } // namespace
 
 juce::ValueTree TockSelector::toValueTree() const

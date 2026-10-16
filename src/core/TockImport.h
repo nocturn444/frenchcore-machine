@@ -12,8 +12,8 @@ namespace fcm::core
 // share, it is untrusted: each limit is checked before the work it protects, and anything unusable
 // is refused with a message. Runs on a background thread, never on the audio thread.
 inline constexpr int kMinTockSamples = 16;
-inline constexpr int kMaxTockSamples = 384000;
-inline constexpr double kMaxTockSeconds = 2.0;
+inline constexpr int kMaxTockSamples = 480000; // 10 seconds at 48 kHz
+inline constexpr double kMaxTockSeconds = 10.0;
 inline constexpr double kMinTockSampleRate = 8000.0;
 inline constexpr double kMaxTockSampleRate = 192000.0;
 
@@ -27,7 +27,7 @@ struct TockImportResult
 
 TockImportResult importTockSample(const void* data, size_t numBytes);
 
-// Checks a sample that comes from saved state: 16 to 384000 samples, all finite and at most 4 in
+// Checks a sample that comes from saved state: 16 to 480000 samples, all finite and at most 4 in
 // magnitude, and a sample rate of 8000 to 192000 Hz.
 bool isValidStoredTockSample(const dsp::TockSample& sample) noexcept;
 

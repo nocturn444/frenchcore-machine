@@ -56,8 +56,11 @@ TEST_CASE("A short WAV is imported with its rate, centred, peak 1 and a faded en
 
             INFO("rate " << rate << " float " << isFloat);
             REQUIRE(result.ok());
-            REQUIRE(result.sample.sampleRate == static_cast<double>(rate));
-            REQUIRE(result.sample.samples.size() == samples.size());
+            // Above 48 kHz a sample is stored at 48 kHz (docs/specs/tock.md section 8.5).
+            const double storedRate = std::min(static_cast<double>(rate), 48000.0);
+            REQUIRE(result.sample.sampleRate == storedRate);
+            REQUIRE(std::abs(static_cast<double>(result.sample.samples.size()) -
+                             static_cast<double>(samples.size()) * storedRate / rate) <= 1.0);
             REQUIRE(isValidStoredTockSample(result.sample));
 
             float peak = 0.0f;
@@ -68,10 +71,39 @@ TEST_CASE("A short WAV is imported with its rate, centred, peak 1 and a faded en
                 mean += s;
             }
             REQUIRE_THAT(peak, WithinAbs(1.0, 1.0e-3));
-            REQUIRE(std::abs(mean / static_cast<double>(samples.size())) < 0.02);
+            REQUIRE(std::abs(mean / static_cast<double>(result.sample.samples.size())) < 0.02);
             // The last sample has faded to 0, so it never ends with a click.
             REQUIRE(result.sample.samples.back() == 0.0f);
         }
+}
+
+TEST_CASE("A sample can be up to 10 seconds, and above 48 kHz it is stored at 48 kHz", "[core][tock][import]")
+{
+    // A whole kick fits.
+    const auto nine = import(makeWav(sine(48000 * 9, 100.0, 48000.0)));
+    REQUIRE(nine.ok());
+    REQUIRE(nine.sample.samples.size() == 48000u * 9u);
+
+    const auto eleven = import(makeWav(sine(48000 * 11, 100.0, 48000.0)));
+    REQUIRE_FALSE(eleven.ok());
+    REQUIRE(eleven.error.contains("at most 10 seconds"));
+
+    // A 96 kHz file is converted and keeps its pitch: 1 kHz stays at 1 kHz.
+    const auto high = import(makeWav(sine(96000, 1000.0, 96000.0), withRate(96000)));
+    REQUIRE(high.ok());
+    REQUIRE(high.sample.sampleRate == 48000.0);
+    int crossings = 0;
+    const auto& x = high.sample.samples;
+    for (size_t i = 2000; i + 1 < x.size() - 2000; ++i)
+        if (x[i] <= 0.0f && x[i + 1] > 0.0f)
+            ++crossings;
+    REQUIRE(std::abs(crossings - 917) <= 3); // (48000 - 4000) samples hold 917 cycles of 1 kHz
+
+    // The longest allowed file stays within the stored limit.
+    const auto longest = import(makeWav(sine(192000 * 10, 300.0, 192000.0), withRate(192000)));
+    REQUIRE(longest.ok());
+    REQUIRE(longest.sample.samples.size() <= static_cast<size_t>(kMaxTockSamples));
+    REQUIRE(isValidStoredTockSample(longest.sample));
 }
 
 TEST_CASE("Only the first channel is used", "[core][tock][import]")
@@ -115,9 +147,9 @@ TEST_CASE("Unusable tock files are refused with a message", "[core][tock][import
     refused(import({}));
     refused(import(std::vector<uint8_t>(1000, 0x41)));
 
-    // Too short, too long (more than 2 seconds), and an unsupported sample rate.
+    // Too short, too long (more than 10 seconds), and an unsupported sample rate.
     refused(import(makeWav(sine(8, 440.0, 48000.0))));
-    refused(import(makeWav(sine(48000 * 2 + 100, 440.0, 48000.0))));
+    refused(import(makeWav(sine(48000 * 10 + 100, 440.0, 48000.0))));
     refused(import(makeWav(sine(1000, 440.0, 4000.0), withRate(4000))));
     refused(import(makeWav(sine(1000, 440.0, 400000.0), withRate(400000))));
 

@@ -85,6 +85,10 @@ class EngineParameterReader
     std::atomic<float>* tockStart;
     std::atomic<float>* tockDecay;
     std::atomic<float>* tockTone;
+    std::atomic<float>* tockAmpEnv;
+    std::atomic<float>* tockTrimStart;
+    std::atomic<float>* tockTrimEnd;
+    std::atomic<float>* tockPogo;
     std::atomic<float>* ampTimeScale;
     std::atomic<float>* pitchTimeScale;
     std::atomic<float>* pitchAmount;

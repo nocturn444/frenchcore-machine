@@ -96,6 +96,16 @@ void migrateFrom1To2(juce::ValueTree& state)
 
     state.removeChild(state.getChildWithName("FxRacks"), nullptr);
     state.appendChild(racks, nullptr);
+
+    // The Tock's Amp Env switch (docs/specs/tock.md §8) is off for new sounds, but a 0.1 Tock was always
+    // shaped by the amp envelope, so a migrated state turns it on.
+    for (const auto& child : state)
+        if (child.hasType("PARAM") && child["id"].toString() == ParameterIds::kTockAmpEnv)
+            return;
+    juce::ValueTree ampEnv("PARAM");
+    ampEnv.setProperty("id", juce::String(ParameterIds::kTockAmpEnv), nullptr);
+    ampEnv.setProperty("value", 1, nullptr);
+    state.appendChild(ampEnv, nullptr);
 }
 } // namespace
 

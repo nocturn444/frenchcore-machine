@@ -1,6 +1,6 @@
 # Spec: Tock (the click layer)
 
-- Status: Implemented (Phase 4, fourth part; every sound decision below was taken by the agent on the product owner's instruction to decide and keep going, and waits for their ears). Reworked for version 0.2 in [section 8](#8-version-02-trimming-pogo-and-its-own-volume) (approved by the product owner on 2026-10-16, questions 4.1 to 4.5; not implemented yet). Where section 8 and the sections above disagree, section 8 is the 0.2 behaviour.
+- Status: Implemented (Phase 4, fourth part; every sound decision below was taken by the agent on the product owner's instruction to decide and keep going, and waits for their ears). Reworked for version 0.2 in [section 8](#8-version-02-trimming-pogo-and-its-own-volume) (approved by the product owner on 2026-10-16, questions 4.1 to 4.5; implemented in stage 6). Where section 8 and the sections above disagree, section 8 is the 0.2 behaviour.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [voice-note-handling](voice-note-handling.md), [voice-punch-tail](voice-punch-tail.md), [ADR 0008](../decisions/0008-wavetable-selection-and-publishing.md), [ARCHITECTURE §4.3](../ARCHITECTURE.md), [UI_LAYOUT](../UI_LAYOUT.md)
 
@@ -103,7 +103,21 @@ Approved by the product owner on 2026-10-16. Stage 6 of the 0.2 plan ([PLAN](../
 
 ### 8.1 Why
 
-The owner reported that the Tock is barely audible even at full Level. Probable cause (read from the code, not measured): the Tock is added before the amp envelope and before the safety limiter; when the oscillators are already loud, the limiter flattens everything above its ceiling and the click is lost under the hit, which starts at the same instant. The first step of the stage is to confirm this with a measurement (the Tock's energy in the first 10 ms with the oscillators at full level, Tock at +12 dB, with and without the limiter) and write the result here.
+The owner reported that the Tock is barely audible even at full Level. The probable cause written first was that the safety limiter flattens it under a loud hit. Stage 6 started by measuring it.
+
+**Measurement** (Synth mode, the default amp envelope, one note, 48 kHz, left channel, the first 10 ms; the Tock's contribution is the difference between a render with the Tock and one without, as energy relative to the kick alone; a throwaway test, not committed):
+
+| Oscillator 1 level | Tock level | Limiter | Tock energy vs the kick | Tock peak |
+|---|---|---|---|---|
+| 1.0 | -12 dB (default) | on | -26 dB | 0.12 |
+| 0.3 | -12 dB | on | -16 dB | 0.12 |
+| 1.0 | +12 dB (the knob's maximum) | on | -4 dB | 1.37 |
+| 1.0 | +12 dB | off | -4 dB | 1.93 |
+| 0.3 | +12 dB | on / off | -0.6 / -0.5 dB | 1.27 / 1.93 |
+
+**Result.** The limiter hypothesis is only a small part: with the oscillator at full level it takes about 3 dB off the Tock's peak at +12 dB and nothing at the default level, where the Tock is far below the 0.8 knee. The real reasons are: (1) at the default -12 dB the Tock has 1/400 of the energy of the kick's first 10 ms (-26 dB), and even at the knob's maximum it only reaches about -4 dB, so there is little room to make it clearly heard; (2) the Tock follows the amp envelope, so any amp attack or dip in the first milliseconds lowers it further (by construction: its gain is the amp curve; Amp Env makes this optional); (3) the pitch envelope starts the kick's own tone high (+48 semitones), so the first 10 ms of the kick are bright and the click competes with it in the same band. Not measured: Sample mode with a real kick sample.
+
+**What this changes.** Amp Env off (the stage's main fix) removes reason 2. For reasons 1 and 3 nothing was changed on its own: the Level default and range are unchanged (a released default; the owner decides if a louder default or a wider range is wanted, see STATUS), and Trim plus Pogo give the tools to shape a click that cuts through.
 
 ### 8.2 What changes for the user
 
@@ -136,6 +150,15 @@ If Trim End is not at least 1 ms after Trim Start, the Tock plays 1 ms from Trim
 - Detect: `core::detectTransient(const TockSample&)` on the message thread: onset = first sample above -30 dB of the peak, minus 1 ms; end = after the peak, where a 1 ms RMS envelope of the signal high-passed at 1 kHz falls 20 dB below its maximum, clamped to 5..80 ms after the onset. Pure function, unit tested; it writes the two Trim parameters.
 - Import: `kMaxTockSeconds` = 10; above 48 kHz the file is resampled to 48 kHz on the loader thread (windowed-sinc, `juce::WindowedSincInterpolator`); stored samples at most 480000. Restore accepts at most 480000 samples (the 0.1 limit of 384000 is below that, so 0.1 states still load).
 - The waveform display reads a decimated copy of the current sample through `core::TockSelector` (message thread), never the audio objects.
+
+### 8.5b Technical decisions made while implementing
+
+- A trim that starts after 0 gets the 0.5 ms fade-in and one that ends before 100 % the 2 ms fade-out, both counted in source samples (so Tune changes their audible length a little). At 0 % and 100 % no fade is added (the import already fades the last 2 ms), which keeps the defaults bit-identical to 0.1.
+- Pogo bends the read rate, so a positive Pogo makes the part play faster and end sooner (about 22 ms instead of 40 for +12 on a 40 ms part), a negative one longer. The bend curve is measured against the nominal length of the part.
+- Without Amp Env the Tock still stops when the amp envelope ends, because the kick stops there; a very short amp envelope can therefore cut a long Tock.
+- Detect runs when a sample is published (message thread, a few milliseconds even for 10 seconds) and the button only writes the two Trim parameters. The built-in Click sample is shorter than the minimum, so Detect leaves it whole.
+- The Tock and Noise imports share the 48 kHz conversion (`core/Resample.*`); the stored limit of both is 480000 samples. The 0.1 limit of 384000 is below it, so every saved sample still loads.
+- The migration from state version 1 adds `tock.ampEnv` = on to the state (inside the existing 1 to 2 step, because 0.2 is not released yet); presets and projects from 0.1 therefore sound as before. The Hardcore Crunch factory preset sets it on itself.
 
 ### 8.6 Tests
 
