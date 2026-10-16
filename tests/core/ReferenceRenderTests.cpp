@@ -73,13 +73,16 @@ std::vector<Case> allCases()
             click = i;
 
     // Tock on, sample mode, no other effect: the tock layer alone on top of the oscillator.
-    cases.push_back({"tock-sample", "Init", {{"tock.on", 1}, {"tock.mode", 1}, {"tock.sample", click}}});
+    cases.push_back({"tock-sample",
+                     "Init",
+                     {{"tock.on", 1}, {"tock.mode", 1}, {"tock.sample", click}, {"tock.ampEnv", 1}}});
     // Tock on, synth mode, through the distortion.
     cases.push_back({"tock-synth",
                      "Init",
                      {{"tock.on", 1},
                       {"tock.mode", 0},
                       {"tock.level", -6},
+                      {"tock.ampEnv", 1},
                       {"distortion.enabled", 1},
                       {"distortion.drive", 35}}});
     return cases;

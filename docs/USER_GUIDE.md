@@ -114,16 +114,20 @@ The Tock is a very short click or knock played at the start of every kick, on to
 | **Tock Level** | How loud it is, from silent to +12 dB (default -12 dB). |
 | **Tock Tune** | Its pitch, in semitones. In Synth mode it moves the tone of the click; in Sample mode it plays the sound faster or slower. |
 | **Tock Start** | A delay of 0 to 20 ms between the note and the Tock. A small delay puts the click just after the start of the pitch drop. |
-| **Tock Decay** | How fast it fades out, 2 to 200 ms (the time to fall by 60 dB). |
+| **Tock Decay** | How fast it fades out, 2 to 200 ms (the time to fall by 60 dB). Set it long (200 ms) to hear a trimmed sample as it is. |
 | **Tock Tone** | Dull to bright: at 0 the Tock is dark, at 1 it is wide open. |
+| **Amp Env** | Whether the amp envelope shapes the Tock. **Off** (the default for new sounds): the Tock plays at its own Level, untouched by the kick's attack. **On**: it follows the amp envelope like the oscillators. Projects and presets from 0.1 open with it on, so they sound as before. |
+| **Pogo** | Bends the Tock's pitch over the part that plays, -24 to +24 semitones. Positive: it rises as it plays; negative: it falls; 0 does nothing. The bend is fast at first. In Synth mode it bends the tone of the click. |
+| **Waveform and handles** | In Sample mode the box shows the sample's waveform with two handles, the start and the end of the part that plays; the rest is dimmed. Drag a handle to move it (it is a parameter, so your DAW can automate it), double-click a handle to put it back. In Synth mode the display just says Synth. Cuts are faded (0.5 ms at the start, 2 ms at the end) so they never click; if the end is before the start, 1 ms plays. |
+| **Detect** | Puts the two handles on the hit at the start of the sample by itself: the start just before the first hit, the end where the high frequencies have faded (between 5 and 80 ms later). Then you can move them. Silent or very dull samples are left whole. |
 
-The Tock follows the velocity, the Punch and Tail levels and the amp envelope like the rest of the kick. Start, Tune, Decay, Tone, Mode and Sample are read when a note starts, so changing them affects the next kick; Level changes at once. If the Tock sounds too soft, raise Start a little or shorten the amp envelope's attack, because the amp envelope also shapes the Tock. 
+The Tock follows the velocity and the Punch and Tail levels, and with **Amp Env** on also the amp envelope. Start, Tune, Decay, Tone, Pogo, the handles, Amp Env, Mode and Sample are read when a note starts, so changing them affects the next kick; Level changes at once. The Tock has its own strip in the Mixer, so you can send it to a bus. If the Tock sounds too soft, switch Amp Env off, raise Level, or trim the sample so only its hit plays.
 
 ### Your own tock sample
 
 The **Load sample...** button in the Tock box opens a WAV file. If it is usable, **Tock Sample** switches to its **User** entry and the Tock plays it in Sample mode (remember to switch Tock Mode to Sample).
 
-- The file must be short: at most 2 seconds, at any sample rate from 8 kHz to 192 kHz. Only the first channel is used.
+- The file can be up to **10 seconds** (a whole kick: load it, then trim it), at any sample rate from 8 kHz to 192 kHz; above 48 kHz it is converted to 48 kHz when loaded. Only the first channel is used.
 - It is centred, scaled to full scale and given a 2 ms fade-out at the end, so it never ends with a click.
 - An unusable file is refused with a message in the line next to the button, and the Tock keeps what it had.
 - The sample is saved inside your project; only its name is kept, not the folder.

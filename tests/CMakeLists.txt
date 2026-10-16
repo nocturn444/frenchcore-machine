@@ -60,6 +60,7 @@ target_sources(fcm_core_tests PRIVATE
     core/BoundedMidiCopyTests.cpp
     core/StateLoaderTests.cpp
     core/TailLengthTests.cpp
+    core/TockAnalysisTests.cpp
     core/TockImportTests.cpp
     core/TockSelectorTests.cpp
     core/UntrustedInputTests.cpp

@@ -83,6 +83,7 @@ class PluginProcessor : public juce::AudioProcessor,
     // The same for the noise oscillator's user sound (docs/specs/noise-oscillator.md).
     void loadUserNoiseSample(const juce::File& file);
     const core::NoiseSelector& noise() const noexcept { return noiseSelector; }
+    const core::TockSelector& tock() const noexcept { return tockSelector; }
     const juce::String& wavetableMessage() const noexcept { return lastWavetableMessage; }
     juce::ChangeBroadcaster& wavetableChanged() noexcept { return wavetableBroadcaster; }
 

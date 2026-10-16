@@ -182,6 +182,10 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
     tockSettings.startMs = parameters.tock.startMs;
     tockSettings.decayMs = parameters.tock.decayMs;
     tockSettings.tone = parameters.tock.tone;
+    tockSettings.trimStart = parameters.tock.trimStart;
+    tockSettings.trimEnd = parameters.tock.trimEnd;
+    tockSettings.pogoSemitones = parameters.tock.pogoSemitones;
+    tockAmpEnv = parameters.tock.ampEnv;
     const float tockGain =
         std::isfinite(parameters.tock.level) ? std::max(parameters.tock.level, 0.0f) : 0.0f;
 
@@ -243,6 +247,7 @@ void Voice::trigger(float velocityGain) noexcept
     { return shape != nullptr && shape->syncRefBpm > 0.0f ? shape->syncRefBpm / bpm : 1.0f; };
     core.amp.start(ampTimeScale * syncScale(ampShapeInUse));
     core.pitch.start(pitchTimeScale * syncScale(pitchShapeInUse));
+    core.tockAmpEnv = tockAmpEnv;
     if (tockOn)
         core.tock.start(tockSettings);
     else
@@ -284,7 +289,8 @@ void Voice::render(Core& voiceCore, float settleNote, const Frame& frame, float 
     voiceCore.samplesSinceNoteOn += 1.0;
 
     // What every stem is multiplied by after its own level.
-    const float common = amp * voiceCore.velocityGain * punchTailGain * scale;
+    const float withoutAmp = voiceCore.velocityGain * punchTailGain * scale;
+    const float common = amp * withoutAmp;
 
     // Hz of the settling pitch plus the envelope's offset, then each oscillator's own tuning.
     const float baseNote = settleNote + pitchOffset;
@@ -294,8 +300,10 @@ void Voice::render(Core& voiceCore, float settleNote, const Frame& frame, float 
             440.0 * std::exp2((static_cast<double>(baseNote + frame.semitones[i]) - 69.0) / 12.0);
         stems[i] += voiceCore.oscillators[i].process(frequency) * frame.level[i] * common;
     }
-    // The Tock is shaped by the amp envelope like the oscillators (docs/specs/tock.md).
-    stems[stemTock] += voiceCore.tock.process() * frame.tockLevel * common;
+    // The Tock follows the amp envelope only when its Amp Env switch is on (docs/specs/tock.md §8);
+    // either way it follows velocity and the Punch / Tail levels.
+    const float tockCommon = voiceCore.tockAmpEnv ? common : withoutAmp;
+    stems[stemTock] += voiceCore.tock.process() * frame.tockLevel * tockCommon;
 
     // The noise follows the note (when Key Track is on, one octave per octave from C3) but not the
     // pitch envelope, and the amp envelope and the Punch / Tail levels (docs/specs/noise-oscillator.md).

@@ -16,6 +16,11 @@ struct TockSettings
     float startMs = 0.0f;
     float decayMs = 25.0f; // time to fall by 60 dB
     float tone = 0.7f;     // 0 dull .. 1 open
+    // docs/specs/tock.md §8: the part of the sample that plays (fractions of its length) and the Pogo
+    // pitch bend over that part. The defaults change nothing.
+    float trimStart = 0.0f;
+    float trimEnd = 1.0f;
+    float pogoSemitones = 0.0f;
 };
 
 // The click layer of the kick (docs/specs/tock.md §4). One sample at a time, real-time safe, plain
@@ -39,6 +44,8 @@ class Tock
 
   private:
     float nextNoise() noexcept;
+    // Multiplier of the pitch for the Pogo bend `age` samples into the played part.
+    double pogoRatio() const noexcept;
 
     double sampleRate = 44100.0;
     const TockSample* sample = nullptr;
@@ -52,6 +59,13 @@ class Tock
     double phaseStep = 0.0;
     double readPosition = 0.0; // sample mode, in source samples
     double readStep = 0.0;
+    double readBegin = 0.0;     // where the played part starts, in source samples
+    double readEnd = 0.0;       // where the played part ends, in source samples
+    double fadeInSamples = 0.0; // source samples; 0 when the trim starts at the beginning
+    double fadeOutStart = 0.0;  // source position where the fade-out begins
+    double fadeOutSamples = 0.0;
+    double pogoSemitones = 0.0;
+    double pogoLength = 1.0; // output samples the bend lasts
     float filterState = 0.0f;
     float filterCoefficient = 1.0f;
     std::uint32_t noiseState = 0x9e3779b9u;

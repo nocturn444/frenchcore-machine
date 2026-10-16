@@ -45,6 +45,9 @@ class ControlPanel : public SectionPanel
     // Adds a component at the end of a row; it takes `weight` shares of the width (a control takes 1).
     void addCustom(int row, juce::Component& component, float weight = 1.0f);
 
+    // Adds a row of its own with one component across the whole width and a fixed height.
+    void addWideRow(juce::Component& component, int height);
+
     void resized() override;
 
   private:
@@ -58,6 +61,7 @@ class ControlPanel : public SectionPanel
     {
         std::vector<Cell> cells;
         bool hasKnob = false;
+        int fixedHeight = 0; // a wide row; 0 for the usual rows
     };
 
     juce::AudioProcessorValueTreeState& parameters;

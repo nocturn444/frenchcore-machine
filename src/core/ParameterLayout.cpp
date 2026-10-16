@@ -168,6 +168,21 @@ void addTockParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layo
         juce::AudioParameterFloatAttributes{}.withLabel("ms")));
     layout.add(std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::kTockTone), "Tock Tone",
                                                            juce::NormalisableRange<float>{0.0f, 1.0f}, 0.7f));
+
+    // Version 0.2 (docs/specs/tock.md §8). Amp Env is off for new sounds; states from 0.1 get it on in
+    // their migration so they sound as before.
+    layout.add(
+        std::make_unique<juce::AudioParameterBool>(id(ParameterIds::kTockAmpEnv), "Tock Amp Env", false));
+    layout.add(
+        std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::kTockTrimStart), "Tock Trim Start",
+                                                    juce::NormalisableRange<float>{0.0f, 100.0f, 0.01f}, 0.0f,
+                                                    juce::AudioParameterFloatAttributes{}.withLabel("%")));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kTockTrimEnd), "Tock Trim End", juce::NormalisableRange<float>{0.0f, 100.0f, 0.01f},
+        100.0f, juce::AudioParameterFloatAttributes{}.withLabel("%")));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kTockPogo), "Tock Pogo", juce::NormalisableRange<float>{-24.0f, 24.0f, 0.01f}, 0.0f,
+        juce::AudioParameterFloatAttributes{}.withLabel("st")));
 }
 void addNoiseParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout)
 {
