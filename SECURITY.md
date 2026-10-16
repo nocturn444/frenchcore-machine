@@ -6,6 +6,8 @@ Please report security problems privately, not in a public issue.
 
 Use GitHub's private vulnerability reporting: open the **Security** tab of this repository, choose **Report a vulnerability**, and describe what you found, how to reproduce it (a state, preset or wavetable file helps), and which version you used.
 
+If the **Report a vulnerability** button is not there, open a public issue that only asks for a private way to contact the maintainer, with no details of the problem.
+
 You can expect an answer within a few days. Once a fix is released, the report can be made public and you will be credited if you want.
 
 ## Supported versions

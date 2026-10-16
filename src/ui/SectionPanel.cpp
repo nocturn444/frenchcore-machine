@@ -124,7 +124,7 @@ void PlaceholderPanel::paint(juce::Graphics& g)
     SectionPanel::paint(g);
     g.setColour(style::kMutedText.withAlpha(0.6f));
     g.setFont(juce::FontOptions(13.0f));
-    g.drawText(note, contentArea(), juce::Justification::centred);
+    g.drawFittedText(note, contentArea(), juce::Justification::centred, 4);
 }
 
 } // namespace fcm::ui

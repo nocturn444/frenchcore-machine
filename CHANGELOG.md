@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+To be released as 0.1.1: security fixes and finishing touches after the 0.1.0 review and security audit. No change to the sound, the controls or the project format; projects and presets from 0.1.0 open as before.
+
+### Security
+
+- JUCE updated from 9.0.3 to 9.0.4, JUCE's security release that fixes a memory overrun when building text from malformed UTF-8 (reachable from a crafted DAW project).
+- The state a DAW hands to the plugin is checked before it is parsed: it must be valid UTF-8, must not declare a DTD or entities, and may nest at most 64 levels. A crafted project can no longer crash the DAW through the text decoder or by running the XML parser out of stack. Preset files get the same DTD and nesting checks.
+- Audio embedded in a project or preset (your own wavetables and Tock sample) is decoded only when its stored size is honest; a crafted size could make the plugin try to allocate gigabytes and crash the DAW. Such audio is now dropped and the rest of the project loads.
+- Release workflow: the build jobs only get read access; a separate job attaches the zips with a `SHA256SUMS.txt` and a signed build provenance attestation; releases are refused for commits that are not on `main`; checkouts no longer keep the token.
+
+### Added
+
+- The window shows the version, the licence (AGPL-3.0, no warranty) and where the source code is, in the free "Other" box. See `docs/specs/legal-notice.md`.
+- Every release zip carries `LICENSE.txt` and a short `README.txt`.
+- CI validates the AU with Apple's `auval` on macOS, and checks the release packaging on every pull request.
+
+### Fixed
+
+- The Windows zip no longer contains the build leftovers `Frenchcore Machine.lib` and `.exp`; the Linux binaries are stripped of their symbol tables.
+- The release notes now list the known limitations; the user guide says the Linux build needs glibc 2.38 or newer and that shared projects and presets include your own wavetables and Tock sample.
+
+
 ## [0.1.0] - 2026-10-13
 
 First release. VST3, AU and Standalone for Windows, macOS and Linux (the plugins are not signed yet; see the installation steps in the user guide).

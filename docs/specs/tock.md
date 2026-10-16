@@ -64,7 +64,7 @@ The Sample and Mode lists are append-only (the saved value is the entry number).
 
 - `core::importTockSample` turns WAV bytes into a `TockSample` or a message. Order of checks: size at most 32 MiB; JUCE's WAV reader opens it; 1 to 8 channels; declared length from 16 samples to 384000 and at most 2 seconds at the file's own rate; sample rate 8000 to 192000; only the first channel is read; every sample finite; then centred, scaled to peak 1, silent files refused, a 2 ms fade-out applied.
 - Loading runs on the same one-thread loader as wavetables, off the audio and message threads, and the result is published on the message thread by `TockSelector::loadUser`.
-- Saved as a node `UserTockSample` with `name`, `sampleRate` and `samples` (base64 float32). Restoring is untrusted input: at most 2,100,000 characters of text, whole floats, at most 384000 samples, finite, magnitude at most 4, sample rate 8000 to 192000; anything else leaves no user sample.
+- Saved as a node `UserTockSample` with `name`, `sampleRate` and `samples` (base64 float32). Restoring is untrusted input: at most 2,100,000 characters of text, a stored byte count that is plain digits and matches the text exactly (`core::decodeStoredFloats`, checked before anything is allocated), whole floats, at most 384000 samples, finite, magnitude at most 4, sample rate 8000 to 192000; anything else leaves no user sample.
 
 ## 5. Tests
 

@@ -104,6 +104,17 @@ Done when:
 - [x] User guide complete (installation added; every feature has its section)
 - [x] Tag `v0.1.0`, GitHub Release with binaries for all platforms (published by the owner on 2026-10-14; the workflow and steps are in [RELEASING](RELEASING.md))
 
+## 0.1.1: security and finishing fixes
+
+Findings of the security audit and the review of the 0.1.0 release (2026-10-14) that did not need the owner.
+
+- [x] JUCE 9.0.4 (JUCE's security release for malformed UTF-8 text)
+- [x] Host state checked before parsing (UTF-8, no DTD or entities, nesting limit); embedded audio decoded only with an honest size ([state-safe-loading](specs/state-safe-loading.md))
+- [x] Release workflow: read-only builds, `SHA256SUMS.txt` and provenance attestations, releases only from `main`; zips with `LICENSE.txt` and `README.txt`, no Windows build leftovers, stripped Linux binaries; release notes with the known limitations ([RELEASING](RELEASING.md))
+- [x] AU validated with `auval` in CI
+- [x] Licence notice in the window ([legal-notice](specs/legal-notice.md))
+- [ ] Merged and released by the owner (`v0.1.1`)
+
 ## After the MVP (not scheduled)
 
 - Visual design pass (custom LookAndFeel, possibly WebView UI).

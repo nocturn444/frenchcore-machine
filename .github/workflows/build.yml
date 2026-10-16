@@ -27,6 +27,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Check clang-format
         run: |
           files=$(git ls-files 'src/*.h' 'src/*.cpp' 'tests/*.h' 'tests/*.cpp')
@@ -52,7 +54,7 @@ jobs:
             pluginval-bin: ./pluginval.app/Contents/MacOS/pluginval
             extra-cmake-args: '"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13'
           - name: Windows
-            os: windows-latest
+            os: windows-2025
             pluginval: pluginval_Windows.zip
             pluginval-sha256: c08e61ce3b96db41636f8ec7e76f4c7e2c13ebdac7fa1b5a1f52b4f32ec715ab
             pluginval-bin: ./pluginval.exe
@@ -60,12 +62,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ninja-build xvfb \
+          sudo apt-get install -y --no-install-recommends ninja-build xvfb zip \
             libasound2-dev libjack-jackd2-dev libfreetype-dev libfontconfig1-dev \
             libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
             libxrandr-dev libxrender-dev libxi-dev libglu1-mesa-dev mesa-common-dev
@@ -125,6 +129,29 @@ jobs:
           else
             ${{ matrix.pluginval-bin }} --strictness-level 10 --skip-gui-tests --validate "$plugin"
           fi
+
+      # Apple's own validator for the AU, which pluginval above does not cover. The codes are the
+      # ones in src/plugin/CMakeLists.txt: type aumu (instrument), PLUGIN_CODE, PLUGIN_MANUFACTURER_CODE.
+      - name: auval (AU)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          cp -R "build/src/plugin/FrenchcoreMachine_artefacts/${BUILD_TYPE}/AU/Frenchcore Machine.component" ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          auval -a | grep -q "aumu Fcmk Nctr" || { auval -a; echo "The AU is not registered"; exit 1; }
+          auval -v aumu Fcmk Nctr
+
+      # The same packaging as the release workflow, so a broken zip shows up here and not on release day.
+      - name: Package (release dry run)
+        shell: bash
+        run: |
+          packaging/package.sh "${BUILD_TYPE}" 0.0.0 package-check.zip
+          if [ "$RUNNER_OS" = "Windows" ]; then 7z l package-check.zip; else unzip -l package-check.zip; fi > package-list.txt
+          cat package-list.txt
+          for required in LICENSE.txt README.txt VST3 Standalone; do
+            grep -q "${required}" package-list.txt || { echo "${required} is missing from the zip"; exit 1; }
+          done
+          if grep -Eq "\.(lib|exp|pdb)$" package-list.txt; then echo "Build leftovers in the zip"; exit 1; fi
 
       - name: Upload plugins
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

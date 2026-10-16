@@ -10,7 +10,7 @@
 
 Run in at least Ableton Live, FL Studio and Reaper, on Windows and macOS where available.
 
-**Result for version 0.1.0** (owner, 2026-10-13): tried in **FL Studio only**, and no other DAW is planned. It loads and works well, RAM use is reasonable, saving and reopening a project works, and presets save, load and stay compatible between versions. **Not tried:** parameter automation, other sample rates and buffer sizes, the Quality setting, CPU at the highest Quality, Ableton Live and Reaper. The items below are left unticked for that reason; the first release says so in its notes.
+**Result for version 0.1.0** (owner, 2026-10-13): tried in **FL Studio only**, and no other DAW is planned. It loads and works well, RAM use is reasonable, saving and reopening a project works, and presets save, load and stay compatible between versions. **Not tried:** parameter automation, other sample rates and buffer sizes, the Quality setting, CPU at the highest Quality, Ableton Live and Reaper. The items below are left unticked for that reason. The release notes list these limitations (template in `.github/release-notes.md`, see [RELEASING](RELEASING.md)); the notes published with 0.1.0 do not.
 
 - [ ] Plugin scans and loads without errors.
 - [ ] Default patch produces a kick on MIDI input; pitch follows the note when key track is on.

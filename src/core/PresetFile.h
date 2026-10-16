@@ -11,7 +11,6 @@ namespace fcm::core
 inline constexpr int kPresetFormatVersion = 1;
 inline constexpr juce::int64 kMaxPresetBytes = 16 * 1024 * 1024;
 inline constexpr int kMaxPresetNameLength = 64;
-inline constexpr int kMaxPresetXmlDepth = 64;
 inline const char* const kPresetExtension = ".fcmpreset";
 
 // A name safe to use as a file name, or an empty string when nothing usable is left

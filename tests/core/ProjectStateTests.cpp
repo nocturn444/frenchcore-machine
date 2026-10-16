@@ -311,6 +311,31 @@ TEST_CASE("A damaged node never fails the load of the rest", "[core][project][da
     REQUIRE(target.pitch.get() == source.pitch.get());
 }
 
+TEST_CASE("Embedded audio with a false size prefix loads as no user audio",
+          "[core][project][untrusted][security]")
+{
+    Rig source;
+    personalise(source);
+    const auto saved = source.project.capture();
+
+    const std::vector<juce::String> falsePrefixes{"-1.A", "0.", "2000000000.A", "99999999999999999999.A",
+                                                  "12.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"};
+    for (const auto& text : falsePrefixes)
+    {
+        INFO(text);
+        auto tree = saved.createCopy();
+        tree.getChildWithName("UserWavetable1").setProperty("frames", text, nullptr);
+        tree.getChildWithName("UserTockSample").setProperty("samples", text, nullptr);
+
+        Rig target;
+        REQUIRE(target.project.restore(tree) == StateLoadResult::loaded);
+        REQUIRE_FALSE(target.wavetable1.hasUser());
+        REQUIRE_FALSE(target.tock.hasUser());
+        REQUIRE(target.wavetable2.hasUser());                                         // the intact one
+        REQUIRE_THAT(target.getParameter(Ids::kOutputGain), WithinAbs(-9.0, 1.0e-3)); // the rest loaded
+    }
+}
+
 TEST_CASE("A state that is not ours changes nothing at all", "[core][project][rejected]")
 {
     Rig rig;

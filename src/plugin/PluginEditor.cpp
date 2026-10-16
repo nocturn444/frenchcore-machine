@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "plugin/PluginEditor.h"
 
+#include "core/AboutText.h"
 #include "core/ParameterIds.h"
 #include "plugin/PluginProcessor.h"
 #include "ui/Style.h"
@@ -87,7 +88,7 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
       lfoPanel("LFO", "Reserved for a later version"),
       tockPanel(owner.getState(), [&owner](const juce::File& file) { owner.loadUserTockSample(file); }),
       punchTailPanel(owner.getState(), "Punch / Tail"), globalPanel(owner.getState(), "Global"),
-      otherPanel("Other", "Reserved")
+      otherPanel("Other", core::legalNotice())
 {
     punchTailPanel.addRow({{Ids::kPunchTailSplit, "Split"},
                            {Ids::kPunchLevel, "Punch Level"},

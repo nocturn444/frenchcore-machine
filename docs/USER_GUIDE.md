@@ -4,7 +4,7 @@
 
 ## Installation
 
-Download the zip for your system from the [Releases page](https://github.com/nocturn444/frenchcore-machine/releases), unzip it and copy the plugin into the folder your DAW scans. There is no installer.
+Download the zip for your system from the [Releases page](https://github.com/nocturn444/frenchcore-machine/releases), unzip it and copy the plugin into the folder your DAW scans. There is no installer. Each zip also has `LICENSE.txt` (the licence) and `README.txt` (what is in the zip and where the source code is).
 
 | System | Format | Copy it to |
 |---|---|---|
@@ -21,6 +21,10 @@ The plugins are **not signed** yet, so your system warns you the first time:
 
 - **macOS** says the developer cannot be verified. Open System Settings, Privacy & Security, scroll down and press **Open Anyway** for it. If the DAW still refuses the plugin, open Terminal and run `xattr -dr com.apple.quarantine "/Library/Audio/Plug-Ins/VST3/Frenchcore Machine.vst3"` (and the same for the AU and the Standalone you installed), then rescan.
 - **Windows** (SmartScreen) shows "Windows protected your PC" when you open the Standalone: press **More info**, then **Run anyway**. If a DLL such as `VCRUNTIME140.dll` is reported missing, install the "Microsoft Visual C++ Redistributable" (x64) from Microsoft.
+
+**Linux**: the build needs a recent distribution, with glibc 2.38 or newer (Ubuntu 24.04, Fedora 39, Debian 13 or newer); on older ones it does not open. It also needs the ALSA, FreeType and Fontconfig libraries, which desktop distributions normally have (on Ubuntu: `libasound2t64`, `libfreetype6`, `libfontconfig1`).
+
+**Checking a download** (optional): the release page has a `SHA256SUMS.txt` with the checksum of each zip, and each zip has a build provenance attestation signed by GitHub that proves it was built from this repository. With the [GitHub CLI](https://cli.github.com/): `gh attestation verify FrenchcoreMachine-Windows.zip --repo nocturn444/frenchcore-machine`.
 
 Your own presets live in `Documents/Frenchcore Machine/Presets` (see [Presets](#presets)).
 
@@ -41,7 +45,7 @@ The whole plugin is one screen, laid out like this:
 - **Left, top**: the two oscillators side by side. Each has a header (On, the Wavetable menu, a Load button), Pitch, Octave and Fine, the wavetable display, and the Position, Level and Phase knobs.
 - **Left, middle**: the Amp Envelope and the Pitch Envelope side by side, each with its display, five knobs for the shape and a Time Scale knob.
 - **Right**: the Effects, one strip each from top to bottom in the order of the sound.
-- **Bottom row**: the LFO box (kept free for a later version), the Tock, Punch / Tail, Global, and a free box.
+- **Bottom row**: the LFO box (kept free for a later version), the Tock, Punch / Tail, Global, and the Other box, which for now only shows the plugin version, its licence (free software, AGPL-3.0, no warranty) and where its source code is.
 - **Standalone only**: the keyboard and Auto-play strip at the very bottom.
 
 You can resize the window. Everything scales together, so nothing moves or gets squeezed: the window only gets smaller or bigger, keeping its shape. Double-click any knob to bring it back to its default value.
@@ -259,7 +263,7 @@ The **preset bar** is the strip at the top of the window:
 - **Init** (the first factory preset) is the plain default sound.
 - A message appears in the bar when a preset cannot be loaded or saved. A damaged or unknown file is refused and your current sound stays as it was.
 
-Your presets are files in your Documents folder, `Frenchcore Machine/Presets`, named `<name>.fcmpreset`. You can copy them to another computer or send them to someone; to delete one, delete the file.
+Your presets are files in your Documents folder, `Frenchcore Machine/Presets`, named `<name>.fcmpreset`. You can copy them to another computer or send them to someone; to delete one, delete the file. A preset or a DAW project carries a copy of any wavetable or Tock sample you loaded yourself (the sound and its file name, never the folder it came from), so sharing one shares that audio too.
 
 The name shown in the bar is the last preset you loaded or saved in this session of the plugin. It is not stored in the DAW project (the project stores the sound itself).
 

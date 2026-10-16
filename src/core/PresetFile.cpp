@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "core/PresetFile.h"
 
-#include <algorithm>
-#include <array>
+#include "core/UntrustedXml.h"
+
 #include <string>
 
 namespace fcm::core
@@ -28,72 +28,6 @@ bool isReservedDeviceName(const juce::String& name)
         return true;
     return base.length() == 4 && (base.startsWith("COM") || base.startsWith("LPT")) && base[3] >= '1' &&
            base[3] <= '9';
-}
-
-// True if the elements nest deeper than `maxDepth`. JUCE's XML parser recurses once per level, so a
-// file made of thousands of nested tags could overflow the stack; this scan runs first. It counts
-// quoted attribute values and comments as opaque so they cannot hide a tag.
-bool nestsTooDeeply(const std::string& s, int maxDepth)
-{
-    const auto n = s.size();
-    size_t i = 0;
-    int depth = 0;
-    while ((i = s.find('<', i)) != std::string::npos)
-    {
-        ++i;
-        if (i >= n)
-            break;
-
-        const auto skipTo = [&](const char* end)
-        {
-            const auto found = s.find(end, i);
-            i = found == std::string::npos ? n : found + std::string(end).size();
-        };
-        if (s.compare(i, 3, "!--") == 0)
-        {
-            skipTo("-->");
-            continue;
-        }
-        if (s.compare(i, 8, "![CDATA[") == 0)
-        {
-            skipTo("]]>");
-            continue;
-        }
-        if (s[i] == '?' || s[i] == '!')
-        {
-            skipTo(">");
-            continue;
-        }
-
-        const bool closing = s[i] == '/';
-        bool selfClosing = false;
-        char quote = 0;
-        for (; i < n; ++i)
-        {
-            const char c = s[i];
-            if (quote != 0)
-            {
-                if (c == quote)
-                    quote = 0;
-            }
-            else if (c == '"' || c == '\'')
-            {
-                quote = c;
-            }
-            else if (c == '>')
-            {
-                selfClosing = s[i - 1] == '/';
-                ++i;
-                break;
-            }
-        }
-
-        if (closing)
-            --depth;
-        else if (!selfClosing && ++depth > maxDepth)
-            return true;
-    }
-    return false;
 }
 
 PresetParseResult refused(const juce::String& message)
@@ -151,7 +85,7 @@ PresetParseResult parsePreset(const juce::String& text)
     const std::string utf8 = text.toStdString();
     if (static_cast<juce::int64>(utf8.size()) > kMaxPresetBytes)
         return refused("That preset file is too big.");
-    if (nestsTooDeeply(utf8, kMaxPresetXmlDepth))
+    if (!hasSafeXmlShape(utf8))
         return refused("That file is not a Frenchcore Machine preset.");
 
     const auto root = juce::XmlDocument::parse(text);
