@@ -27,7 +27,7 @@ int readStateVersion(const juce::ValueTree& state);
 bool applyMigrations(juce::ValueTree& state, int fromVersion, int toVersion,
                      std::span<const Migration> steps);
 
-// The steps of this build: empty while the state format is still at its first version.
+// The steps of this build, one per version up to kStateVersion.
 std::span<const Migration> stateMigrations() noexcept;
 
 } // namespace fcm::core

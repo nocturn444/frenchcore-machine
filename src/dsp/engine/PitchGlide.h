@@ -66,6 +66,9 @@ class PitchGlide
 
     bool hasPitch() const noexcept { return hasValue; }
 
+    // The pitch right now (the last value next() returned), without advancing.
+    float value() const noexcept { return current; }
+
   private:
     double sampleRate = 44100.0;
     bool hasValue = false;

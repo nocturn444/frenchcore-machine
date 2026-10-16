@@ -55,15 +55,18 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
       punchSplit(lookup(state, ParameterIds::kPunchTailSplit)),
       punchLevel(lookup(state, ParameterIds::kPunchLevel)), tailLevel(lookup(state, ParameterIds::kTailLevel))
 {
-    for (int index = 0; index < registry.count(); ++index)
+    // One entry per pool instance, in pool order (docs/decisions/0010).
+    for (int instance = 0; instance < registry.instanceCount(); ++instance)
     {
-        const auto& descriptor = *registry.descriptor(index);
+        const std::string instanceId = registry.instanceId(instance);
+        const int index = dsp::EffectRegistry::effectOf(instance);
         EffectPointers pointers;
-        pointers.enabled = lookup(state, ParameterIds::effect(descriptor.id, ParameterIds::kEffectEnabled));
-        pointers.mix = lookup(state, ParameterIds::effect(descriptor.id, ParameterIds::kEffectMix));
+        pointers.enabled = lookup(state, ParameterIds::effect(instanceId, ParameterIds::kEffectEnabled));
+        pointers.mix = lookup(state, ParameterIds::effect(instanceId, ParameterIds::kEffectMix));
+        pointers.defaultMixPercent = registry.descriptor(index)->defaultMix * 100.0f;
         for (const auto& spec : registry.parameters(index))
         {
-            pointers.values.push_back(lookup(state, ParameterIds::effect(descriptor.id, spec.idSuffix)));
+            pointers.values.push_back(lookup(state, ParameterIds::effect(instanceId, spec.idSuffix)));
             pointers.defaults.push_back(spec.defaultValue);
         }
         effects.push_back(std::move(pointers));
@@ -113,13 +116,13 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.tock.decayMs = finiteOr(tockDecay, defaults.tock.decayMs);
     result.tock.tone = finiteOr(tockTone, defaults.tock.tone);
 
-    // The FX chain: a value that is not a finite number becomes the effect's default.
+    // The effect instances: a value that is not a finite number becomes the effect's default.
     for (size_t i = 0; i < effects.size() && i < result.effects.size(); ++i)
     {
         const auto& source = effects[i];
         auto& target = result.effects[i];
         target.enabled = toBool(source.enabled, false);
-        target.mix = juce::jlimit(0.0f, 1.0f, finiteOr(source.mix, 100.0f) * 0.01f);
+        target.mix = juce::jlimit(0.0f, 1.0f, finiteOr(source.mix, source.defaultMixPercent) * 0.01f);
         for (size_t p = 0; p < source.values.size() && p < target.values.size(); ++p)
             target.values[p] = finiteOr(source.values[p], source.defaults[p]);
     }

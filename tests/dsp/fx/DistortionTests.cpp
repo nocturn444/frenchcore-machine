@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#include "../RackRig.h"
 #include "../TestUtils.h"
-#include "dsp/fx/EffectChain.h"
 #include "dsp/fx/distortion/DistortionEffect.h"
 
 #include <algorithm>
@@ -411,17 +411,17 @@ TEST_CASE("In the chain, toggling, mixing and the type do not change the timing"
 {
     fcm::dsp::EffectRegistry registry;
     registry.add<DistortionEffect>();
-    fcm::dsp::EffectChain chain(registry);
+    fcm::test::RackRig chain(registry);
     chain.prepare({48000.0, kBlock, 2});
-    const int latency = chain.latencySamples(2);
+    const int latency = chain.latencySamples(2); // the pool holds four copies
     REQUIRE(latency > 0);
 
     const auto input = sine(kBlock * 40, 120.0, 48000.0, 0.01f);
     const auto render = [&](bool enabled, float mix, int type)
     {
-        fcm::dsp::EffectChain c(registry);
+        fcm::test::RackRig c(registry);
         c.prepare({48000.0, kBlock, 2});
-        std::array<fcm::dsp::EffectSlotParameters, fcm::dsp::kMaxEffects> slots{};
+        std::array<fcm::dsp::EffectSlotParameters, fcm::dsp::kMaxInstances> slots{};
         slots[0].enabled = enabled;
         slots[0].mix = mix;
         slots[0].values = {static_cast<float>(type), 0.0f, 0.0f, 0.0f, 100.0f, 8.0f, 1.0f};

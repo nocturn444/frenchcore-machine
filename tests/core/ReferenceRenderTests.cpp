@@ -161,7 +161,11 @@ struct Rig
     fcm::core::EngineParameterReader reader{processor.state};
     fcm::core::EnvelopeState amp{fcm::dsp::EnvelopeKind::amp};
     fcm::core::EnvelopeState pitch{fcm::dsp::EnvelopeKind::pitch};
-    fcm::core::FxOrderState fx{fcm::dsp::defaultEffectRegistry(), engine.fxOrder()};
+    fcm::core::FxRackState fx{processor.state,
+                              fcm::dsp::defaultEffectRegistry(),
+                              {&engine.rackValue(fcm::dsp::RackId::busA),
+                               &engine.rackValue(fcm::dsp::RackId::busB),
+                               &engine.rackValue(fcm::dsp::RackId::main)}};
     fcm::core::WavetableSelector wavetable1{processor.state, 0};
     fcm::core::WavetableSelector wavetable2{processor.state, 1};
     fcm::core::TockSelector tock{processor.state};

@@ -19,6 +19,20 @@ constexpr int kGroupTitleHeight = 16;
 constexpr int kMixWidth = 200;
 constexpr int kOnWidth = 84;
 constexpr int kBodyInset = 6;
+constexpr int kButtonWidth = 30;
+constexpr int kAddButtonHeight = 30;
+constexpr int kEmptyNoteHeight = 26;
+constexpr int kScrollBarWidth = 12;
+
+// The controls that are visible: a control that depends on another parameter may be hidden.
+std::vector<ParameterControl*> shown(const std::vector<std::unique_ptr<ParameterControl>>& controls)
+{
+    std::vector<ParameterControl*> result;
+    for (const auto& control : controls)
+        if (control->isVisible())
+            result.push_back(control.get());
+    return result;
+}
 
 // "Band 1 Freq" with the group "Band 1" gives "Freq".
 juce::String withoutGroup(const juce::String& name, const juce::String& group)
@@ -27,26 +41,47 @@ juce::String withoutGroup(const juce::String& name, const juce::String& group)
 }
 } // namespace
 
-FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry, int registryIndex,
-                        juce::AudioProcessorValueTreeState& state)
-    : rack(owner)
+FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
+                        const std::string& instanceId, juce::AudioProcessorValueTreeState& state)
+    : rack(owner), instance(instanceId)
 {
+    const int instanceIndex = registry.indexOfInstance(instanceId);
+    const int registryIndex = dsp::EffectRegistry::effectOf(instanceIndex);
+    const int copy = dsp::EffectRegistry::copyOf(instanceIndex);
     const auto& descriptor = *registry.descriptor(registryIndex);
-    effectId = juce::String(std::string(descriptor.id));
-    name = juce::String(std::string(descriptor.displayName));
+    name = juce::String(std::string(descriptor.displayName)) +
+           (copy > 1 ? " " + juce::String(copy) : juce::String());
 
     onSwitch = std::make_unique<ParameterControl>(
-        state, juce::String(core::ParameterIds::effect(descriptor.id, core::ParameterIds::kEffectEnabled)),
-        "On", true);
+        state, juce::String(core::ParameterIds::effect(instanceId, core::ParameterIds::kEffectEnabled)), "On",
+        true);
     mixSlider = std::make_unique<ParameterControl>(
-        state, juce::String(core::ParameterIds::effect(descriptor.id, core::ParameterIds::kEffectMix)), "Mix",
+        state, juce::String(core::ParameterIds::effect(instanceId, core::ParameterIds::kEffectMix)), "Mix",
         true);
     addAndMakeVisible(*onSwitch);
     addAndMakeVisible(*mixSlider);
 
+    duplicateButton.setTooltip("Duplicate this effect, with its settings");
+    removeButton.setTooltip("Remove this effect");
+    duplicateButton.onClick = [this] { rack.racks.duplicate(rack.rackId, instance); };
+    removeButton.onClick = [this]
+    {
+        // Removing destroys this strip while its own button is handling the click: defer it.
+        juce::Component::SafePointer<FxRackPanel> owner(&rack);
+        const auto id = instance;
+        juce::MessageManager::callAsync(
+            [owner, id]
+            {
+                if (owner != nullptr)
+                    owner->racks.remove(owner->rackId, id);
+            });
+    };
+    addAndMakeVisible(duplicateButton);
+    addAndMakeVisible(removeButton);
+
     if (const auto* extra = decorationFor(descriptor.id); extra != nullptr && extra->make)
     {
-        decoration = extra->make(state);
+        decoration = extra->make(state, juce::String(instanceId));
         decorationHeight = extra->height;
         addAndMakeVisible(*decoration);
     }
@@ -71,11 +106,36 @@ FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
         }
 
         auto control = std::make_unique<ParameterControl>(
-            state, juce::String(core::ParameterIds::effect(descriptor.id, spec.idSuffix)),
+            state, juce::String(core::ParameterIds::effect(instanceId, spec.idSuffix)),
             withoutGroup(specName, groupName));
         if (!control->isValid())
             continue;
         addAndMakeVisible(*control);
+
+        // Shown only for some values of another parameter of the same effect.
+        if (!spec.shownWhenSuffix.empty())
+            if (auto* other = state.getParameter(
+                    juce::String(core::ParameterIds::effect(instanceId, spec.shownWhenSuffix))))
+            {
+                auto* shown = control.get();
+                const unsigned mask = spec.shownWhenMask;
+                auto attachment = std::make_unique<juce::ParameterAttachment>(
+                    *other,
+                    [this, shown, mask](float value)
+                    {
+                        const int entry = juce::jlimit(0, 31, juce::roundToInt(value));
+                        const bool show = ((mask >> entry) & 1u) != 0;
+                        if (shown->isVisible() != show)
+                        {
+                            shown->setVisible(show);
+                            if (ready)
+                                resized();
+                        }
+                    });
+                attachment->sendInitialUpdate();
+                conditions.push_back(std::move(attachment));
+            }
+
         (control->kind() == ParameterControl::Kind::knob ? found->knobs : found->switches)
             .push_back(std::move(control));
     }
@@ -86,6 +146,7 @@ FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
     height = kHandleHeight + decorationHeight + 2 * kBodyInset;
     height +=
         grouped ? kGroupTitleHeight + ParameterControl::kSwitchHeight + kGroupKnobRowHeight : kKnobRowHeight;
+    ready = true;
 }
 
 void FxRackPanel::Slot::paint(juce::Graphics& g)
@@ -124,7 +185,10 @@ void FxRackPanel::Slot::resized()
 {
     auto area = getLocalBounds();
     auto handle = area.removeFromTop(kHandleHeight);
-    handle.removeFromRight(6);
+    handle.removeFromRight(4);
+    removeButton.setBounds(handle.removeFromRight(kButtonWidth).reduced(0, 2));
+    duplicateButton.setBounds(handle.removeFromRight(kButtonWidth).reduced(0, 2));
+    handle.removeFromRight(4);
     mixSlider->setBounds(handle.removeFromRight(kMixWidth));
     onSwitch->setBounds(handle.removeFromRight(kOnWidth));
 
@@ -151,30 +215,32 @@ void FxRackPanel::Slot::resized()
         {
             // Switches and menus on one row, the knobs on the next.
             auto switchRow = column.removeFromTop(ParameterControl::kSwitchHeight);
-            const int numSwitches = static_cast<int>(group.switches.size());
+            const auto switches = shown(group.switches);
+            const int numSwitches = static_cast<int>(switches.size());
             for (int s = 0; s < numSwitches; ++s)
             {
                 const bool isToggle =
-                    group.switches[static_cast<size_t>(s)]->kind() == ParameterControl::Kind::toggle;
+                    switches[static_cast<size_t>(s)]->kind() == ParameterControl::Kind::toggle;
                 // A switch needs only its tick and "On"; the menus share the rest.
                 const int width = isToggle ? juce::jmin(46, switchRow.getWidth() / 3)
                                            : switchRow.getWidth() / (numSwitches - s);
-                group.switches[static_cast<size_t>(s)]->setBounds(switchRow.removeFromLeft(width));
+                switches[static_cast<size_t>(s)]->setBounds(switchRow.removeFromLeft(width));
             }
-            const int numKnobs = static_cast<int>(group.knobs.size());
+            const auto knobs = shown(group.knobs);
+            const int numKnobs = static_cast<int>(knobs.size());
             for (int k = 0; k < numKnobs; ++k)
-                group.knobs[static_cast<size_t>(k)]->setBounds(
+                knobs[static_cast<size_t>(k)]->setBounds(
                     column.removeFromLeft(column.getWidth() / (numKnobs - k)));
         }
         else
         {
             // One row: menus and switches first (Type before Drive), then the knobs. A menu gets more width
             // than a knob, a switch a little less.
-            std::vector<ParameterControl*> all;
-            for (auto& control : group.switches)
-                all.push_back(control.get());
-            for (auto& control : group.knobs)
-                all.push_back(control.get());
+            std::vector<ParameterControl*> all = shown(group.switches);
+            for (auto* control : shown(group.knobs))
+                all.push_back(control);
+            if (all.empty())
+                continue;
             const auto weightOf = [](const ParameterControl* control)
             {
                 return control->kind() == ParameterControl::Kind::choice
@@ -211,7 +277,7 @@ void FxRackPanel::Slot::mouseDown(const juce::MouseEvent& e)
 void FxRackPanel::Slot::mouseDrag(const juce::MouseEvent& e)
 {
     if (dragging)
-        rack.dragSlot(effectId, e);
+        rack.dragSlot(instance, e);
 }
 
 void FxRackPanel::Slot::mouseUp(const juce::MouseEvent&)
@@ -221,31 +287,37 @@ void FxRackPanel::Slot::mouseUp(const juce::MouseEvent&)
     repaint();
 }
 
-FxRackPanel::FxRackPanel(juce::AudioProcessorValueTreeState& state, core::FxOrderState& orderState,
-                         const dsp::EffectRegistry& registry)
-    : order(orderState)
+void FxRackPanel::Content::paint(juce::Graphics& g)
 {
-    for (int i = 0; i < registry.count(); ++i)
+    if (empty)
     {
-        slots.push_back(std::make_unique<Slot>(*this, registry, i, state));
-        addAndMakeVisible(*slots.back());
+        g.setColour(style::kMutedText);
+        g.setFont(juce::FontOptions(13.0f));
+        g.drawText("Empty: the sound passes through", getLocalBounds().removeFromTop(kEmptyNoteHeight),
+                   juce::Justification::centred);
     }
+}
 
-    order.addChangeListener(this);
+FxRackPanel::FxRackPanel(juce::AudioProcessorValueTreeState& state, core::FxRackState& rackState,
+                         dsp::RackId rack, const dsp::EffectRegistry& effectRegistry)
+    : parameters(state), racks(rackState), rackId(rack), registry(effectRegistry)
+{
+    viewport.setViewedComponent(&content, false);
+    viewport.setScrollBarsShown(true, false);
+    viewport.setScrollBarThickness(kScrollBarWidth);
+    addAndMakeVisible(viewport);
+
+    addButton.setTooltip("Add an effect at the end of this rack");
+    addButton.onClick = [this] { showAddMenu(); };
+    content.addAndMakeVisible(addButton);
+
+    rebuildSlots();
+    racks.addChangeListener(this);
 }
 
 FxRackPanel::~FxRackPanel()
 {
-    order.removeChangeListener(this);
-}
-
-void FxRackPanel::paint(juce::Graphics& g)
-{
-    if (slots.empty())
-    {
-        g.setColour(style::kMutedText);
-        g.drawText("No effects", getLocalBounds(), juce::Justification::centred);
-    }
+    racks.removeChangeListener(this);
 }
 
 int FxRackPanel::preferredHeight() const
@@ -253,40 +325,97 @@ int FxRackPanel::preferredHeight() const
     int total = 0;
     for (const auto& slot : slots)
         total += slot->preferredHeight() + kSlotGap;
-    return juce::jmax(0, total - kSlotGap);
+    return total + (slots.empty() ? kEmptyNoteHeight + kSlotGap : 0) + kAddButtonHeight;
 }
 
 void FxRackPanel::changeListenerCallback(juce::ChangeBroadcaster*)
 {
-    layoutSlots();
+    rebuildSlots();
 }
 
 void FxRackPanel::resized()
 {
+    viewport.setBounds(getLocalBounds());
+    layoutSlots();
+}
+
+void FxRackPanel::rebuildSlots()
+{
+    const auto& wanted = racks.ids(rackId);
+
+    // Strips of effects that left the rack go; strips of effects that joined are built. A strip that
+    // stays is kept, so a drag in progress and the controls' state survive.
+    std::vector<std::unique_ptr<Slot>> kept;
+    for (auto& slot : slots)
+        if (std::find(wanted.begin(), wanted.end(), slot->id()) != wanted.end())
+            kept.push_back(std::move(slot));
+    slots = std::move(kept);
+
+    for (const auto& id : wanted)
+    {
+        const bool present =
+            std::any_of(slots.begin(), slots.end(), [&](const auto& s) { return s->id() == id; });
+        if (!present)
+        {
+            slots.push_back(std::make_unique<Slot>(*this, registry, id, parameters));
+            content.addAndMakeVisible(*slots.back());
+        }
+    }
+
+    content.empty = slots.empty();
     layoutSlots();
 }
 
 std::vector<FxRackPanel::Slot*> FxRackPanel::slotsInOrder() const
 {
     std::vector<Slot*> result;
-    for (const auto& id : order.ids())
+    for (const auto& id : racks.ids(rackId))
         for (const auto& slot : slots)
-            if (slot->id().toStdString() == id)
+            if (slot->id() == id)
                 result.push_back(slot.get());
     return result;
 }
 
 void FxRackPanel::layoutSlots()
 {
+    const bool scrolls = preferredHeight() > getHeight();
+    const int width = juce::jmax(0, getWidth() - (scrolls ? kScrollBarWidth : 0));
+
     int y = 0;
     for (auto* slot : slotsInOrder())
     {
-        slot->setBounds(0, y, getWidth(), slot->preferredHeight());
+        slot->setBounds(0, y, width, slot->preferredHeight());
+        slot->setCanDuplicate(racks.canDuplicate(rackId, slot->id()));
         y += slot->preferredHeight() + kSlotGap;
     }
+    if (slots.empty())
+        y += kEmptyNoteHeight + kSlotGap;
+
+    addButton.setBounds(0, y, width, kAddButtonHeight);
+    addButton.setEnabled(static_cast<int>(slots.size()) < dsp::kMaxRackEffects);
+    content.setSize(width, y + kAddButtonHeight);
+    content.repaint();
 }
 
-void FxRackPanel::dragSlot(const juce::String& effectId, const juce::MouseEvent& e)
+void FxRackPanel::showAddMenu()
+{
+    juce::PopupMenu menu;
+    for (int i = 0; i < registry.count(); ++i)
+    {
+        const juce::String name(std::string(registry.descriptor(i)->displayName));
+        menu.addItem(i + 1, name, racks.freeCopies(i) > 0);
+    }
+
+    juce::Component::SafePointer<FxRackPanel> safe(this);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&addButton),
+                       [safe](int chosen)
+                       {
+                           if (safe != nullptr && chosen > 0)
+                               safe->racks.add(safe->rackId, chosen - 1);
+                       });
+}
+
+void FxRackPanel::dragSlot(const std::string& instanceId, const juce::MouseEvent& e)
 {
     const auto ordered = slotsInOrder();
     if (ordered.size() < 2)
@@ -297,13 +426,13 @@ void FxRackPanel::dragSlot(const juce::String& effectId, const juce::MouseEvent&
     for (size_t i = 0; i < ordered.size(); ++i)
     {
         sizes.push_back(ordered[i]->preferredHeight() + kSlotGap);
-        if (ordered[i]->id() == effectId)
+        if (ordered[i]->id() == instanceId)
             current = static_cast<int>(i);
     }
 
-    const int target = core::FxOrderState::positionIn(sizes, e.getEventRelativeTo(this).position.y);
+    const int target = core::FxRackState::positionIn(sizes, e.getEventRelativeTo(&content).position.y);
     if (target != current)
-        order.move(current, target);
+        racks.move(rackId, current, target);
 }
 
 } // namespace fcm::ui

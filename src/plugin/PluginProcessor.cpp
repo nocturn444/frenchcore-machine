@@ -25,7 +25,7 @@ PluginProcessor::PluginProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state),
       project(core::ProjectState::Parts{
-          state, kStateType, ampEnvelope, pitchEnvelope, fxOrder, {&wavetable1, &wavetable2}, tockSelector}),
+          state, kStateType, ampEnvelope, pitchEnvelope, fxRacks, {&wavetable1, &wavetable2}, tockSelector}),
       presetManager(project, core::PresetLibrary(core::PresetLibrary::defaultFolder()), kStateType)
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);

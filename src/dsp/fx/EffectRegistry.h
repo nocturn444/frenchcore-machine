@@ -4,6 +4,7 @@
 #include "dsp/fx/Effect.h"
 
 #include <memory>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -35,6 +36,22 @@ class EffectRegistry
 
     // Index of the effect with this ID, or -1.
     int indexOf(std::string_view id) const noexcept;
+
+    // The pool of copies (docs/decisions/0010): every effect has kInstancesPerEffect instances.
+    // Instance 1 of an effect keeps its plain ID ("distortion"), the others add the copy number
+    // ("distortion2"). A pool index is `effect * kInstancesPerEffect + (copy - 1)`.
+    int instanceCount() const noexcept { return count() * kInstancesPerEffect; }
+    static constexpr int instanceIndex(int effectIndex, int copy) noexcept
+    {
+        return effectIndex * kInstancesPerEffect + (copy - 1);
+    }
+    static constexpr int effectOf(int instance) noexcept { return instance / kInstancesPerEffect; }
+    static constexpr int copyOf(int instance) noexcept { return instance % kInstancesPerEffect + 1; }
+
+    // "distortion", "distortion2", ... Empty when the instance does not exist.
+    std::string instanceId(int instance) const;
+    // The pool index of an instance ID, or -1.
+    int indexOfInstance(std::string_view instanceId) const noexcept;
 
     // A new instance of effect `index`.
     std::unique_ptr<Effect> create(int index) const;

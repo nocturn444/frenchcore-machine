@@ -269,7 +269,7 @@ TEST_CASE("A state from a newer version loads what is known and ignores the rest
 {
     juce::ScopedJuceInitialiser_GUI juceInitialiser;
 
-    for (const char* future : {"2", "99", "1000000", "99999999999"})
+    for (const char* future : {"3", "99", "1000000", "99999999999"})
     {
         TestProcessor processor;
         const std::string attributes = std::string("stateVersion=\"") + future + "\" brandNew=\"yes\"";
@@ -389,8 +389,40 @@ TEST_CASE("applyMigrations reports a missing step and stops", "[core][state][mig
     REQUIRE(static_cast<int>(tree["stateVersion"]) == 2); // left at the last version reached
 }
 
-TEST_CASE("This build has no migrations yet, and the format is at version 1", "[core][state][migration]")
+TEST_CASE("This build migrates from version 1 and the format is at version 2", "[core][state][migration]")
 {
-    REQUIRE(fcm::core::kStateVersion == 1);
-    REQUIRE(fcm::core::stateMigrations().empty());
+    REQUIRE(fcm::core::kStateVersion == 2);
+    REQUIRE(fcm::core::stateMigrations().size() == 1);
+    REQUIRE(fcm::core::stateMigrations()[0].fromVersion == 1);
+}
+
+TEST_CASE("Migration 1 to 2 turns the 0.1 effect order into the Main rack", "[core][state][migration]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    const auto racksOf = [](const juce::String& order)
+    {
+        juce::ValueTree tree("FrenchcoreMachineState");
+        tree.setProperty("stateVersion", 1, nullptr);
+        if (order != "<none>")
+        {
+            juce::ValueTree chain("FxChain");
+            chain.setProperty("order", order, nullptr);
+            tree.appendChild(chain, nullptr);
+        }
+        REQUIRE(fcm::core::applyMigrations(tree, 1, 2, fcm::core::stateMigrations()));
+        REQUIRE(static_cast<int>(tree["stateVersion"]) == 2);
+        REQUIRE_FALSE(tree.getChildWithName("FxChain").isValid());
+
+        const auto racks = tree.getChildWithName("FxRacks");
+        REQUIRE(racks.isValid());
+        REQUIRE(racks.getChildWithProperty("id", "busA")["effects"].toString().isEmpty());
+        REQUIRE(racks.getChildWithProperty("id", "busB")["effects"].toString().isEmpty());
+        return racks.getChildWithProperty("id", "main")["effects"].toString();
+    };
+
+    REQUIRE(racksOf("stereo,distortion,eq") == "stereo,distortion,eq"); // the saved order, kept
+    REQUIRE(racksOf("eq") == "eq,distortion,stereo");                   // what is missing is appended
+    REQUIRE(racksOf("bogus,eq,eq,stereo") == "eq,stereo,distortion");   // unknown and repeats dropped
+    REQUIRE(racksOf("") == "distortion,eq,stereo");
+    REQUIRE(racksOf("<none>") == "distortion,eq,stereo"); // no node: the 0.1 default order
 }

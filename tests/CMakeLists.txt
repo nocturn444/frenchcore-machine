@@ -7,7 +7,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/AllocationCounter.cpp
     dsp/AuditionTests.cpp
     dsp/BreakpointEnvelopeTests.cpp
-    dsp/EffectChainTests.cpp
+    dsp/EffectRackTests.cpp
     dsp/fx/DistortionTests.cpp
     dsp/fx/EqTests.cpp
     dsp/fx/StereoTests.cpp

@@ -2,7 +2,7 @@
 #pragma once
 
 #include "core/EnvelopeState.h"
-#include "core/FxOrderState.h"
+#include "core/FxRackState.h"
 #include "core/StateLoader.h"
 #include "core/TockSelector.h"
 #include "core/WavetableSelector.h"
@@ -25,7 +25,7 @@ class ProjectState
         juce::Identifier rootType;
         EnvelopeState& ampEnvelope;
         EnvelopeState& pitchEnvelope;
-        FxOrderState& fxOrder;
+        FxRackState& fxRacks;
         std::array<WavetableSelector*, 2> wavetables;
         TockSelector& tock;
     };

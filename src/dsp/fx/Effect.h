@@ -10,7 +10,13 @@ namespace fcm::dsp
 {
 
 inline constexpr int kMaxEffects = 16;
-inline constexpr int kMaxEffectParameters = 24;
+inline constexpr int kMaxEffectParameters = 48; // docs/decisions/0011
+
+// Every effect type exists as a fixed pool of copies (docs/decisions/0010). A pool index is
+// `effect index * kInstancesPerEffect + (copy - 1)`, so it fits the 6 bits a rack uses per entry.
+inline constexpr int kInstancesPerEffect = 4;
+inline constexpr int kMaxInstances = kMaxEffects * kInstancesPerEffect;
+inline constexpr int kMaxRackEffects = 8;
 
 // How an effect describes one of its parameters, as plain data (docs/decisions/0009). fcm_core turns
 // the specs of all registered effects into APVTS parameters; fcm_dsp never includes APVTS.
@@ -34,6 +40,12 @@ struct ParameterSpec
     float skewCentre = 0.0f; // 0: linear; otherwise the value that sits at the middle of the control
     std::string_view unit;   // "dB", "ms", ...
     std::span<const std::string_view> choices; // for ParameterKind::choice
+
+    // Only the UI reads these: the control is shown only while the toggle or choice parameter
+    // `shownWhenSuffix` of the same effect has a value whose bit is set in `shownWhenMask`
+    // (docs/decisions/0011). Empty: always shown. The parameter exists and automates either way.
+    std::string_view shownWhenSuffix = {};
+    unsigned shownWhenMask = 0;
 };
 
 // Stable identity of an effect. `id` never changes after release; `version` bumps when its parameters
@@ -43,6 +55,8 @@ struct EffectDescriptor
     std::string_view id; // lowercase, no spaces: "distortion", "eq", "stereo"
     std::string_view displayName;
     int version = 1;
+    float defaultMix = 1.0f;    // 0..1, the default of "<id>.mix" (docs/decisions/0011)
+    bool inDefaultMain = false; // part of the rack a new project starts with (docs/decisions/0010 item 9)
 };
 
 // What the engine hands the chain once per block for one effect: whether it is on, its dry/wet mix
@@ -52,6 +66,14 @@ struct EffectSlotParameters
     bool enabled = false;
     float mix = 1.0f; // 0..1
     std::array<float, kMaxEffectParameters> values{};
+};
+
+// What an effect may want to know about the sound it is processing, set once per block before
+// process() (docs/decisions/0011). Effects never see MIDI.
+struct EffectContext
+{
+    float noteSemitones = 0.0f; // the pitch the tail settles on, relative to MIDI note 60, with glide
+    float tempoBpm = 120.0f;
 };
 
 struct EffectSpec
@@ -81,6 +103,9 @@ class Effect
     // Once per block, before process(). `values` has one entry per parameter, in the order of
     // parameters(), in the units of the spec (a choice is its entry number, a toggle 0 or 1).
     virtual void setParameters(std::span<const float> values) noexcept = 0;
+
+    // Once per block, before process(), for effects that follow the note or the tempo.
+    virtual void setContext(const EffectContext& context) noexcept { juce::ignoreUnused(context); }
 
     // The oversampling factor (1, 2, 4 or 8) of the global Quality setting, before process() whenever
     // it changes and once after prepare(). Effects that do not oversample ignore it.

@@ -25,7 +25,7 @@ constexpr std::array<double, 6> kAllpassCoefficients{0.62, -0.47, 0.33, -0.71, 0
 
 const EffectDescriptor& StereoEffect::descriptor() const
 {
-    static const EffectDescriptor d{"stereo", "Stereo", 1};
+    static const EffectDescriptor d{"stereo", "Stereo", 1, 1.0f, true};
     return d;
 }
 
