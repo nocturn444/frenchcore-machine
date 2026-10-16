@@ -11,6 +11,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/MixerBusTests.cpp
     dsp/fx/DistortionTests.cpp
     dsp/fx/EqTests.cpp
+    dsp/fx/FilterTests.cpp
     dsp/fx/StereoTests.cpp
     dsp/fx/RegisteredEffectsTests.cpp
     dsp/EngineTests.cpp

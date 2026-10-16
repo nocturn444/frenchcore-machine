@@ -1,6 +1,6 @@
 # Spec: Filter effect
 
-- Status: Approved (product owner's answers of 2026-10-16, questions 1.1 and 1.2 A); not implemented. Version 0.2, stage 4. Ranges and defaults are first choices by the agent, for the owner's ears.
+- Status: Approved (product owner's answers of 2026-10-16, questions 1.1 and 1.2 A); implemented (stage 4, first of the four effects). Ranges and defaults are first choices by the agent, for the owner's ears.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [mixer-and-buses](mixer-and-buses.md), [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md), [ADR 0011](../decisions/0011-effect-interface-additions.md)
 
@@ -38,8 +38,8 @@ Defaults: a Low Pass fully open with no resonance and no drive, so switching it 
 
 - `fcm::dsp::FilterEffect` in `src/dsp/fx/filter/`, one registration line.
 - Topology-preserving-transform state variable filter (Vadim Zavalishin, "The Art of VA Filter Design", chapter on the 2-pole SVF), which stays stable and smooth under fast cutoff changes. Low Pass, High Pass, Band Pass (constant peak gain) and Notch are outputs of the same filter. 24 dB = two SVFs in series with the same cutoff, the resonance applied to the second.
-- Resonance maps to the SVF damping `k = 2 - 1.95 * r` (`r` = resonance / 100), so `k` never reaches 0 (no self-oscillation).
-- Drive: gain `1 + 15 * d^2` (`d` = drive / 100, so up to about +24 dB) into `tanh` at the filter input, divided by the same gain after, so turning Drive adds saturation without a big jump in level. Not oversampled (mild saturation; heavy saturation belongs to Distortion), so `latencySamples` is 0 at every factor.
+- Resonance maps to the SVF damping `k` (1 / Q). The first version of this spec said `k = 2 - 1.95 r`, which gives -6 dB at the cutoff with no resonance; the test below asks for -3 dB, so the implementation starts maximally flat (Butterworth): 12 dB uses `k = sqrt(2) - (sqrt(2) - 0.05) r`; 24 dB uses the two Butterworth fourth-order stages (`k = 1.8478` fixed for the first, `k = 0.7654 - (0.7654 - 0.05) r` for the second, which carries the resonance). `k` never goes below 0.05 (Q 20), so there is no self-oscillation.
+- Drive: `tanh(a x) / tanh(a)` at the filter input with `a = 15 d^2` (`d` = drive / 100). It is exactly the input at drive 0 and continuous from there, and a full-scale input stays at full scale, so turning Drive adds saturation without a big jump in level (the first version said "divided by the same gain after", which would have lost about 22 dB at full drive). Small signals are boosted as the drive rises, like any saturator. Not oversampled (mild saturation; heavy saturation belongs to Distortion), so `latencySamples` is 0 at every factor.
 - Cutoff and resonance are smoothed per sample, and the coefficients recomputed per sample (one `tan` per sample per filter, cheap enough; a table if profiling says otherwise). The cutoff is limited to 0.45 of the sample rate.
 - Non-finite input becomes 0.
 
