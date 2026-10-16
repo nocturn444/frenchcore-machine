@@ -2,7 +2,7 @@
 
 Living summary for the product owner (nocturn4). Updated by the agent in every PR that changes something listed here. It is in English like the rest of the repository; the agent explains the important parts in Spanish in the chat.
 
-Last updated: 2026-10-14.
+Last updated: 2026-10-16.
 
 ## 1. Where the project is
 
@@ -16,13 +16,14 @@ Last updated: 2026-10-14.
 | 6 State and presets (project state, preset files, five factory presets, preset bar) | Done and merged |
 | Feedback round 2026-10-13 (Punch/Tail balance removed, EQ made parametric, window rebuilt on the agreed grid and scaled to the window) | Done and merged |
 | 7 Hardening and release | Done. Version 0.1.0 was published on 2026-10-14 with zips for Windows, macOS and Linux. It was tried in FL Studio only (works well, reasonable RAM, saving and presets fine); not tried: automation, other sample rates, the Quality setting, other DAWs. CPU measured offline (3 % of one core at 8x with all effects on) |
-| 0.1.1 security and finishing fixes (JUCE 9.0.4, safe loading of embedded audio and of the DAW state, release zips with licence and checksums, auval in CI, licence notice in the window) | Pull request open, waiting for the owner's review and merge. Not released yet |
+| 0.1.1 security and finishing fixes (JUCE 9.0.4, safe loading of embedded audio and of the DAW state, release zips with licence and checksums, auval in CI, licence notice in the window) | Merged on 2026-10-16 (#34, merged by the agent on the owner's instruction). Not released yet: the owner tags and publishes 0.1.1 when they want |
+| Version 0.2.0 (mixer and buses, effect copies, Filter, Compressor with Multiband, Transient shaper, Reverb, noise oscillator, Tock rework, extreme EQ) | Planned and documented on 2026-10-16 from the owner's answers ([PLAN](PLAN.md), section "Version 0.2.0"). Stage 0 (documentation) in review; stages 1 to 7 are to be built in claude.ai/code sessions, one pull request per stage |
 
 ## 2. Open pull requests
 
-- The 0.1.1 pull request (branch `claude/project-thread-2hsmqk`): every code and documentation finding of the 0.1.0 security audit and release review that did not need the owner. It changes the build, the release machinery and the window, so the owner reviews and merges it.
+- The 0.2 documentation pull request (branch `claude/project-thread-xe9kgr`): specs, ADRs 0010 and 0011, plan, architecture and layout for version 0.2. Documentation only.
 
-Everything before it is merged into `main`.
+Everything else is merged into `main`, including 0.1.1 (#34).
 
 Merge rule (decided by the owner on 2026-10-13, written in `CLAUDE.md`): features and important changes are reviewed and merged by the owner; documentation-only pull requests and minor fixes may be merged by the agent once CI is green.
 
@@ -58,6 +59,10 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-14 | Embedded audio is decoded only when its stored size is plain digits, within the limits and exactly what the text holds; otherwise it is dropped and the rest loads. | `docs/specs/state-safe-loading.md`, `wavetable-user.md`, `tock.md` |
 | 2026-10-14 | The release workflow builds with read-only access; one small job attaches the zips, `SHA256SUMS.txt` and provenance attestations, and only commits on `main` are released. Windows runners are pinned to `windows-2025`. | `docs/RELEASING.md` |
 | 2026-10-14 | The licence notice sits in the free Other box until that box gets its own contents. | `docs/specs/legal-notice.md` |
+| 2026-10-16 | Version 0.2 technical choices: four copies of every effect with fixed IDs (copy 1 keeps the 0.1 IDs), three racks of up to eight effects stored as state, constant latency padded per rack, state version 2 with a migration that keeps every 0.1 sound; effects get the note pitch, conditional controls and a per-effect default Mix. | ADR 0010, ADR 0011, `docs/specs/mixer-and-buses.md` |
+| 2026-10-16 | 0.2 sound starting points for the owner's ears: Filter (TPT state variable), Compressor (OTT-like band curves to be voiced by ear), Transient shaper (envelope difference), Reverb (8-line FDN, Mix 30 %), eight generated noises, the Pogo curve, the Detect rule. | `docs/specs/fx-*.md`, `noise-oscillator.md`, `tock.md` §8 |
+| 2026-10-16 | The EQ's extreme ranges are separate parameters (`eq.bN.xgain`, `eq.bN.xq`) because changing the range of a released parameter would change automation in saved projects. | `docs/specs/fx-eq.md` §8 |
+| 2026-10-16 | The mixer goes in a tab of the Effects box and the noise in the free LFO box, so the window keeps its size (owner: "it has to fit my screen"). | `docs/specs/ui-grid-layout.md` §8 |
 
 ## 4. What the owner needs to do or listen to
 

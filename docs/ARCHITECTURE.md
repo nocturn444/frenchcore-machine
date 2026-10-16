@@ -78,22 +78,28 @@ How this is built: the four libraries are CMake `INTERFACE` libraries that carry
 MIDI ──► NoteHandler (mono, last-note priority, optional glide)
               │ pitch, gate, velocity
               ▼
-        ┌──────────────────────────────┐
-        │ Voice                        │
-        │  Pitch envelope ─► pitch     │
-        │  Oscillator 1 (wavetable)    │
-        │  + Oscillator 2 (wavetable)  │
-        │  + Tock (optional)           │
-        │  × Amp envelope              │
-        │  × Punch/Tail levels         │
-        └──────────────┬───────────────┘
-                       ▼
-        FX chain (user-ordered slots, each with bypass and mix)
-                       ▼
+        ┌──────────────────────────────────────────────┐
+        │ Voice (one mono stem per source)             │
+        │  Pitch envelope ─► pitch of Osc 1 and Osc 2  │
+        │  Osc 1, Osc 2, Noise  × Amp env × Punch/Tail │
+        │  Tock × Punch/Tail (× Amp env if Amp Env on) │
+        └──────┬──────────┬──────────┬──────────┬──────┘
+               ▼          ▼          ▼          ▼
+        Mixer: per source Destination (Main / Bus A / Bus B), Mute, Solo
+               │                 │                  │
+               ▼                 ▼                  ▼
+        Bus A rack        Bus B rack        (direct, delayed to match)
+        region, level     region, level             │
+               └────────────┬────┴──────────────────┘
+                            ▼
+        Main rack (user-ordered effects, each with On and Mix)
+                            ▼
         Output gain ─► Safety limiter (soft clip, always last, not reorderable)
-                       ▼
-                    Host output
+                            ▼
+                        Host output
 ```
+
+Version 0.2 replaced the single FX chain with this mixer and three racks ([ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md), [mixer-and-buses](specs/mixer-and-buses.md)). Until stage 2 of the 0.2 plan is merged, the code still has the 0.1 flow (one mono sum into one chain).
 
 ### 4.1 Voice and note handling
 
@@ -119,10 +125,14 @@ Details and tests in [voice-note-handling](specs/voice-note-handling.md).
 
 ### 4.3 Tock (click layer with optional samples)
 
-- Optional short transient (the "tock") mixed before the amp envelope. Two sources, selected with `Tock Mode`:
+- Optional short transient (the "tock"). In 0.1 it is mixed before the amp envelope; from 0.2 an `Amp Env` switch decides (off for new sounds, on for 0.1 states), and the Tock has its own mixer channel ([tock](specs/tock.md) section 8: trimming, Detect, Pogo, 10-second samples). Two sources, selected with `Tock Mode`:
   - **Synth:** a generated click (short noise burst or pitched blip) with its own decay and filter.
   - **Sample:** a factory tock or a user-loaded WAV. User samples are embedded in the plugin state like wavetables, and loading follows the same background-load and atomic-publish pattern.
 - Parameters: `Tock On`, `Tock Mode`, `Tock Sample`, `Tock Level`, `Tock Tune`, `Tock Start`, `Tock Decay`, `Tock Tone` (details, ranges and the choices made in [tock](specs/tock.md)). The Tock is added to the oscillator sum before the amp envelope, and the selected sample is published to the voice like a wavetable ([ADR 0008](decisions/0008-wavetable-selection-and-publishing.md)).
+
+### 4.3b Noise oscillator (version 0.2)
+
+- A third source like Serum's noise oscillator ([noise-oscillator](specs/noise-oscillator.md)): eight generated noises or a user WAV (`UserNoiseSample` node), Level, Pitch, Key Track, One Shot, Phase, Random. It follows the amp envelope and the Punch/Tail levels but not the pitch envelope, and has its own mixer channel. The selected sample is published like the Tock's ([ADR 0008](decisions/0008-wavetable-selection-and-publishing.md)). Code in `src/dsp/noise/`.
 
 ### 4.4 Envelopes
 
@@ -150,6 +160,8 @@ Details and tests in [voice-punch-tail](specs/voice-punch-tail.md).
 - All three are automatable parameters and are smoothed over 10 ms.
 
 ### 4.6 FX chain (main extension point)
+
+> **Version 0.2:** [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md) supersedes the "one slot per effect type" model below: every effect type has four copies with fixed IDs (`distortion`, `distortion2` ... `distortion4`), and three racks (Bus A, Bus B, Main) each hold up to eight of them in a user order, with add, remove and duplicate. One rack works like the chain described here (per-slot dry compensation and mix), padded to a constant latency. [ADR 0011](decisions/0011-effect-interface-additions.md) adds `setContext(EffectContext)` (the note pitch, for Key Track), `ParameterSpec::shownWhen`, `EffectDescriptor::defaultMix` and raises the parameter limit to 48. The 0.2 effects are Filter, Compressor (with Multiband), Transient shaper and Reverb ([specs](specs/)). This section describes 0.1 until stage 2 of the 0.2 plan is merged.
 
 The effects system follows the "one slot per effect type" model used by Serum: each effect type exists exactly once, the user can enable it, bypass it and drag it to any position in the chain.
 
@@ -209,8 +221,9 @@ MVP effects:
   - `UserWavetable1`, `UserWavetable2`: display name and embedded frames (base64), see [wavetable-user](specs/wavetable-user.md).
   - `UserTockSample`: display name, sample rate and the embedded sample (base64), see [tock](specs/tock.md).
   - `AmpEnvelope`, `PitchEnvelope`: point lists.
-  - `FxChain`: order of effect IDs.
-- **Versioning:** the root state node carries `stateVersion`, always written on save (`core::kStateVersion`, currently 1). A missing or damaged value counts as version 1. Loading older state runs the steps of `stateMigrations()` in `src/core/StateMigrations.cpp` in order (the list is empty while only version 1 exists); a state whose version is newer than this build is still loaded: the controls this build knows are applied and the rest is ignored. Each effect also carries its descriptor `version`.
+  - `FxChain`: order of effect IDs (state version 1; replaced in version 2 by `FxRacks`: three `Rack` children with ordered instance IDs, [mixer-and-buses](specs/mixer-and-buses.md)).
+  - `UserNoiseSample` (version 0.2): like `UserTockSample`, see [noise-oscillator](specs/noise-oscillator.md).
+- **Versioning:** the root state node carries `stateVersion`, always written on save (`core::kStateVersion`, currently 1; version 0.2 makes it 2 with a migration that turns the 0.1 effect order into the Main rack and keeps every 0.1 sound, [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)). A missing or damaged value counts as version 1. Loading older state runs the steps of `stateMigrations()` in `src/core/StateMigrations.cpp` in order (the list is empty while only version 1 exists); a state whose version is newer than this build is still loaded: the controls this build knows are applied and the rest is ignored. Each effect also carries its descriptor `version`.
 - **One load path** (`core::ProjectState`, [project-state](specs/project-state.md)): it gathers the parameter tree, both envelopes, the effect order and the user wavetable and Tock nodes, and offers `capture()` and `restore()` (and the XML form). The processor, the presets and the tests all use it. A saved state describes everything: a parameter it does not mention becomes its default.
 - **Loading is always sanitized** (`core::loadState` in `src/core/StateLoader.cpp`, spec [state-safe-loading](specs/state-safe-loading.md)): the root type must match; unknown or value-less `PARAM` entries are dropped; every parameter value that is not a plain finite number becomes the parameter's default, and every other value is clamped to the parameter's range and snapped to its step. `EngineParameterReader` and the oscillator repeat these guards as a second layer, so a bad value can never index outside memory on the audio thread. State blobs above `core::kMaxStateBytes` (32 MiB) are rejected before parsing.
 - **Presets** ([presets](specs/presets.md)) are the same state wrapped in a small XML file with a name and a `presetFormat` version (`.fcmpreset`, `core::PresetFile`). Factory presets are a table in code (`core::FactoryPresets`: parameter overrides plus envelope shape names) applied over the defaults, so they follow new controls and need no embedded files. User presets go to the platform's user documents folder (`Frenchcore Machine/Presets`) through `core::PresetLibrary`; `core::PresetManager` presents factory then user presets as one list with next/previous and save. Preset files are untrusted input (§12): size cap, nesting-depth scan before XML parsing, strict file-name whitelist.
@@ -229,7 +242,7 @@ Three threads matter:
 Patterns used:
 
 - **Atomic pointer swap + deferred release** for large immutable data (wavetables, envelope shapes): the producer builds a new object and publishes it with an atomic exchange (`PublishedPointer`); the audio thread records the pointer it reads as a hazard pointer, and the old object is freed on the publishing thread once it is no longer that one ([ADR 0006](decisions/0006-envelope-model-and-publishing.md)).
-- **Atomic packed values** for small state (FX order).
+- **Atomic packed values** for small state (FX order; from 0.2 one packed value per rack, [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)).
 - **APVTS raw parameter pointers** (`std::atomic<float>*`) are read once per block, and parameters that cause clicks are smoothed (`juce::SmoothedValue`).
 - **Debug check:** in debug builds a scoped guard flags any allocation on the audio thread.
 
@@ -237,7 +250,7 @@ Patterns used:
 
 - Functional first; visual design will be done later and must not require structural changes. All drawing goes through a custom `LookAndFeel` so restyling is a separate task.
 - Resizable editor with a fixed aspect ratio. The editor is drawn on one fixed design grid (1500 points wide) and scaled as a whole to the window, so it never rearranges ([ui-grid-layout](specs/ui-grid-layout.md)). Styling lives in `ui/Style.h` and `ui::FcmLookAndFeel`.
-- Main areas, as agreed in [UI_LAYOUT.md](UI_LAYOUT.md): preset bar, two oscillator panels, amp and pitch envelope panels, tock, punch/tail levels, global, and the FX rack. LFOs (post-MVP) and "Other" have reserved space.
+- Main areas, as agreed in [UI_LAYOUT.md](UI_LAYOUT.md): preset bar, two oscillator panels, amp and pitch envelope panels, tock, punch/tail levels, global, and the FX rack. LFOs (post-MVP) and "Other" have reserved space. From 0.2 the LFO box holds the Noise panel and the Effects box has tabs Mixer / Bus A / Bus B / Main; the window keeps its size.
 - The UI never calls DSP code. It changes parameters through APVTS attachments and non-parameter state through `fcm_core` APIs.
 - A JUCE 9 WebView-based UI is a possible future option for the visual redesign. It is not used in the MVP.
 - **Standalone-only audition strip** (on-screen keyboard and auto-play loop, [spec](specs/standalone-audition.md)). It exists only when `AudioProcessor::wrapperType` is `wrapperType_Standalone`. Its settings are not parameters and not state: `core::AuditionState` holds atomics and a lock-free `dsp::NoteQueue` (message thread to audio thread), and the audio thread turns them into MIDI events (`dsp::AuditionSequencer` for the loop) inside a pre-allocated MIDI buffer. `MidiKeyboardState` (which locks) stays on the message thread.

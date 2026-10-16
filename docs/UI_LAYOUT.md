@@ -1,6 +1,6 @@
 # UI Layout
 
-- Status: v3. Layout agreed with the product owner (2026-10-11); implemented as a fixed design grid on 2026-10-13 ([spec](specs/ui-grid-layout.md)). "Other" is reserved, contents to be defined.
+- Status: v4 (planned for version 0.2, approved 2026-10-16; v3 is what 0.1 implements). Layout agreed with the product owner (2026-10-11); implemented as a fixed design grid on 2026-10-13 ([spec](specs/ui-grid-layout.md)). "Other" shows the licence notice since 0.1.1.
 
 This document describes the functional layout of the editor. Visual styling (colours, fonts, knob graphics) is a separate, later task and is not specified here.
 
@@ -29,9 +29,9 @@ In the original sketch, black areas were mandatory and red areas were to be disc
 ├────────────────┼────────────────┤                                    │
 │ Amp envelope   │ Pitch envelope │                                    │
 ├────────────────┼────────────────┼───────────────────┬────────────────┤
-│ LFO 1/2        │ Tock           │ Punch / Tail     │ Global         │
-│ (after MVP,    ├────────────────┴───────────────────┤                │
-│  space kept)   │ Other (reserved)                   │                │
+│ Noise (0.2;    │ Tock           │ Punch / Tail     │ Global         │
+│ was the LFO    ├────────────────┴───────────────────┤                │
+│ space)         │ Other (licence notice)             │                │
 └────────────────┴────────────────────────────────────┴────────────────┘
 ```
 
@@ -43,11 +43,12 @@ In the original sketch, black areas were mandatory and red areas were to be disc
 | **Oscillator 1 and 2** | Two identical panels. Header: on/off, Pitch, Octave, Fine tune. Wavetable display (click to load, frame name). 6 knobs: Position, Level, Phase, plus three reserved for later oscillator features | Yes | Oscillators (§4.2) |
 | **Amp envelope** | Editable display (drag, add, delete points) + 5 knobs: Attack, Hold, Decay, Sustain, Release. Knobs move the main points of the same curve. Shows the punch/tail split marker. Default shape: kick + bass | Yes | Envelopes (§4.4) |
 | **Pitch envelope** | Editable display + 5 knobs: Amount (st), Attack, Decay, Curve, End | Yes | Envelopes (§4.4) |
-| **Tock** | Mode switch (Synth / Sample), sample selector (factory list + load file), Level, Tune, Start, Decay, Tone | Yes | Tock (§4.3) |
+| **Tock** | Mode switch (Synth / Sample), sample selector (factory list + load file), Level, Tune, Start, Decay, Tone. From 0.2: Detect, Amp Env, a waveform display with Trim handles, Pogo ([tock](specs/tock.md) §8) | Yes | Tock (§4.3) |
 | **Punch / Tail** | A Split control for the time where the punch ends and the tail starts, and a Punch Level and a Tail Level knob. There is no balance knob (removed 2026-10-13) | Yes | Punch/Tail (§4.5) |
 | **Global** | Output gain, safety limiter on/off, Quality (oversampling 1x/2x/4x/8x), Glide on + time, Velocity sensitivity, Key track | Yes | Voice (§4.1), Output (§4.7) |
-| **FX rack** | Reorderable list of effect slots (drag handle, enable, mix) with the selected effect's panel below | Yes | FX chain (§4.6) |
-| **LFO 1 / LFO 2** | Display, 3 knobs, 2 toggles, LFO1/LFO2 tabs (from the sketch) | After MVP. The space is kept empty so adding it does not move other panels | Requires a modulation system |
+| **FX rack** | Reorderable list of effect slots (drag handle, enable, mix) with the selected effect's panel below. From 0.2: tabs Mixer / Bus A / Bus B / Main; each rack adds, duplicates and removes effects ([mixer-and-buses](specs/mixer-and-buses.md)) | Yes | FX chain (§4.6) |
+| **Noise** (0.2) | On, Type menu, Load..., Key Track, One Shot, knobs Level, Pitch, Phase, Random ([noise-oscillator](specs/noise-oscillator.md)) | 0.2 | Noise (§4.3b) |
+| **LFO 1 / LFO 2** | Display, 3 knobs, 2 toggles, LFO1/LFO2 tabs (from the sketch) | After 0.2. Their box now holds the Noise panel; they need a new place when planned | Requires a modulation system |
 | **Other** | Reserved space; shows the licence notice (version, AGPL-3.0, source address) until it gets its own contents ([legal-notice](specs/legal-notice.md)) | To be defined | |
 
 ## Standalone audition strip
@@ -82,3 +83,4 @@ PluginEditor                 (scales one fixed grid to the window)
 | v1 | 2026-10-11 | First layout from the product owner's sketch. |
 | v2 | 2026-10-11 | Red areas decided: two identical oscillators, punch/tail balance with split slider, global panel contents, LFOs after MVP, tock with synth and sample modes. |
 | v3 | 2026-10-13 | Implemented as a fixed design grid scaled to the window; the Punch / Tail balance knob was removed; the FX rack became vertical strips; the EQ gained a response display. |
+| v4 | 2026-10-16 | Planned for 0.2: the LFO box holds the Noise panel; the Effects box gets tabs Mixer / Bus A / Bus B / Main; the Tock box gets a waveform with Trim handles, Detect, Amp Env and Pogo. The window keeps its size so it fits the owner's screen. |

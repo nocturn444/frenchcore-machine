@@ -115,12 +115,51 @@ Findings of the security audit and the review of the 0.1.0 release (2026-10-14) 
 - [x] Licence notice in the window ([legal-notice](specs/legal-notice.md))
 - [ ] Merged and released by the owner (`v0.1.1`)
 
-## After the MVP (not scheduled)
+## Version 0.2.0: mixer, more effects, noise, new Tock, extreme EQ
+
+Requested by the product owner on 2026-10-16 (five items: the missing effects, a Serum 2 style mixer with effect copies and per-part/per-source effects, a noise oscillator like Serum's, a rethought Tock, and extreme EQ peaks for microwave and hardtekk kicks). One version, built in stages; each stage is one pull request (stage 4 is one pull request per effect) that the owner reviews and merges. Version 0.1.1 (security fixes) is merged and is the base.
+
+### Decisions of the product owner (2026-10-16)
+
+| Topic | Decision | Spec |
+|---|---|---|
+| Release | One version, 0.2.0, in stages | this plan |
+| Compatibility | Every 0.1 project and preset (factory and user) opens and sounds the same | [mixer-and-buses](specs/mixer-and-buses.md), ADR 0010 |
+| New effects | Filter (with Drive), Compressor with a Multiband switch (off: a normal compressor; on: OTT-style, with OTT's controls), Transient shaper, Reverb (one simple room) | [fx-filter](specs/fx-filter.md), [fx-compressor](specs/fx-compressor.md), [fx-transient](specs/fx-transient.md), [fx-reverb](specs/fx-reverb.md) |
+| Mixer | Sources Osc 1, Osc 2, Noise, Tock, each to Main, Bus A or Bus B, with Level, Mute, Solo | [mixer-and-buses](specs/mixer-and-buses.md) |
+| Buses | Two buses plus Main; a bus applies to Whole, Punch or Tail using the one existing Split; all the sound enters the bus and outside the chosen part it comes out clean | [mixer-and-buses](specs/mixer-and-buses.md) |
+| Effect copies | Up to 4 of each effect; add, remove, duplicate, reorder | [mixer-and-buses](specs/mixer-and-buses.md), ADR 0010 |
+| Window | Must still fit the owner's screen: the mixer may go in a tab (agent's choice: tabs in the Effects box); the window does not grow | [ui-grid-layout](specs/ui-grid-layout.md) |
+| Noise | Eight generated noises plus your own WAV; follows the amp envelope (own envelopes per source may come with a future modulation system); fixed pitch with a Key Track switch, not the pitch envelope; in the free LFO box | [noise-oscillator](specs/noise-oscillator.md) |
+| Tock | Keep Synth mode and the four sounds; add trimming of any sample with handles and a Detect button, a Pogo knob (bipolar pitch bend over the played part), samples up to 10 s; it no longer goes through the amp envelope (0.1 states keep the old behaviour) | [tock](specs/tock.md) section 8 |
+| EQ | An Extreme switch per band (±36 dB, Q up to 50) and a Key Track per band that follows the MIDI note like Serum's filters; loud peaks are left to the safety limiter | [fx-eq](specs/fx-eq.md) section 8 |
+
+Questions 3.4 (noise in the LFO box) and 4.5 (Tock samples up to 10 seconds) were written with the agent's recommendation while the owner's confirmation was pending.
+
+### Stages
+
+- [x] **0. Documentation**: the specs above, [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md), [ADR 0011](decisions/0011-effect-interface-additions.md), architecture, layout and this plan.
+- [ ] **1. Effect copies and racks (Main only).** First commit: reference renders of 0.1.1 (every factory preset and a test project with the Tock on, one note each) as test data, so every later stage can prove nothing changed. Then the interface additions of ADR 0011 (`EffectContext`, `shownWhen`, `defaultMix`, 48 parameters; Bits and Rate of the Distortion shown only for Bitcrush), the instance pool (4 per type, IDs per ADR 0010), `core::FxRackState` with the three racks, state version 2 and the migration from 1, and the Main rack UI with "+ Add effect", duplicate, remove, drag and scrolling.
+- [ ] **2. Mixer and buses.** Voice stems, the mixer parameters, Bus A and Bus B with Level and Apply To, the latency model of ADR 0010, and the Effects box tabs Mixer / Bus A / Bus B / Main.
+- [ ] **3. EQ: Extreme and Key Track** ([fx-eq](specs/fx-eq.md) section 8).
+- [ ] **4. New effects**, one pull request each, in this order: Filter, Transient shaper, Compressor (single band and Multiband), Reverb. Each follows [ADDING_AN_EFFECT](ADDING_AN_EFFECT.md) and needs no change outside its folder, its registration line, its tests and docs (if it does, that is a defect of stages 1 and 2 to fix first).
+- [ ] **5. Noise oscillator** ([noise-oscillator](specs/noise-oscillator.md)), in the LFO box, with its mixer channel.
+- [ ] **6. Tock rework** ([tock](specs/tock.md) section 8): first measure and record why it is hard to hear; then Amp Env, Trim with the waveform display, Detect, Pogo, 10-second samples; the Hardcore Crunch factory preset gets `tock.ampEnv` on so it sounds as in 0.1.
+- [ ] **7. Wrap-up.** Every 0.1 factory preset and the test project still render the same as the references of stage 1 (the tolerance of [mixer-and-buses](specs/mixer-and-buses.md) section 5); CPU measured again with every rack full ([TESTING](TESTING.md)); user guide, README (EN and ES) features, CHANGELOG; version 0.2.0 in `CMakeLists.txt`; release notes draft in `.github/release-notes.md`. The owner tags and publishes.
+
+Done when (for the whole version):
+
+- Every spec above is implemented and its tests pass; CI is green on Windows, macOS and Linux; pluginval at strictness 10 and auval pass.
+- A 0.1.0 or 0.1.1 project, every 0.1 factory preset and a 0.1 user preset file open and render the same audio as 0.1.1 (aligned by the reported latency, every sample within 1e-6 of the reference, which is -120 dBFS: the stems are summed in a different order, so exact bit equality is not required), checked by tests.
+- No allocation on the audio thread in any new DSP (counting `operator new` tests, as for the 0.1 effects), and the voice stems and racks have allocation tests too.
+- The window keeps its 0.1 size and shape.
+- `docs/USER_GUIDE.md`, `CHANGELOG.md`, `docs/STATUS.md` and this plan are updated in each stage's pull request.
+
+## After 0.2 (not scheduled)
 
 - Visual design pass (custom LookAndFeel, possibly WebView UI).
-- More effects (compressor/OTT, filter, transient shaper, reverb).
 - CLAP format.
-- Two LFOs and a modulation system (wavetable position, FX parameters).
+- Two LFOs and a modulation system (wavetable position, FX parameters), including separate envelopes per oscillator or source like Serum (owner's note, 2026-10-16). The LFO box now holds the Noise panel, so the LFOs need a new place in the window.
 - Signed and notarized installers.
 
 ## Risks
