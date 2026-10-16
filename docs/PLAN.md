@@ -134,7 +134,7 @@ Requested by the product owner on 2026-10-16 (five items: the missing effects, a
 | Tock | Keep Synth mode and the four sounds; add trimming of any sample with handles and a Detect button, a Pogo knob (bipolar pitch bend over the played part), samples up to 10 s; it no longer goes through the amp envelope (0.1 states keep the old behaviour) | [tock](specs/tock.md) section 8 |
 | EQ | An Extreme switch per band (±36 dB, Q up to 50) and a Key Track per band that follows the MIDI note like Serum's filters; loud peaks are left to the safety limiter | [fx-eq](specs/fx-eq.md) section 8 |
 
-Questions 3.4 (noise in the LFO box) and 4.5 (Tock samples up to 10 seconds) were written with the agent's recommendation while the owner's confirmation was pending.
+The owner confirmed questions 3.4 (noise in the LFO box) and 4.5 (Tock samples up to 10 seconds) on 2026-10-16.
 
 ### Stages
 
