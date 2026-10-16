@@ -1,6 +1,6 @@
 # Spec: FX rack (user interface for the effects)
 
-- Status: Implemented (Phase 5, fifth part), reworked on 2026-10-13 from columns in a tab into strips in the Effects box of the grid ([ui-grid-layout](ui-grid-layout.md)). Layout and look are first choices by the agent.
+- Status: Implemented (Phase 5, fifth part), reworked on 2026-10-13 from columns in a tab into strips in the Effects box of the grid ([ui-grid-layout](ui-grid-layout.md)). Layout and look are first choices by the agent. Version 0.2 puts this rack in three tabs (Bus A, Bus B, Main) next to a Mixer tab and adds add, duplicate and remove ([mixer-and-buses](mixer-and-buses.md) section 2).
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [fx-chain](fx-chain.md), [fx-distortion](fx-distortion.md), [fx-eq](fx-eq.md), [fx-stereo](fx-stereo.md), [UI_LAYOUT](../UI_LAYOUT.md), [ARCHITECTURE §7](../ARCHITECTURE.md)
 

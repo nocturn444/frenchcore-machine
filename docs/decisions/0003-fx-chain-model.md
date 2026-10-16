@@ -1,6 +1,6 @@
 # 0003: FX chain: one reorderable slot per effect type
 
-- Status: Accepted
+- Status: Superseded by [0010](0010-effect-instances-buses-and-mixer.md) (2026-10-16)
 - Date: 2026-10-11
 
 ## Context

@@ -1,6 +1,6 @@
 # Spec: FX chain (effect interface, registry and reorderable chain)
 
-- Status: Implemented (Phase 5, first part: the machinery, with no effect yet; the effects follow in their own specs)
+- Status: Implemented (Phase 5, first part: the machinery, with no effect yet; the effects follow in their own specs). Version 0.2 replaces the single chain with copies of each effect in three racks ([mixer-and-buses](mixer-and-buses.md), [ADR 0010](../decisions/0010-effect-instances-buses-and-mixer.md)); one rack keeps the per-slot behaviour described here.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ADR 0003](../decisions/0003-fx-chain-model.md), [ADR 0009](../decisions/0009-effect-parameters-and-chain-latency.md), [ARCHITECTURE §4.6](../ARCHITECTURE.md), [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md), [UI_LAYOUT](../UI_LAYOUT.md)
 

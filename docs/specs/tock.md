@@ -1,6 +1,6 @@
 # Spec: Tock (the click layer)
 
-- Status: Implemented (Phase 4, fourth part; every sound decision below was taken by the agent on the product owner's instruction to decide and keep going, and waits for their ears)
+- Status: Implemented (Phase 4, fourth part; every sound decision below was taken by the agent on the product owner's instruction to decide and keep going, and waits for their ears). Reworked for version 0.2 in [section 8](#8-version-02-trimming-pogo-and-its-own-volume) (approved by the product owner on 2026-10-16, questions 4.1 to 4.5; not implemented yet). Where section 8 and the sections above disagree, section 8 is the 0.2 behaviour.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [voice-note-handling](voice-note-handling.md), [voice-punch-tail](voice-punch-tail.md), [ADR 0008](../decisions/0008-wavetable-selection-and-publishing.md), [ARCHITECTURE §4.3](../ARCHITECTURE.md), [UI_LAYOUT](../UI_LAYOUT.md)
 
@@ -96,3 +96,57 @@ All of these are first choices for the owner's ears:
 3. The Tock goes through the amp envelope and the Punch/Tail gain like the oscillators (ARCHITECTURE says "before the amp envelope"), so a very fast amp attack softens a Tock that starts at 0 ms: raise Start or shorten the amp attack if it is too soft.
 4. Most controls are read at note-on, not live, so a kick never changes character while it rings.
 5. Default Level -12 dB, Decay 25 ms, Tone 0.7.
+
+## 8. Version 0.2: trimming, Pogo and its own volume
+
+Approved by the product owner on 2026-10-16. Stage 6 of the 0.2 plan ([PLAN](../PLAN.md)).
+
+### 8.1 Why
+
+The owner reported that the Tock is barely audible even at full Level. Probable cause (read from the code, not measured): the Tock is added before the amp envelope and before the safety limiter; when the oscillators are already loud, the limiter flattens everything above its ceiling and the click is lost under the hit, which starts at the same instant. The first step of the stage is to confirm this with a measurement (the Tock's energy in the first 10 ms with the oscillators at full level, Tock at +12 dB, with and without the limiter) and write the result here.
+
+### 8.2 What changes for the user
+
+- **Its own volume** (question 4.2 A): a new switch **Amp Env** decides whether the Tock goes through the amp envelope. **Off by default**: the Tock plays at its own Level, untouched by the kick's attack. Projects and presets from 0.1 open with it **on**, so they sound as before (migration, [ADR 0010](../decisions/0010-effect-instances-buses-and-mixer.md) item 8). The Tock still follows the Punch / Tail levels and velocity, and has its own channel in the mixer ([mixer-and-buses](mixer-and-buses.md)), so it can go to a bus of its own.
+- **Load any kick and keep its transient** (question 4.1 A: Synth mode and the four built-in sounds stay). In Sample mode the Tock box shows the **waveform** of the current sample with two handles: **Trim Start** and **Trim End**. Only the part between them plays. They work on the built-in sounds too (at 0 % and 100 %, the defaults, nothing changes). A 0.5 ms fade-in (only when Trim Start is above 0) and a 2 ms fade-out at Trim End keep the cut from clicking.
+- **Detect** button (question 4.4 A): places the handles on the transient of the sample by itself (start just before the first hit, end where the hit's high-frequency energy has fallen by 20 dB, between 5 and 80 ms later). You can then move them.
+- **Pogo** (question 4.3 A): a bipolar knob, -24 to +24 semitones, that bends the Tock's pitch over the length of the part that plays: positive values make it rise as it plays, negative values make it fall. 0 (default) does nothing. In Synth mode it bends the tone of the click. The curve is exponential (fast at first), a first choice for the owner's ears.
+- **Longer samples** (question 4.5 A): your own sample can be up to **10 seconds** (a whole kick), so you can load a full kick and trim it. Files at a sample rate above 48 kHz are converted to 48 kHz when loaded, to keep projects and presets small.
+- Existing controls (Level, Tune, Start, Decay, Tone, Mode, Sample) stay as they are. Decay still fades the Tock out; set it long (200 ms) to hear the trimmed part as it is.
+
+### 8.3 User interface
+
+Tock box (440 x 180 points, unchanged size): row 1: On, Mode, Sample, Load sample..., Detect, Amp Env; row 2: the waveform display (about 60 points high) with the two handles, the part outside them dimmed (Synth mode shows a flat "Synth" label instead); row 3: knobs Level, Tune, Start, Decay, Tone, Pogo. Dragging a handle changes the Trim parameter (so it can be automated and undone); double-click a handle to reset it.
+
+### 8.4 New parameters
+
+| ID | Name | Range | Default | Unit | Skew/Curve | Smoothed | Automatable |
+|---|---|---|---|---|---|---|---|
+| `tock.ampEnv` | Tock Amp Env | off / on | off (on for states from 0.1) | | | at note-on | yes |
+| `tock.trimStart` | Tock Trim Start | 0 to 100, step 0.01 | 0 | % of the sample | linear | at note-on | yes |
+| `tock.trimEnd` | Tock Trim End | 0 to 100, step 0.01 | 100 | % of the sample | linear | at note-on | yes |
+| `tock.pogo` | Tock Pogo | -24 to +24, step 0.01 | 0 | semitones | linear | at note-on | yes |
+
+If Trim End is not at least 1 ms after Trim Start, the Tock plays 1 ms from Trim Start.
+
+### 8.5 DSP / implementation approach
+
+- `Tock::start(settings)` gains `trimStart`, `trimEnd` (fractions) and `pogoSemitones`. Sample mode reads from `trimStart * length` to `trimEnd * length` with the fades above; the pitch offset at time `t` within the played part of length `T` (in output samples, accounting for Tune) is `pogo * (1 - exp(-4 t / T)) / (1 - exp(-4))`, applied to the read rate (Sample) or to the tone frequency (Synth, where `T` is the Decay time).
+- Amp Env off: the voice adds the Tock to the Tock stem after the amp envelope instead of before it (still times Punch/Tail gain and velocity).
+- Detect: `core::detectTransient(const TockSample&)` on the message thread: onset = first sample above -30 dB of the peak, minus 1 ms; end = after the peak, where a 1 ms RMS envelope of the signal high-passed at 1 kHz falls 20 dB below its maximum, clamped to 5..80 ms after the onset. Pure function, unit tested; it writes the two Trim parameters.
+- Import: `kMaxTockSeconds` = 10; above 48 kHz the file is resampled to 48 kHz on the loader thread (windowed-sinc, `juce::WindowedSincInterpolator`); stored samples at most 480000. Restore accepts at most 480000 samples (the 0.1 limit of 384000 is below that, so 0.1 states still load).
+- The waveform display reads a decimated copy of the current sample through `core::TockSelector` (message thread), never the audio objects.
+
+### 8.6 Tests
+
+- The measurement of 8.1, then: with Amp Env off and a slow amp attack (20 ms), the Tock's first 5 ms are as loud as with Amp Env on and a 0 ms attack.
+- Every 0.1 factory preset that uses the Tock (Hardcore Crunch) and a saved 0.1.1 project with the Tock on render the same after migration (the tolerance of [mixer-and-buses](mixer-and-buses.md) section 5).
+- Trim: only the chosen part plays (energy outside it is zero); the fades are there; Trim End before Trim Start plays 1 ms; defaults are bit-identical to 0.1.
+- Pogo: +12 makes the read rate reach about twice the start rate at the end of the part; -12 half; 0 is bit-identical; Synth mode bends the tone.
+- Detect: on synthetic kicks with known onset and click length, the handles land within 1 ms of the onset and within the documented end rule; silence and DC give 0 % and 100 %.
+- Import: a 9-second file loads, an 11-second one is refused ("Too long: at most 10 seconds"), a 96 kHz file is converted to 48 kHz and keeps its pitch; the 0.1 import tests still pass with the new limits.
+- Parameters: new IDs in the released-ID guard.
+
+### 8.7 Out of scope for 0.2
+
+- Several samples layered, a sample editor beyond the two handles, stereo Tock, Pogo with a separate time control (question 4.3 B).

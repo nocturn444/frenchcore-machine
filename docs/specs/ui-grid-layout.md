@@ -1,6 +1,6 @@
 # Spec: Editor grid layout
 
-- Status: Implemented (2026-10-13). Replaces the generic parameter list and the tabs of the first editor versions. The sizes are first choices by the agent.
+- Status: Implemented (2026-10-13). Replaces the generic parameter list and the tabs of the first editor versions. The sizes are first choices by the agent. Version 0.2 changes three boxes without changing the grid: see [section 8](#8-version-02).
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [UI_LAYOUT](../UI_LAYOUT.md), [fx-rack](fx-rack.md), [preset-browser](preset-browser.md), [fx-eq](fx-eq.md)
 
@@ -65,3 +65,13 @@ UI components are not unit tested in this project. What can be tested without a 
 2. The Global box has Output, Root Note, Glide Time and Velocity as knobs and Limiter, Key Track, Glide and Quality as a row of switches and a menu (the sketch left its contents to the agent).
 3. The Punch / Tail box has the Split and the two levels; the Balance knob was removed ([voice-punch-tail](voice-punch-tail.md)).
 4. The Envelope's Time Scale is a knob in the same row as the shape knobs, to leave more height to the display.
+
+## 8. Version 0.2
+
+Approved by the product owner on 2026-10-16 ("it has to fit my screen"; the mixer may go in a tab, the agent's choice). The grid, the window size and the aspect ratio do not change.
+
+- **LFO box → Noise panel** ([noise-oscillator](noise-oscillator.md)).
+- **Effects box → four tabs** at its top (about 24 points high): Mixer, Bus A, Bus B, Main ([mixer-and-buses](mixer-and-buses.md)). The rack tabs scroll vertically when their strips do not fit.
+- **Tock box**: three rows (controls, waveform with Trim handles, knobs), [tock](tock.md) section 8.
+- The Other box keeps the licence notice ([legal-notice](legal-notice.md)).
+- Check, as in section 5: at the design size and at the smallest window (60 %) every control of the new panels is readable and reachable; the tabs and the waveform handles can be clicked at 60 %.

@@ -1,6 +1,6 @@
 # Spec: Parametric EQ effect
 
-- Status: Implemented (Phase 5, third part), reworked on 2026-10-13 from a fixed low shelf / peak / high shelf into a parametric EQ on the product owner's request. Ranges and defaults are first choices by the agent.
+- Status: Implemented (Phase 5, third part), reworked on 2026-10-13 from a fixed low shelf / peak / high shelf into a parametric EQ on the product owner's request. Ranges and defaults are first choices by the agent. Version 0.2 adds Extreme and Key Track per band, [section 8](#8-version-02-extreme-peaks-and-key-track) (approved by the product owner on 2026-10-16, questions 5.1 to 5.3; not implemented yet).
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [fx-chain](fx-chain.md), [fx-distortion](fx-distortion.md), [fx-rack](fx-rack.md), [ARCHITECTURE §4.6](../ARCHITECTURE.md), [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md)
 
@@ -89,3 +89,55 @@ Manual check (Standalone): switch EQ on, drag the dots while the auto-play loop 
 2. The old parameter IDs (`eq.low.*`, `eq.mid.*`, `eq.high.*`) are gone: they never reached a release. A project saved with them ignores those entries and the EQ takes its defaults.
 3. Cookbook biquads, no oversampling, no latency. Cuts are 12 dB per octave.
 4. The response display and draggable dots are part of the first parametric version because a parametric EQ without a picture is hard to use.
+
+## 8. Version 0.2: extreme peaks and Key Track
+
+Approved by the product owner on 2026-10-16. Stage 3 of the 0.2 plan ([PLAN](../PLAN.md)).
+
+### 8.1 What it does for the user
+
+Microwave and hardtekk kicks use very narrow, very loud peaks that "whistle". Two additions per band:
+
+- **Extreme** (question 5.1 A): a switch per band. When on, that band's Gain goes up to **+36 dB** (and down to -36) and its Q up to **50**, for razor-thin, screaming peaks. The other bands keep the normal, comfortable ranges. Switching Extreme on in the window starts the extreme controls at the band's current Gain and Q, so the sound does not jump.
+- **Key Track** (question 5.2: "follow the MIDI like Serum's filters"): a knob per band, 0 to 100 %. At 0 % (default) the band stays where you put it. At 100 % the band's frequency moves one octave for every octave of the note you play, so a peak tuned to the kick on C stays at the same musical place on every other note. Freq is the frequency at C3 (MIDI note 60); in between, it moves part of the way. It follows the note the tail settles on (with glide), not the pitch envelope. With the voice's Key Track off, the tail stays on the Root Note, and so does the band.
+
+Very loud peaks are caught by the safety limiter at the output, as now (question 5.3 A); there is no automatic level compensation inside the EQ.
+
+### 8.2 User interface
+
+Under each band's Type: an **Extreme** switch and a **Key Track** knob. With Extreme on, the band's Gain and Q knobs are replaced by the extreme ones (`shownWhen`, [ADR 0011](../decisions/0011-effect-interface-additions.md)); the response display draws ±36 dB when any band is extreme, and dragging a dot moves the controls the band is using. The display draws the curve at the current note when Key Track is used (C3 when no note is playing).
+
+### 8.3 New parameters
+
+For each band `n` = 1 to 4 (the existing `eq.bn.gain` and `eq.bn.q` keep their released ranges; changing a released range would change automation in saved projects, so the extreme ranges are separate parameters):
+
+| ID | Name | Range | Default | Unit | Skew/Curve | Smoothed | Automatable |
+|---|---|---|---|---|---|---|---|
+| `eq.bn.extreme` | Band n Extreme | off / on | off | | | per block | yes |
+| `eq.bn.xgain` | Band n Extreme Gain | -36 to +36, step 0.1 | 0 | dB | linear | per block | yes |
+| `eq.bn.xq` | Band n Extreme Q | 0.1 to 50, step 0.01 | 1.0 | | skewed, midpoint 2 | per block | yes |
+| `eq.bn.keytrack` | Band n Key Track | 0 to 100, step 0.1 | 0 | % | linear | per block | yes |
+
+The same parameters exist for the copies `eq2` to `eq4` ([mixer-and-buses](mixer-and-buses.md)). The EQ grows from 20 to 36 parameters (within the new limit of 48, [ADR 0011](../decisions/0011-effect-interface-additions.md)). Effect `version` becomes 2; no migration is needed because every new parameter's default reproduces 0.1.
+
+The copy of Gain and Q into the extreme controls when Extreme is switched on is done by the editor on the message thread (a click in the window), not by the effect, so automating the Extreme switch alone does not copy.
+
+### 8.4 DSP / implementation approach
+
+- A band uses `(extreme ? xgain : gain, extreme ? xq : q)`. The Q limit inside the filter design rises from 20 to 50; the frequency limit stays at 0.45 of the sample rate.
+- Key Track: the band's frequency is `freq * 2^(keytrack/100 * noteSemitones / 12)` with `noteSemitones` from the `EffectContext` ([ADR 0011](../decisions/0011-effect-interface-additions.md)), then clamped to 20 Hz..0.45 sr. Coefficients are recomputed when the result changes (once per block).
+- A Q of 50 with +36 dB is a very sharp resonance: the filters stay in `double` and transposed direct form II, which remains stable; the coefficient change per block is accepted as it is today (section 4).
+- `core::EqResponse` and the display read the extreme values and the note through `core` (no DSP object).
+
+### 8.5 Tests
+
+- Defaults bit-identical to 0.1 (Extreme off, Key Track 0), including the migration tests.
+- Extreme bell at +36 dB, Q 50, 1 kHz: +36 dB at the centre (within 1 dB), less than +3 dB at 1.1 kHz; finite and bounded for noise and a loud swept sine at 44.1, 48 and 96 kHz.
+- Key Track 100 %: with note 72 the measured peak is at twice Freq; with 50 % at `freq * 2^0.5`; 0 % does not move; the voice's Key Track off keeps it at the Root Note's offset.
+- Extreme off ignores xgain and xq; Extreme on ignores gain and q.
+- `magnitudeDb` matches the measured response with the new ranges.
+- Layout: the new IDs for `eq` and its copies in the released-ID guard.
+
+### 8.6 Out of scope for 0.2
+
+- Following the pitch envelope (question 5.2 asked for the MIDI note only), automatic gain compensation (5.3 A), more bands.

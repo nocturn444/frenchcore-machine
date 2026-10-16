@@ -1,6 +1,6 @@
 # Spec: Distortion effect
 
-- Status: Implemented (Phase 5, second part; every sound decision below was taken by the agent on the product owner's instruction to decide and keep going, and waits for their ears)
+- Status: Implemented (Phase 5, second part; every sound decision below was taken by the agent on the product owner's instruction to decide and keep going, and waits for their ears). Version 0.2: Bits and Rate are shown only when Type is Bitcrush (`shownWhen`, [ADR 0011](../decisions/0011-effect-interface-additions.md)); no sound change.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [fx-chain](fx-chain.md), [ADR 0009](../decisions/0009-effect-parameters-and-chain-latency.md), [ARCHITECTURE §4.6](../ARCHITECTURE.md), [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md), [MVP_SCOPE](../MVP_SCOPE.md)
 

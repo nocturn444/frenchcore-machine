@@ -14,8 +14,10 @@ This guide was validated by adding Distortion, the EQ and Stereo with it ([fx-di
    The product owner approves what the user hears and sees before implementation.
 2. **Create the folder** `src/dsp/fx/<id>/` with `<Name>Effect.h/.cpp`: a class deriving from `fcm::dsp::Effect` ([`src/dsp/fx/Effect.h`](../src/dsp/fx/Effect.h)):
    - `descriptor()` returns the ID, the display name and a `version` (static data);
+   - (from 0.2) optionally `defaultMix` in the descriptor (0 to 1, default 1) when the effect should not start fully wet, like the Reverb ([ADR 0011](decisions/0011-effect-interface-additions.md));
    - `parameters()` returns a **static** array of `ParameterSpec` (plain data: ID suffix, name, kind `toggle`/`choice`/`integer`/`number`, range, step, default, skew centre, unit, choices). The full ID is `"<id>.<suffix>"`, and a suffix may contain a dot (`low.gain`). Do not declare `enabled` or `mix`: the chain adds them to every effect, off and 100 % by default;
    - `prepare(spec)` allocates everything (buffers, oversamplers); `reset()`, `setParameters(values)`, `setOversampling(factor)` and `process(buffer)` never allocate, lock or wait;
+   - (from 0.2) a control that only matters for some values of a switch or menu of the same effect sets `shownWhen`, so the rack hides it otherwise; an effect that follows the played note overrides `setContext` and reads `noteSemitones` (relative to MIDI note 60);
    - `setParameters` gets the values once per block in the order of `parameters()`, in the units of the spec. It never needs the APVTS;
    - `latencySamples(factor)` is constant for a given factor and does not depend on the parameters or on whether the effect is on. The chain compensates the dry signal by it;
    - replace non-finite samples by 0 and never let one leave the effect.
@@ -30,6 +32,10 @@ This guide was validated by adding Distortion, the EQ and Stereo with it ([fx-di
 5. **Update docs:** the effect's section in `docs/USER_GUIDE.md`, `CHANGELOG.md` under `Unreleased`, the status in `docs/PLAN.md`, and the spec's status.
 6. **Optional: grouping and a picture.** The rack ([fx-rack](specs/fx-rack.md)) lays out your controls by itself. To get one column per group (like the EQ's bands) give the suffixes a dot ("b1.freq") and name the parameters "<Group> <Control>" ("Band 1 Freq"). To show a picture above the controls, add one entry for your effect ID in `src/ui/EffectDecorations.cpp`; the rack code does not change.
 7. **Open a PR** using the template. The effect appears in the Effects box, saves and restores with the project, and takes part in the chain order without any further work.
+
+## Copies (from 0.2)
+
+You write the effect once. The plugin creates four copies of it with the IDs `<id>`, `<id>2`, `<id>3`, `<id>4` and their parameters, and the user can put them in any rack ([ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)). Nothing in your effect may assume there is only one: no static mutable state. Add the copies' IDs to the released-ID list too (the layout test generates them from yours).
 
 ## Rules
 
