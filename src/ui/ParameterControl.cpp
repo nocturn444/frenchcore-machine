@@ -91,6 +91,12 @@ ParameterControl::ParameterControl(juce::AudioProcessorValueTreeState& state, co
     }
 }
 
+void ParameterControl::setWheelAdjusts(bool adjusts)
+{
+    if (slider != nullptr)
+        slider->setScrollWheelEnabled(adjusts);
+}
+
 void ParameterControl::addToggledListener(std::function<void(bool)> listener)
 {
     if (toggle == nullptr)
