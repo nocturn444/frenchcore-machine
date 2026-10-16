@@ -1,6 +1,6 @@
 # Spec: Reverb effect
 
-- Status: Approved (product owner's answers of 2026-10-16, questions 1.1 and 1.4 A: one simple room); not implemented. Version 0.2, stage 4. Ranges, defaults and voicing are first choices by the agent, for the owner's ears.
+- Status: Approved (product owner's answers of 2026-10-16, questions 1.1 and 1.4 A: one simple room); implemented (stage 4, last of the four effects). Ranges, defaults and voicing are first choices by the agent, for the owner's ears.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [mixer-and-buses](mixer-and-buses.md), [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md), [ADR 0011](../decisions/0011-effect-interface-additions.md)
 
@@ -36,6 +36,7 @@ Effect ID `reverb` (copies `reverb2` to `reverb4`). `defaultMix` = 0.3 ([ADR 001
 
 - `fcm::dsp::ReverbEffect` in `src/dsp/fx/reverb/`, one registration line.
 - An 8-line feedback delay network with a Householder feedback matrix (Jot and Chaigne, 1991; Julius O. Smith, "Physical Audio Signal Processing", FDN reverberation). Mutually prime delay lengths between about 10 and 80 ms scaled by Size (0.3x to 1.5x), a few short allpass diffusers before the network, per-line gain set from Decay so the tail falls 60 dB in Decay seconds (`g = 10^(-3 * delay / (decay * sr))`), a one-pole low-pass per line for Damping, slight modulation of two lines to avoid metallic ringing. Two decorrelated output taps for left and right.
+- **Choices made in the implementation (technical, by the agent):** delay lengths 509, 677, 877, 1109, 1409, 1783, 2203 and 2711 samples at 48 kHz (10.6 to 56 ms at scale 1, scaled with the sample rate), Size scaling them from 0.3x to 1.5x; four diffusers of 149, 211, 337 and 419 samples with a coefficient of 0.6; the Damping one-pole coefficient goes from 0 to 0.8; two lines (3 and 6) are modulated by 6 samples at 0.37 and 0.51 Hz; the input is the mono sum of the channels; Size and Pre-delay changes are smoothed over 50 ms (a moving read position with linear interpolation, so changing them while it rings glides instead of clicking). The tail's decay is exact for Damping 0; damped, the high frequencies fall faster than the set Decay by design.
 - Pre-delay: a delay line before the network. Low Cut: a 2nd-order high-pass on the reverb input.
 - All delay lines are allocated in `prepare()` for the longest size at the current sample rate. Size changes crossfade the read positions so they never click.
 - The wet output is the reverb only (the chain's Mix adds the dry). No latency.

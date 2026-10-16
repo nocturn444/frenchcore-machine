@@ -267,6 +267,20 @@ A classic synth filter to carve the kick: take the top off a distorted tail, thi
 
 With the defaults (Low Pass, fully open, no resonance, no drive) switching it on changes almost nothing until you move **Cutoff**.
 
+### Reverb
+
+A simple room reverb. In hardcore kick design it is often put **before** the distortion: the distortion then turns the tail of the reverb into a fuller, longer, noisier kick tail. After the distortion it adds space. The reverb is stereo even though the kick is mono, it adds no delay to the dry sound, and its **Mix starts at 30 %** (not 100 % like the other effects) because a reverb that is only wet is rarely what you want.
+
+| Control | What it does |
+|---|---|
+| **Size** | From a small room to a big hall. |
+| **Decay** | How long the reverb rings (0.1 to 10 seconds). |
+| **Damping** | How dark the tail becomes as it fades: the high frequencies die first. |
+| **Pre-delay** | A short gap before the reverb starts (0 to 200 ms), which keeps the hit dry and clear. |
+| **Low Cut** | Removes the lows from the reverb only, so it does not muddy the sub (default 200 Hz). |
+
+Removing a Reverb from a rack cuts its tail at once. A Reverb on a **Punch** bus is cut at the Split.
+
 ### Compressor
 
 Compression evens out the level of a sound: on a kick it makes the tail denser and louder next to the punch, or (with a fast attack) squashes the punch. It has the usual **On** and **Mix** and adds no delay. The **Multiband** switch chooses between two compressors, and the strip shows only the controls of the one in use.
