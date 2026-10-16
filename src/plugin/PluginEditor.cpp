@@ -84,8 +84,8 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
       pitchPanel(
           owner.getPitchEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
           ui::EnvelopePanel::pitchConfig()),
-      fxRack(owner.getState(), owner.getFxRacks(), dsp::RackId::main, dsp::defaultEffectRegistry()),
-      fxArea(fxRack), lfoPanel("LFO", "Reserved for a later version"),
+      fxArea(owner.getState(), owner.getFxRacks(), dsp::defaultEffectRegistry()),
+      lfoPanel("LFO", "Reserved for a later version"),
       tockPanel(owner.getState(), [&owner](const juce::File& file) { owner.loadUserTockSample(file); }),
       punchTailPanel(owner.getState(), "Punch / Tail"), globalPanel(owner.getState(), "Global"),
       otherPanel("Other", core::legalNotice())

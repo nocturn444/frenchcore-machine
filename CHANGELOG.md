@@ -29,7 +29,7 @@ To be released as 0.1.1: security fixes and finishing touches after the 0.1.0 re
 
 ### Version 0.2.0 (in progress)
 
-Stage 1 of the 0.2 plan (`docs/PLAN.md`): effect copies and racks. Projects and presets from 0.1 open and sound the same (checked by tests against renders made with 0.1.1).
+Stages 1 and 2 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer and the buses. Projects and presets from 0.1 open and sound the same (checked by tests against renders made with 0.1.1).
 
 #### Added
 
@@ -38,10 +38,15 @@ Stage 1 of the 0.2 plan (`docs/PLAN.md`): effect copies and racks. Projects and 
 - Controls that only matter for some settings are hidden otherwise (Distortion's Bits and Rate show only for Bitcrush). `docs/decisions/0011-effect-interface-additions.md`.
 - Test data: renders of every factory preset and two Tock projects made with 0.1.1 (`tests/data/reference-0.1.1`) that later versions must reproduce.
 
+- **Mixer** (Osc 1, Osc 2, Tock; the Noise channel comes with the noise oscillator): Level, Destination (Main, Bus A, Bus B), Mute and Solo per sound, smooth changes. See `docs/specs/mixer-and-buses.md`.
+- **Bus A and Bus B** with their own rows of effects, a Level and **Apply To** Whole, Punch or Tail (the effects are heard only before or after the Split). New parameters `mixer.<source>.dest|mute|solo`, `bus.a|b.level|region`.
+- The **Effects** box has tabs: Mixer, Bus A, Bus B, Main.
+
 #### Changed
 
 - The project state is version 2: the effect order is saved as three racks (`FxRacks`; only Main is used until the mixer arrives). Projects from version 1 are migrated when they load. A project saved with 0.2 does not open correctly in 0.1.
-- The plugin reports 16 samples of latency at the default Quality (4 in 0.1), because it keeps room for four copies of every effect.
+- The plugin reports 32 samples of latency at the default Quality (4 in 0.1): room for four copies of every effect, in the two rows every sound now passes. It does not change with what you route.
+- The engine processes a block that is longer than the host announced in pieces, with MIDI events at the same sample positions.
 
 ## [0.1.0] - 2026-10-13
 

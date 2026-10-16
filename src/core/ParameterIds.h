@@ -48,6 +48,48 @@ inline constexpr const char* kTockStart = "tock.start";
 inline constexpr const char* kTockDecay = "tock.decay";
 inline constexpr const char* kTockTone = "tock.tone";
 
+// The mixer and the two buses (docs/specs/mixer-and-buses.md §3). A source is one of the voice's
+// stems; its Level is the source's own level control (osc1.level, osc2.level, tock.level, ...).
+struct MixerSource
+{
+    int stem;          // dsp::Stem
+    const char* id;    // "osc1": the middle of mixer.osc1.dest
+    const char* name;  // "Osc 1"
+    const char* level; // the ID of the source's own Level parameter
+    const char* on;    // the ID of its On switch (the mixer dims the strip when off)
+};
+
+inline constexpr std::array<MixerSource, 3> kMixerSources{{
+    {0, "osc1", "Osc 1", "osc1.level", "osc1.on"},
+    {1, "osc2", "Osc 2", "osc2.level", "osc2.on"},
+    {3, "tock", "Tock", "tock.level", "tock.on"},
+}};
+
+inline std::string mixerDestination(const MixerSource& source)
+{
+    return std::string("mixer.") + source.id + ".dest";
+}
+inline std::string mixerMute(const MixerSource& source)
+{
+    return std::string("mixer.") + source.id + ".mute";
+}
+inline std::string mixerSolo(const MixerSource& source)
+{
+    return std::string("mixer.") + source.id + ".solo";
+}
+
+// Bus A (index 0) and Bus B (index 1).
+inline constexpr std::array<const char*, 2> kBusPrefixes{"bus.a", "bus.b"};
+inline constexpr std::array<const char*, 2> kBusNames{"Bus A", "Bus B"};
+inline std::string busLevel(int bus)
+{
+    return std::string(kBusPrefixes[static_cast<size_t>(bus)]) + ".level";
+}
+inline std::string busRegion(int bus)
+{
+    return std::string(kBusPrefixes[static_cast<size_t>(bus)]) + ".region";
+}
+
 // "distortion.enabled" for ("distortion", kEffectEnabled). `effectId` is an instance ID: the effect's
 // ID for the first copy ("distortion"), the ID plus the copy number for the others ("distortion2"),
 // see EffectRegistry::instanceId and docs/decisions/0010.

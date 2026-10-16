@@ -86,6 +86,7 @@ void Voice::reset() noexcept
         ghost.gain = 0.0f;
     }
     ghostStep = 0.0f;
+    samplesSinceTrigger = 1.0e12;
 
     for (size_t i = 0; i < kNumOscillators; ++i)
     {
@@ -219,6 +220,7 @@ void Voice::trigger(float velocityGain) noexcept
     else
         core.tock.reset();
     core.samplesSinceNoteOn = 0.0;
+    samplesSinceTrigger = 0.0;
     core.velocityGain = velocityGain;
     core.active = true;
     core.hasRendered = false;
@@ -230,7 +232,7 @@ bool Voice::isActive() const noexcept
            std::any_of(ghosts.begin(), ghosts.end(), [](const Ghost& g) { return g.gain > 0.0f; });
 }
 
-float Voice::render(Core& voiceCore, float settleNote, const Frame& frame) noexcept
+void Voice::render(Core& voiceCore, float settleNote, const Frame& frame, float scale, Stems& stems) noexcept
 {
     voiceCore.hasRendered = true;
     const float pitchOffset = voiceCore.pitch.next() * frame.pitchAmount;
@@ -249,21 +251,22 @@ float Voice::render(Core& voiceCore, float settleNote, const Frame& frame) noexc
     const float punchTailGain = frame.punchGain + (frame.tailGain - frame.punchGain) * s;
     voiceCore.samplesSinceNoteOn += 1.0;
 
+    // What every stem is multiplied by after its own level.
+    const float common = amp * voiceCore.velocityGain * punchTailGain * scale;
+
     // Hz of the settling pitch plus the envelope's offset, then each oscillator's own tuning.
     const float baseNote = settleNote + pitchOffset;
-    float sum = 0.0f;
     for (size_t i = 0; i < kNumOscillators; ++i)
     {
         const auto frequency =
             440.0 * std::exp2((static_cast<double>(baseNote + frame.semitones[i]) - 69.0) / 12.0);
-        sum += voiceCore.oscillators[i].process(frequency) * frame.level[i];
+        stems[i] += voiceCore.oscillators[i].process(frequency) * frame.level[i] * common;
     }
-    // The Tock joins the oscillators before the amp envelope (docs/specs/tock.md).
-    sum += voiceCore.tock.process() * frame.tockLevel;
-    return sum * amp * voiceCore.velocityGain * punchTailGain;
+    // The Tock is shaped by the amp envelope like the oscillators (docs/specs/tock.md).
+    stems[stemTock] += voiceCore.tock.process() * frame.tockLevel * common;
 }
 
-float Voice::process(float settleNote) noexcept
+void Voice::processStems(float settleNote, Stems& stems, float& punchWeight) noexcept
 {
     // Smoothers always advance so a parameter change is never left half-done while the voice is idle.
     Frame frame;
@@ -282,9 +285,9 @@ float Voice::process(float settleNote) noexcept
             ghost.core.oscillators[i].setPosition(position);
     }
 
-    float output = 0.0f;
+    stems.fill(0.0f);
     if (core.active)
-        output += render(core, settleNote, frame);
+        render(core, settleNote, frame, 1.0f, stems);
 
     for (auto& ghost : ghosts)
     {
@@ -292,11 +295,30 @@ float Voice::process(float settleNote) noexcept
             continue;
 
         if (ghost.core.active)
-            output += render(ghost.core, settleNote, frame) * ghost.gain;
+            render(ghost.core, settleNote, frame, ghost.gain, stems);
         ghost.gain = std::max(0.0f, ghost.gain - ghostStep);
     }
 
-    return output;
+    // The punch weight follows the newest kick, whether or not it is still sounding, so an effect
+    // that rings on (a reverb) is cut at the Split like everything else.
+    const double crossfadeSamples = kPunchTailCrossfadeMs * 0.001 * sampleRate;
+    const double splitSamples = static_cast<double>(frame.punchSplitMs) * 0.001 * sampleRate;
+    const double progress = std::clamp(
+        (samplesSinceTrigger - (splitSamples - 0.5 * crossfadeSamples)) / crossfadeSamples, 0.0, 1.0);
+    punchWeight = 1.0f - static_cast<float>(progress * progress * (3.0 - 2.0 * progress));
+    samplesSinceTrigger += 1.0;
+}
+
+float Voice::process(float settleNote) noexcept
+{
+    Stems stems;
+    float weight = 0.0f;
+    processStems(settleNote, stems, weight);
+
+    float sum = 0.0f;
+    for (const float stem : stems)
+        sum += stem;
+    return sum;
 }
 
 } // namespace fcm::dsp

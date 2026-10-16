@@ -2,9 +2,9 @@
 #pragma once
 
 #include "ui/AuditionPanel.h"
+#include "ui/EffectsBox.h"
 #include "ui/EnvelopePanel.h"
 #include "ui/FcmLookAndFeel.h"
-#include "ui/FxRackPanel.h"
 #include "ui/OscillatorPanel.h"
 #include "ui/PresetBar.h"
 #include "ui/SectionPanel.h"
@@ -29,21 +29,6 @@ class TockPanel : public ui::ControlPanel
     std::function<void(const juce::File&)> loadRequested;
     juce::TextButton loadButton{"Load sample..."};
     std::unique_ptr<juce::FileChooser> chooser;
-};
-
-// The box around the FX rack.
-class FxArea : public ui::SectionPanel
-{
-  public:
-    explicit FxArea(ui::FxRackPanel& rackPanel) : SectionPanel("Effects"), rack(rackPanel)
-    {
-        addAndMakeVisible(rack);
-    }
-
-    void resized() override { rack.setBounds(contentArea()); }
-
-  private:
-    ui::FxRackPanel& rack;
 };
 
 // The editor draws everything on a fixed design grid (docs/UI_LAYOUT.md) and scales the whole of it to
@@ -75,8 +60,7 @@ class PluginEditor : public juce::AudioProcessorEditor
     ui::OscillatorPanel osc2;
     ui::EnvelopePanel ampPanel;
     ui::EnvelopePanel pitchPanel;
-    ui::FxRackPanel fxRack;
-    FxArea fxArea;
+    ui::EffectsBox fxArea;
     ui::PlaceholderPanel lfoPanel;
     TockPanel tockPanel;
     ui::ControlPanel punchTailPanel;
