@@ -27,9 +27,9 @@ To be released as 0.1.1: security fixes and finishing touches after the 0.1.0 re
 - The release notes now list the known limitations; the user guide says the Linux build needs glibc 2.38 or newer and that shared projects and presets include your own wavetables and Tock sample.
 
 
-### Version 0.2.0 (in progress)
+### Version 0.2.0 (ready for review; not released)
 
-Stages 1 and 2 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer and the buses. Projects and presets from 0.1 open and sound the same (checked by tests against renders made with 0.1.1).
+Stages 1 to 7 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer and the buses, five new effects (Filter, Transient, Compressor, Reverb, EQ Extreme), the noise oscillator and the Tock rework. Projects and presets from 0.1 open and sound the same (checked by tests against renders made with 0.1.1).
 
 #### Added
 

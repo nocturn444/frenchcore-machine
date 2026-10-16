@@ -40,3 +40,16 @@ A kick about every 0.3 s for 10 s of audio at 48 kHz in blocks of 512, rendered 
 | 8x | 0.3 % | 3.4 % |
 
 Even at 8x with every effect on, one instance needs about 3 % of one core. This is the engine alone: the DAW's own work and the editor are not included, and other CPUs will differ, so treat it as an order of magnitude.
+
+### CPU measurement for version 0.2 (engine only, no DAW)
+
+The same method, in the worst case the 0.2 window allows: all four sources on (Osc 1 and the Tock to Main, Osc 2 to Bus A, Noise to Bus B), all three racks full with eight effects each (one copy of every effect type per rack plus one more Distortion, Compressor and Reverb), every effect on at its default Mix, and every Compressor in Multiband mode. Measured by the agent on 2026-10-16, 10 s of audio at 48 kHz in blocks of 512 on the same kind of machine, a kick every 0.3 s.
+
+| Quality | All 24 effects off | All 24 effects on |
+|---|---|---|
+| 1x | 1.7 % | 10.8 % |
+| 2x (default) | 1.5 % | 13.8 % |
+| 4x | 1.5 % | 17.9 % |
+| 8x | 1.8 % | 19.0 % |
+
+This is the extreme case (every effect of every rack on, with the heaviest compressor mode); a normal kick uses a few effects and needs a fraction of that. Version 0.1's three effects at 2x needed 1.6 %.
