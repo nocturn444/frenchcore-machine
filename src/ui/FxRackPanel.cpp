@@ -67,13 +67,13 @@ FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
     removeButton.onClick = [this]
     {
         // Removing destroys this strip while its own button is handling the click: defer it.
-        juce::Component::SafePointer<FxRackPanel> owner(&rack);
+        juce::Component::SafePointer<FxRackPanel> panel(&rack);
         const auto id = instance;
         juce::MessageManager::callAsync(
-            [owner, id]
+            [panel, id]
             {
-                if (owner != nullptr)
-                    owner->racks.remove(owner->rackId, id);
+                if (panel != nullptr)
+                    panel->racks.remove(panel->rackId, id);
             });
     };
     addAndMakeVisible(duplicateButton);

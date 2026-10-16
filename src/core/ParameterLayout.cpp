@@ -168,6 +168,37 @@ void addTockParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layo
     layout.add(std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::kTockTone), "Tock Tone",
                                                            juce::NormalisableRange<float>{0.0f, 1.0f}, 0.7f));
 }
+void addMixerParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+{
+    // The choice lists are append-only (the saved value is the entry number). Where a source goes is
+    // a parameter so presets and undo carry it, but not automatable: a host moving it per block
+    // would make the routing jump (docs/specs/mixer-and-buses.md section 3).
+    const juce::StringArray destinations{"Main", "Bus A", "Bus B"};
+    for (const auto& source : ParameterIds::kMixerSources)
+    {
+        const juce::String name = source.name;
+        layout.add(std::make_unique<juce::AudioParameterChoice>(
+            id(ParameterIds::mixerDestination(source)), name + " Destination", destinations, 0,
+            juce::AudioParameterChoiceAttributes{}.withAutomatable(false)));
+        layout.add(std::make_unique<juce::AudioParameterBool>(id(ParameterIds::mixerMute(source)),
+                                                              name + " Mute", false));
+        layout.add(std::make_unique<juce::AudioParameterBool>(id(ParameterIds::mixerSolo(source)),
+                                                              name + " Solo", false));
+    }
+
+    const juce::StringArray regions{"Whole", "Punch", "Tail"};
+    for (int bus = 0; bus < 2; ++bus)
+    {
+        const juce::String name = ParameterIds::kBusNames[static_cast<size_t>(bus)];
+        layout.add(std::make_unique<juce::AudioParameterFloat>(
+            id(ParameterIds::busLevel(bus)), name + " Level",
+            juce::NormalisableRange<float>{-48.0f, 12.0f, 0.1f}, 0.0f,
+            juce::AudioParameterFloatAttributes{}.withLabel("dB")));
+        layout.add(std::make_unique<juce::AudioParameterChoice>(id(ParameterIds::busRegion(bus)),
+                                                                name + " Apply To", regions, 0));
+    }
+}
+
 void addEffectParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout,
                          const dsp::EffectRegistry& registry)
 {
@@ -242,6 +273,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout(const 
     for (int index = 0; index < dsp::kNumOscillators; ++index)
         addOscillatorParameters(layout, index);
     addTockParameters(layout);
+    addMixerParameters(layout);
     addEffectParameters(layout, registry);
 
     return layout;

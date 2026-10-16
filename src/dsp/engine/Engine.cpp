@@ -35,6 +35,19 @@ void Engine::prepare(const juce::dsp::ProcessSpec& spec)
     pool.prepare(fxSpec);
     for (auto& rack : racks)
         rack.prepare(pool, fxSpec);
+
+    // The mixer, the buses and their delays (docs/decisions/0010).
+    const int chunk = std::max(1, static_cast<int>(maxBlockSize));
+    const int longestLatency = pool.largestLatencySamples();
+    mixer.prepare(sampleRate);
+    for (auto& bus : buses)
+        bus.prepare(sampleRate, chunk, longestLatency);
+    mainDirectRing.prepare(longestLatency + 1);
+    for (auto& sum : sums)
+        sum.assign(static_cast<size_t>(chunk), 0.0f);
+    punchWeights.assign(static_cast<size_t>(chunk), 0.0f);
+    for (auto& busBuffer : busBuffers)
+        busBuffer.setSize(2, chunk);
     glide.prepare(sampleRate);
     outputGain.reset(sampleRate, kOutputGainSmoothSeconds);
 
@@ -48,6 +61,10 @@ void Engine::reset() noexcept
     pool.reset();
     for (auto& rack : racks)
         rack.reset();
+    mixer.reset();
+    for (auto& bus : buses)
+        bus.reset();
+    mainDirectRing.reset();
     notes.allNotesOff();
     glide.reset();
     voice.reset();
@@ -60,6 +77,9 @@ void Engine::setParameters(const EngineParameters& newParameters) noexcept
 {
     parameters = newParameters;
     voice.setParameters(parameters, snapParameters);
+    mixer.setParameters(parameters.mixer, snapParameters);
+    for (size_t i = 0; i < buses.size(); ++i)
+        buses[i].setParameters(parameters.buses[i], snapParameters);
 
     if (snapParameters)
         outputGain.setCurrentAndTargetValue(parameters.outputGain);
@@ -135,10 +155,19 @@ void Engine::handleMidi(const juce::MidiMessageMetadata& event) noexcept
     }
 }
 
-void Engine::renderSegment(float* output, int numSamples) noexcept
+void Engine::renderStems(int offset, int count) noexcept
 {
-    for (int i = 0; i < numSamples; ++i)
-        output[i] = voice.process(glide.next());
+    Voice::Stems stems;
+    std::array<float, kNumDestinations> routed{};
+    for (int i = offset; i < offset + count; ++i)
+    {
+        float weight = 0.0f;
+        voice.processStems(glide.next(), stems, weight);
+        mixer.process(stems, routed);
+        for (size_t d = 0; d < sums.size(); ++d)
+            sums[d][static_cast<size_t>(i)] = routed[d];
+        punchWeights[static_cast<size_t>(i)] = weight;
+    }
 }
 
 void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& midi) noexcept
@@ -165,29 +194,88 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
         (glide.hasPitch() ? glide.value() : static_cast<float>(parameters.rootNote)) - 60.0f;
     context.tempoBpm = parameters.bpm;
 
-    // The voice is mono: render into the first channel and copy it to the others.
-    float* output = buffer.getWritePointer(0);
-
-    int position = 0;
-    for (const auto event : midi)
+    // The racks are read once for the whole block. An instance can be in one rack only: a rack that
+    // claims one that an earlier rack has is treated as empty (it cannot happen through the plugin's
+    // own state, only through a bug).
+    std::array<std::uint64_t, kNumRacks> packed{};
+    std::uint64_t inRack = 0;
+    for (size_t r = 0; r < racks.size(); ++r)
     {
-        const int eventPosition = std::clamp(event.samplePosition, position, numSamples);
-        renderSegment(output + position, eventPosition - position);
-        position = eventPosition;
-        handleMidi(event);
+        packed[r] = racks[r].value().load();
+        const auto mask = EffectRack::memberMask(packed[r], pool.instanceCount());
+        if ((mask & inRack) != 0)
+            packed[r] = 0;
+        else
+            inRack |= mask;
     }
-    renderSegment(output + position, numSamples - position);
+    pool.setParameters(parameters.effects, parameters.oversamplingFactor, context, inRack);
 
-    for (int channel = 1; channel < channels; ++channel)
-        buffer.copyFrom(channel, 0, buffer, 0, 0, numSamples);
+    const int factor = parameters.oversamplingFactor;
+    const int latency = pool.latencySamples(factor);
+    const int chunkSize = std::max(1, static_cast<int>(maxBlockSize));
+    const auto busIndex = [](RackId id) { return static_cast<size_t>(id); };
 
-    // The effects see the whole block, on every channel.
-    const auto mainRack = racks[static_cast<size_t>(RackId::main)].value().load();
-    pool.setParameters(parameters.effects, parameters.oversamplingFactor, context,
-                       EffectRack::memberMask(mainRack, pool.instanceCount()));
-    racks[static_cast<size_t>(RackId::main)].process(pool, mainRack, parameters.oversamplingFactor, buffer);
+    // A host may hand over more samples than it announced: they are processed in chunks.
+    int position = 0;
+    auto event = midi.begin();
+    for (int start = 0; start < numSamples; start += chunkSize)
+    {
+        const int end = std::min(start + chunkSize, numSamples);
+        const int count = end - start;
 
-    // The chain handles two channels; any further channel (not offered by the plugin's layouts, but
+        // The voice, with the MIDI events that fall in this chunk, into one mono sum per destination.
+        int cursor = start;
+        while (event != midi.end())
+        {
+            const auto metadata = *event;
+            const int eventPosition = std::clamp(metadata.samplePosition, position, numSamples);
+            if (eventPosition >= end && end < numSamples)
+                break;
+            const int inChunk = std::clamp(eventPosition, cursor, end);
+            renderStems(cursor - start, inChunk - cursor);
+            cursor = inChunk;
+            position = eventPosition;
+            handleMidi(metadata);
+            ++event;
+        }
+        renderStems(cursor - start, end - cursor);
+
+        // The buses: each takes its mono sum through its rack of effects.
+        for (size_t b = 0; b < buses.size(); ++b)
+        {
+            auto& busBuffer = busBuffers[b];
+            auto& rack = racks[busIndex(b == 0 ? RackId::busA : RackId::busB)];
+            buses[b].begin(sums[b + 1].data(), punchWeights.data(), count, latency, busBuffer);
+            juce::AudioBuffer<float> view(busBuffer.getArrayOfWritePointers(), 2, count);
+            rack.process(pool, packed[b == 0 ? busIndex(RackId::busA) : busIndex(RackId::busB)], factor,
+                         view);
+        }
+
+        // Main: what was sent straight to it, delayed to line up with the buses, plus the buses.
+        for (int i = 0; i < count; ++i)
+        {
+            const float direct = mainDirectRing.process(sums[0][static_cast<size_t>(i)], latency);
+            for (int c = 0; c < channels; ++c)
+                buffer.getWritePointer(c)[start + i] = direct;
+        }
+        {
+            std::array<float*, 2> pointers{};
+            const int used = std::min(channels, 2);
+            for (int c = 0; c < used; ++c)
+                pointers[static_cast<size_t>(c)] = buffer.getWritePointer(c) + start;
+            juce::AudioBuffer<float> mainView(pointers.data(), used, count);
+            for (size_t b = 0; b < buses.size(); ++b)
+            {
+                juce::AudioBuffer<float> busView(busBuffers[b].getArrayOfWritePointers(), 2, count);
+                buses[b].finish(busView, count, mainView);
+            }
+
+            // The Main rack; the first channels only, as before the racks were three.
+            racks[busIndex(RackId::main)].process(pool, packed[busIndex(RackId::main)], factor, mainView);
+        }
+    }
+
+    // The racks handle two channels; any further channel (not offered by the plugin's layouts, but
     // harmless to cover) repeats the first.
     for (int channel = 2; channel < channels; ++channel)
         buffer.copyFrom(channel, 0, buffer, 0, 0, numSamples);

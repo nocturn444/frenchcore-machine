@@ -56,7 +56,16 @@ class Voice
     // The last held key was released: fades the current kick out with the envelope's short release.
     void release() noexcept { core.amp.release(); }
 
-    // Renders one sample. `settleNote` is the pitch the kick settles on, in MIDI note numbers.
+    using Stems = std::array<float, kNumStems>;
+
+    // Renders one sample into one stem per sound (docs/specs/mixer-and-buses.md §4), each already
+    // through its own level, the amp envelope, the velocity and the Punch / Tail levels, and the
+    // punch weight: 1 in the punch part of the newest kick, 0 in the tail, with the same smooth
+    // change at the Split as the levels. `settleNote` is the pitch the kick settles on, in MIDI
+    // note numbers. The noise stem is silent until the noise oscillator exists.
+    void processStems(float settleNote, Stems& stems, float& punchWeight) noexcept;
+
+    // The sum of the stems: what the voice sounded like before the mixer existed.
     float process(float settleNote) noexcept;
 
     bool isActive() const noexcept;
@@ -93,11 +102,12 @@ class Voice
         float tockLevel;
     };
 
-    float render(Core& voiceCore, float settleNote, const Frame& frame) noexcept;
+    void render(Core& voiceCore, float settleNote, const Frame& frame, float scale, Stems& stems) noexcept;
 
     Core core;
     std::array<Ghost, kMaxGhosts> ghosts;
     float ghostStep = 0.0f;
+    double samplesSinceTrigger = 1.0e12; // of the newest kick, for the punch weight; counts while idle too
 
     double sampleRate = 44100.0;
     const WavetableData* fallbackTable = nullptr; // what prepare() was given

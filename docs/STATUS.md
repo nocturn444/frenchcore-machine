@@ -17,11 +17,12 @@ Last updated: 2026-10-16 (0.2 stage 1).
 | Feedback round 2026-10-13 (Punch/Tail balance removed, EQ made parametric, window rebuilt on the agreed grid and scaled to the window) | Done and merged |
 | 7 Hardening and release | Done. Version 0.1.0 was published on 2026-10-14 with zips for Windows, macOS and Linux. It was tried in FL Studio only (works well, reasonable RAM, saving and presets fine); not tried: automation, other sample rates, the Quality setting, other DAWs. CPU measured offline (3 % of one core at 8x with all effects on) |
 | 0.1.1 security and finishing fixes (JUCE 9.0.4, safe loading of embedded audio and of the DAW state, release zips with licence and checksums, auval in CI, licence notice in the window) | Merged on 2026-10-16 (#34, merged by the agent on the owner's instruction). Not released yet: the owner tags and publishes 0.1.1 when they want |
-| Version 0.2.0 (mixer and buses, effect copies, Filter, Compressor with Multiband, Transient shaper, Reverb, noise oscillator, Tock rework, extreme EQ) | Planned and documented on 2026-10-16 from the owner's answers ([PLAN](PLAN.md), section "Version 0.2.0"). Stage 0 (documentation) merged. Stage 1 (effect copies and the Main rack, state version 2) is built and in review; stages 2 to 7 follow one pull request each (stage 4: one per effect) |
+| Version 0.2.0 (mixer and buses, effect copies, Filter, Compressor with Multiband, Transient shaper, Reverb, noise oscillator, Tock rework, extreme EQ) | Planned and documented on 2026-10-16 from the owner's answers ([PLAN](PLAN.md), section "Version 0.2.0"). Stage 0 (documentation) merged. Stage 1 (effect copies and the Main rack, state version 2) is merged or in review (#36); stage 2 (mixer and buses) is built and in review on top of it; stages 3 to 7 follow one pull request each (stage 4: one per effect) |
 
 ## 2. Open pull requests
 
-- Stage 1 of version 0.2 (branch `feat/effect-copies-racks`): the 0.1.1 reference renders as test data, effect copies, racks and state version 2, the Main rack with Add, duplicate, remove and scrolling. Feature: the owner reviews and merges.
+- Stage 2 of version 0.2 (branch `feat/mixer-and-buses`, stacked on stage 1): voice stems, the mixer (Level, Destination, Mute, Solo), Bus A and Bus B with Level and Apply To, the latency model of ADR 0010, and the Effects box tabs. Feature: the owner reviews and merges, after stage 1.
+- Stage 1 of version 0.2 (branch `feat/effect-copies-racks`, #36): the 0.1.1 reference renders as test data, effect copies, racks and state version 2, the Main rack with Add, duplicate, remove and scrolling. Feature: the owner reviews and merges.
 
 Everything else is merged into `main`, including 0.1.1 (#34) and the 0.2 documentation.
 
@@ -63,6 +64,7 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-16 | 0.2 sound starting points for the owner's ears: Filter (TPT state variable), Compressor (OTT-like band curves to be voiced by ear), Transient shaper (envelope difference), Reverb (8-line FDN, Mix 30 %), eight generated noises, the Pogo curve, the Detect rule. | `docs/specs/fx-*.md`, `noise-oscillator.md`, `tock.md` §8 |
 | 2026-10-16 | The EQ's extreme ranges are separate parameters (`eq.bN.xgain`, `eq.bN.xq`) because changing the range of a released parameter would change automation in saved projects. | `docs/specs/fx-eq.md` §8 |
 | 2026-10-16 | Stage 1 choices: the effects a new project starts with in Main are marked on the effect itself (`inDefaultMain`), so new effects never change the default; an effect ID cannot be another one plus 2, 3 or 4; every rack pads to the latency of the whole pool (the plugin now reports 16 samples at 2x, four copies of Distortion's 4); duplicate copies every setting including On; removing an effect cuts it at once; the 0.1.1 reference renders are committed as test data (about 50 KB each, left channel, 0.3 s) and must match within 1e-6. | `docs/specs/mixer-and-buses.md` section 4 |
+| 2026-10-16 | Stage 2 choices: the Noise channel is added to the mixer when the noise oscillator exists (the voice already has its silent stem); the punch weight follows the newest kick even after it ends, so a reverb on a Punch bus is cut at the Split; the engine renders in chunks of the announced block size (a longer host block gives the same sound); bus racks always run so tails ring out; the plugin reports twice the pool's latency (32 samples at 2x, always the same). | `docs/specs/mixer-and-buses.md` section 4 |
 | 2026-10-16 | The mixer goes in a tab of the Effects box and the noise in the free LFO box, so the window keeps its size (owner: "it has to fit my screen"). | `docs/specs/ui-grid-layout.md` §8 |
 
 ## 4. What the owner needs to do or listen to
@@ -88,7 +90,8 @@ Stage 1 of 0.2 (effect copies), to try in the Standalone:
 - Open the Effects box: scroll it, press **+ Add effect** and add a second Distortion; it appears as "Distortion 2" at the end, on, with default settings. Try **++** (duplicate) and **x** (remove) on a strip, and drag a strip by its bar. Tell the agent if the buttons are where you want them.
 - Load each factory preset and an old project or preset of yours from 0.1: they should sound exactly as before (the tests compare them with the 0.1.1 sound).
 - Switch Distortion's Type to Bitcrush: Bits and Rate appear; with any other Type they are hidden.
-- The buses and the mixer are not there yet: stage 2.
+- Stage 2 (mixer and buses): open the **Mixer** tab. Send Osc 1 to **Bus A**, open the **Bus A** tab, add a Distortion and set **Apply To** to **Tail**: only the tail should be distorted. Try **Punch**, and a Reverb later when it exists. Solo Osc 2 (switch it on first), mute a sound, move Osc 2 alone to Bus B and put an EQ there. Nothing should click when you switch; the bus **Level** at -48 is silence.
+- The Noise channel of the mixer comes with the noise oscillator (stage 5).
 
 Things to listen to (sound):
 

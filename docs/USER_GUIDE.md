@@ -194,6 +194,18 @@ The Sync switch is saved with the shape, but a DAW cannot automate it.
 
 The shapes are saved with your project, so the kick comes back exactly as you left it. The two envelopes cannot be automated point by point, but Time Scale and Amount can.
 
+## Mixer and buses
+
+The **Effects** box has four tabs at its top: **Mixer**, **Bus A**, **Bus B** and **Main**. (A new window opens on Main.)
+
+- **Mixer**: one strip for each sound of the kick (Osc 1, Osc 2 and the Tock; the Noise joins later in 0.2). Each strip has the sound's **Level** (the same control as on its own panel: turning one turns the other), **Destination** (**Main**, **Bus A** or **Bus B**, default Main), and **Mute** and **Solo**. Solo on any strip silences every strip that is not soloed. A sound that is switched off is drawn dimmed. Switching is smooth, with no clicks.
+- **Bus A and Bus B** (on the right of the Mixer): each has a **Level** (-48 to +12 dB, default 0; -48 is silence) and **Apply To**: **Whole** (default), **Punch** or **Tail**. All of the sound goes into the bus; with Punch, the bus's effects are heard only in the punch part of the kick (before the Split time of the Punch / Tail box) and after it you hear what went in, untouched; with Tail it is the other way round. The change at the Split takes 4 ms. A reverb on a Punch bus therefore stops at the Split.
+- **Bus A, Bus B and Main tabs**: each is a row of effects like the one described below: **+ Add effect**, **++**, **x**, drag to reorder. Bus A and Bus B end in Main; Main has its own row and then goes to the Output gain and the safety limiter.
+
+Examples: send everything to **Bus A**, set **Apply To** to **Tail** and put a Distortion there, to distort only the tail; send **Osc 2** alone to **Bus B** and put an EQ there, to EQ only that layer.
+
+The delay your DAW is told about (32 samples at the default Quality) never changes with what you route, switch on or add.
+
 ## Effects
 
 After the oscillators and the Tock, the kick goes through a row of effects, which starts with Distortion, EQ and Stereo. They live in the **Effects** box on the right, and every one works the same way:
@@ -221,7 +233,7 @@ The first effect. Switch it on with **Distortion On** (the Distortion column of 
 | **Rate** | Bitcrush only (shown only when Type is Bitcrush): rate reduction, 1x (none) to 32x. |
 | **Mix** | How much distorted sound you hear against the clean kick. |
 
-The clipping types are oversampled according to **Quality** to avoid harsh aliasing; Bitcrush is not, because its roughness is the point. Changing **Type** while a kick rings can click, so set it before you play. With effects in the plugin, your DAW is told about a small delay (16 samples at the default Quality, because the plugin keeps room for four copies of every effect) that it compensates; nothing shifts when you switch an effect on or off.
+The clipping types are oversampled according to **Quality** to avoid harsh aliasing; Bitcrush is not, because its roughness is the point. Changing **Type** while a kick rings can click, so set it before you play. With effects in the plugin, your DAW is told about a small delay (32 samples at the default Quality: the plugin keeps room for four copies of every effect, and every sound passes two rows of that size) that it compensates; nothing shifts when you switch an effect on or off.
 
 ### EQ
 

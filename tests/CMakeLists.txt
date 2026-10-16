@@ -8,6 +8,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/AuditionTests.cpp
     dsp/BreakpointEnvelopeTests.cpp
     dsp/EffectRackTests.cpp
+    dsp/MixerBusTests.cpp
     dsp/fx/DistortionTests.cpp
     dsp/fx/EqTests.cpp
     dsp/fx/StereoTests.cpp
@@ -44,6 +45,7 @@ target_sources(fcm_core_tests PRIVATE
     core/EnvelopeStateTests.cpp
     core/EqResponseTests.cpp
     core/FxCoreTests.cpp
+    core/MixerParameterTests.cpp
     core/ParameterTests.cpp
     core/PresetTests.cpp
     core/ProjectStateTests.cpp
