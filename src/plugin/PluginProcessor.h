@@ -4,7 +4,7 @@
 #include "core/AuditionState.h"
 #include "core/EngineParameterReader.h"
 #include "core/EnvelopeState.h"
-#include "core/FxOrderState.h"
+#include "core/FxRackState.h"
 #include "core/PresetManager.h"
 #include "core/ProjectState.h"
 #include "core/TempoState.h"
@@ -64,7 +64,7 @@ class PluginProcessor : public juce::AudioProcessor,
     // In the Standalone it is the BPM control itself, so it is right even before audio runs.
     float currentTempo() const noexcept { return isStandalone() ? auditionState.getBpm() : tempoState.get(); }
     core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
-    core::FxOrderState& getFxOrder() noexcept { return fxOrder; }
+    core::FxRackState& getFxRacks() noexcept { return fxRacks; }
     core::PresetManager& getPresets() noexcept { return presetManager; }
 
     core::WavetableSelector& selectorFor(int oscillator) noexcept
@@ -99,8 +99,11 @@ class PluginProcessor : public juce::AudioProcessor,
     juce::String lastWavetableMessage;
     juce::ChangeBroadcaster wavetableBroadcaster;
     dsp::Engine engine;
-    // The order of the effects, which the engine's chain reads (docs/specs/fx-chain.md).
-    core::FxOrderState fxOrder{dsp::defaultEffectRegistry(), engine.fxOrder()};
+    // What is in each rack, which the engine reads (docs/specs/mixer-and-buses.md).
+    core::FxRackState fxRacks{state,
+                              dsp::defaultEffectRegistry(),
+                              {&engine.rackValue(dsp::RackId::busA), &engine.rackValue(dsp::RackId::busB),
+                               &engine.rackValue(dsp::RackId::main)}};
 
     // Standalone only. The host's MIDI is copied here together with the audition events; the
     // capacity is reserved in prepareToPlay so processBlock does not allocate.

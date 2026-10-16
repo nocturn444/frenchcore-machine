@@ -171,55 +171,62 @@ void addTockParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layo
 void addEffectParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout,
                          const dsp::EffectRegistry& registry)
 {
+    // Every effect exists as a fixed pool of copies (docs/decisions/0010): the first keeps the 0.1
+    // IDs and names, the others add the copy number to both.
     for (int index = 0; index < registry.count(); ++index)
     {
-        const auto& descriptor = *registry.descriptor(index);
-        const juce::String name{std::string(descriptor.displayName)};
-
-        layout.add(std::make_unique<juce::AudioParameterBool>(
-            id(ParameterIds::effect(descriptor.id, ParameterIds::kEffectEnabled)), name + " On", false));
-        layout.add(std::make_unique<juce::AudioParameterFloat>(
-            id(ParameterIds::effect(descriptor.id, ParameterIds::kEffectMix)), name + " Mix",
-            juce::NormalisableRange<float>{0.0f, 100.0f, 1.0f}, 100.0f,
-            juce::AudioParameterFloatAttributes{}.withLabel("%")));
-
-        for (const auto& spec : registry.parameters(index))
+        for (int copy = 1; copy <= dsp::kInstancesPerEffect; ++copy)
         {
-            const auto parameterId = id(ParameterIds::effect(descriptor.id, spec.idSuffix));
-            const juce::String parameterName = name + " " + juce::String(std::string(spec.name));
-            const auto unit = juce::String(std::string(spec.unit));
+            const auto& descriptor = *registry.descriptor(index);
+            const std::string instance = registry.instanceId(dsp::EffectRegistry::instanceIndex(index, copy));
+            const juce::String name = juce::String(std::string(descriptor.displayName)) +
+                                      (copy > 1 ? " " + juce::String(copy) : juce::String());
 
-            switch (spec.kind)
+            layout.add(std::make_unique<juce::AudioParameterBool>(
+                id(ParameterIds::effect(instance, ParameterIds::kEffectEnabled)), name + " On", false));
+            layout.add(std::make_unique<juce::AudioParameterFloat>(
+                id(ParameterIds::effect(instance, ParameterIds::kEffectMix)), name + " Mix",
+                juce::NormalisableRange<float>{0.0f, 100.0f, 1.0f}, descriptor.defaultMix * 100.0f,
+                juce::AudioParameterFloatAttributes{}.withLabel("%")));
+
+            for (const auto& spec : registry.parameters(index))
             {
-            case dsp::ParameterKind::toggle:
-                layout.add(std::make_unique<juce::AudioParameterBool>(parameterId, parameterName,
-                                                                      spec.defaultValue >= 0.5f));
-                break;
-            case dsp::ParameterKind::choice:
-            {
-                juce::StringArray choices;
-                for (const auto& choice : spec.choices)
-                    choices.add(juce::String(std::string(choice)));
-                layout.add(std::make_unique<juce::AudioParameterChoice>(parameterId, parameterName, choices,
-                                                                        static_cast<int>(spec.defaultValue)));
-                break;
-            }
-            case dsp::ParameterKind::integer:
-                layout.add(std::make_unique<juce::AudioParameterInt>(
-                    parameterId, parameterName, static_cast<int>(spec.minimum),
-                    static_cast<int>(spec.maximum), static_cast<int>(spec.defaultValue),
-                    juce::AudioParameterIntAttributes{}.withLabel(unit)));
-                break;
-            case dsp::ParameterKind::number:
-            {
-                juce::NormalisableRange<float> range{spec.minimum, spec.maximum, spec.step};
-                if (spec.skewCentre > spec.minimum && spec.skewCentre < spec.maximum)
-                    range.setSkewForCentre(spec.skewCentre);
-                layout.add(std::make_unique<juce::AudioParameterFloat>(
-                    parameterId, parameterName, range, spec.defaultValue,
-                    juce::AudioParameterFloatAttributes{}.withLabel(unit)));
-                break;
-            }
+                const auto parameterId = id(ParameterIds::effect(instance, spec.idSuffix));
+                const juce::String parameterName = name + " " + juce::String(std::string(spec.name));
+                const auto unit = juce::String(std::string(spec.unit));
+
+                switch (spec.kind)
+                {
+                case dsp::ParameterKind::toggle:
+                    layout.add(std::make_unique<juce::AudioParameterBool>(parameterId, parameterName,
+                                                                          spec.defaultValue >= 0.5f));
+                    break;
+                case dsp::ParameterKind::choice:
+                {
+                    juce::StringArray choices;
+                    for (const auto& choice : spec.choices)
+                        choices.add(juce::String(std::string(choice)));
+                    layout.add(std::make_unique<juce::AudioParameterChoice>(
+                        parameterId, parameterName, choices, static_cast<int>(spec.defaultValue)));
+                    break;
+                }
+                case dsp::ParameterKind::integer:
+                    layout.add(std::make_unique<juce::AudioParameterInt>(
+                        parameterId, parameterName, static_cast<int>(spec.minimum),
+                        static_cast<int>(spec.maximum), static_cast<int>(spec.defaultValue),
+                        juce::AudioParameterIntAttributes{}.withLabel(unit)));
+                    break;
+                case dsp::ParameterKind::number:
+                {
+                    juce::NormalisableRange<float> range{spec.minimum, spec.maximum, spec.step};
+                    if (spec.skewCentre > spec.minimum && spec.skewCentre < spec.maximum)
+                        range.setSkewForCentre(spec.skewCentre);
+                    layout.add(std::make_unique<juce::AudioParameterFloat>(
+                        parameterId, parameterName, range, spec.defaultValue,
+                        juce::AudioParameterFloatAttributes{}.withLabel(unit)));
+                    break;
+                }
+                }
             }
         }
     }

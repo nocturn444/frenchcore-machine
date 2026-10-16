@@ -14,6 +14,9 @@ constexpr double kSmoothSeconds = 0.020;
 constexpr float kDriveDbPerPercent = 0.48f; // 100 % = 48 dB
 constexpr double kDcBlockerHz = 5.0;
 
+// Bits and Rate matter only for Bitcrush (bit 4 = the Type entry number).
+constexpr unsigned kBitcrushOnly = 1u << static_cast<int>(DistortionEffect::Type::bitcrush);
+
 constexpr std::string_view kTypeNames[] = {"Soft Clip", "Hard Clip", "Overdrive", "Foldback", "Bitcrush"};
 
 // Indices into the values given to setParameters(), in the order of parameters().
@@ -36,7 +39,7 @@ float finiteOrZero(float x) noexcept
 
 const EffectDescriptor& DistortionEffect::descriptor() const
 {
-    static const EffectDescriptor d{"distortion", "Distortion", 1};
+    static const EffectDescriptor d{"distortion", "Distortion", 1, 1.0f, true};
     return d;
 }
 
@@ -49,8 +52,30 @@ std::span<const ParameterSpec> DistortionEffect::parameters() const
         {"pregain", "Pre-gain", ParameterKind::number, -24.0f, 24.0f, 0.1f, 0.0f, 0.0f, "dB", {}},
         {"postgain", "Post-gain", ParameterKind::number, -48.0f, 12.0f, 0.1f, -6.0f, 0.0f, "dB", {}},
         {"tone", "Tone", ParameterKind::number, 0.0f, 100.0f, 1.0f, 100.0f, 0.0f, "%", {}},
-        {"bits", "Bits", ParameterKind::integer, 2.0f, 16.0f, 1.0f, 8.0f, 0.0f, "bits", {}},
-        {"rate", "Rate", ParameterKind::number, 1.0f, 32.0f, 0.1f, 4.0f, 4.0f, "x", {}},
+        {"bits",
+         "Bits",
+         ParameterKind::integer,
+         2.0f,
+         16.0f,
+         1.0f,
+         8.0f,
+         0.0f,
+         "bits",
+         {},
+         "type",
+         kBitcrushOnly},
+        {"rate",
+         "Rate",
+         ParameterKind::number,
+         1.0f,
+         32.0f,
+         0.1f,
+         4.0f,
+         4.0f,
+         "x",
+         {},
+         "type",
+         kBitcrushOnly},
     };
     return specs;
 }

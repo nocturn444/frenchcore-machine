@@ -16,6 +16,7 @@ using fcm::core::StateLoadResult;
 using fcm::dsp::AmpKnob;
 using fcm::dsp::BreakpointEnvelope;
 using fcm::dsp::EnvelopeKind;
+using fcm::dsp::RackId;
 namespace Ids = fcm::core::ParameterIds;
 
 namespace
@@ -52,10 +53,13 @@ struct Rig
 
     juce::ScopedJuceInitialiser_GUI juceInitialiser;
     fcm::test::TestProcessor processor;
-    std::atomic<std::uint64_t> packed{0};
+    std::atomic<std::uint64_t> packedBusA{0};
+    std::atomic<std::uint64_t> packedBusB{0};
+    std::atomic<std::uint64_t> packedMain{0};
     fcm::core::EnvelopeState amp{EnvelopeKind::amp};
     fcm::core::EnvelopeState pitch{EnvelopeKind::pitch};
-    fcm::core::FxOrderState fx{fcm::dsp::defaultEffectRegistry(), packed};
+    fcm::core::FxRackState fx{
+        processor.state, fcm::dsp::defaultEffectRegistry(), {&packedBusA, &packedBusB, &packedMain}};
     fcm::core::WavetableSelector wavetable1{processor.state, 0};
     fcm::core::WavetableSelector wavetable2{processor.state, 1};
     fcm::core::TockSelector tock{processor.state};
@@ -94,7 +98,9 @@ void personalise(Rig& rig)
         });
     rig.pitch.set(fcm::dsp::EnvelopePresets::all(EnvelopeKind::pitch)[1].envelope);
 
-    rig.fx.set({"stereo", "distortion", "eq"});
+    rig.fx.move(RackId::main, 2, 0); // Stereo first
+    rig.fx.add(RackId::busA, 0);     // a second kind of content: Distortion on Bus A
+    rig.fx.add(RackId::busA, 0);
 
     REQUIRE(rig.wavetable1.loadUser(sineFrames(3), "Osc One"));
     REQUIRE(rig.wavetable2.loadUser(sineFrames(1), "Osc Two"));
@@ -154,7 +160,8 @@ TEST_CASE("A fresh state captures with its version and every piece that exists",
     REQUIRE(static_cast<int>(tree["stateVersion"]) == fcm::core::kStateVersion);
     REQUIRE(tree.getChildWithName("AmpEnvelope").isValid());
     REQUIRE(tree.getChildWithName("PitchEnvelope").isValid());
-    REQUIRE(tree.getChildWithName("FxChain").isValid());
+    REQUIRE(tree.getChildWithName("FxRacks").isValid());
+    REQUIRE_FALSE(tree.getChildWithName("FxChain").isValid());
     // Nothing user-loaded yet.
     REQUIRE_FALSE(tree.getChildWithName("UserWavetable1").isValid());
     REQUIRE_FALSE(tree.getChildWithName("UserTockSample").isValid());
@@ -185,12 +192,14 @@ TEST_CASE("Everything survives a save and a load into a fresh instance", "[core]
     REQUIRE(target.amp.get() == source.amp.get());
     REQUIRE(target.amp.get().isSynced());
     REQUIRE(target.pitch.get() == source.pitch.get());
-    REQUIRE(target.fx.ids() == source.fx.ids());
+    for (const auto rack : {RackId::busA, RackId::busB, RackId::main})
+        REQUIRE(target.fx.ids(rack) == source.fx.ids(rack));
     REQUIRE(target.wavetable1.userName() == "Osc One");
     REQUIRE(target.wavetable2.userName() == "Osc Two");
     REQUIRE(target.wavetable1.displayFrames() == source.wavetable1.displayFrames());
     REQUIRE(target.tock.userName() == "my tock");
-    REQUIRE(target.packed.load() == source.packed.load());
+    REQUIRE(target.packedMain.load() == source.packedMain.load());
+    REQUIRE(target.packedBusA.load() == source.packedBusA.load());
 
     // A second round trip changes nothing.
     Rig again;
@@ -209,7 +218,8 @@ TEST_CASE("A state loaded into a used instance replaces everything that was ther
     Rig target;
     target.setParameter(Ids::kOutputGain, 6.0f);
     target.setParameter("stereo.enabled", 1.0f);
-    target.fx.set({"eq", "stereo", "distortion"});
+    target.fx.move(RackId::main, 0, 2);
+    target.fx.add(RackId::busB, 1);
     REQUIRE(target.wavetable2.loadUser(sineFrames(2), "Other"));
 
     REQUIRE(target.project.restore(saved) == StateLoadResult::loaded);
@@ -256,7 +266,8 @@ TEST_CASE("Controls that a saved state does not mention take their defaults", "[
     // ...and the other pieces: default envelopes, registration order, no user data.
     REQUIRE(rig.amp.get() == BreakpointEnvelope(EnvelopeKind::amp));
     REQUIRE(rig.pitch.get() == BreakpointEnvelope(EnvelopeKind::pitch));
-    REQUIRE(rig.fx.ids().front() == fcm::dsp::defaultEffectRegistry().descriptor(0)->id);
+    REQUIRE(rig.fx.ids(RackId::main) == std::vector<std::string>{"distortion", "eq", "stereo"});
+    REQUIRE(rig.fx.ids(RackId::busA).empty());
     REQUIRE_FALSE(rig.wavetable1.hasUser());
     REQUIRE_FALSE(rig.wavetable2.hasUser());
     REQUIRE_FALSE(rig.tock.hasUser());
@@ -295,7 +306,7 @@ TEST_CASE("A damaged node never fails the load of the rest", "[core][project][da
 
     // An envelope with a NaN, an order of unknown IDs and a wavetable that is not base64.
     tree.getChildWithName("AmpEnvelope").getChild(0).setProperty("time", "nan", nullptr);
-    tree.getChildWithName("FxChain").setProperty("order", "nothing,unknown,more", nullptr);
+    tree.getChildWithName("FxRacks").getChild(2).setProperty("effects", "nothing,unknown,more", nullptr);
     tree.getChildWithName("UserWavetable1").setProperty("frames", "!!!not base64!!!", nullptr);
     tree.getChildWithName("UserTockSample").setProperty("sampleRate", 3.0, nullptr);
 
@@ -303,8 +314,7 @@ TEST_CASE("A damaged node never fails the load of the rest", "[core][project][da
     REQUIRE(target.project.restore(tree) == StateLoadResult::loaded);
     REQUIRE_THAT(target.getParameter(Ids::kOutputGain), WithinAbs(-9.0, 1.0e-3)); // the rest loaded
     REQUIRE(target.amp.get() == BreakpointEnvelope(EnvelopeKind::amp));           // damaged: default
-    REQUIRE(target.fx.ids() == target.fx.ids());
-    REQUIRE(target.fx.ids().front() == fcm::dsp::defaultEffectRegistry().descriptor(0)->id);
+    REQUIRE(target.fx.ids(RackId::main).empty()); // only unknown IDs: nothing is left of the rack
     REQUIRE_FALSE(target.wavetable1.hasUser());
     REQUIRE(target.wavetable2.hasUser()); // the intact one
     REQUIRE_FALSE(target.tock.hasUser());
@@ -365,4 +375,38 @@ TEST_CASE("A newer version loads what it knows", "[core][project]")
     REQUIRE_THAT(target.getParameter(Ids::kOutputGain), WithinAbs(-9.0, 1.0e-3));
     // Saved again it is a state of this version.
     REQUIRE(static_cast<int>(target.project.capture()["stateVersion"]) == fcm::core::kStateVersion);
+}
+
+TEST_CASE("A version 1 project opens with its effects in the Main rack and its settings",
+          "[core][project][migration]")
+{
+    Rig source;
+    source.setParameter("distortion.enabled", 1.0f);
+    source.setParameter("distortion.drive", 61.0f);
+    source.setParameter("eq.enabled", 1.0f);
+
+    // Make it look like a saved 0.1 project: version 1, the effect order in a FxChain node, no racks.
+    auto old = source.project.capture();
+    old.setProperty("stateVersion", 1, nullptr);
+    old.removeChild(old.getChildWithName("FxRacks"), nullptr);
+    juce::ValueTree chain("FxChain");
+    chain.setProperty("order", "stereo,eq,distortion", nullptr);
+    old.appendChild(chain, nullptr);
+
+    Rig target;
+    target.fx.add(RackId::busA, 1); // something that must not survive the load
+    REQUIRE(target.project.restore(old) == StateLoadResult::loaded);
+
+    REQUIRE(target.fx.ids(RackId::main) == std::vector<std::string>{"stereo", "eq", "distortion"});
+    REQUIRE(target.fx.ids(RackId::busA).empty());
+    REQUIRE(target.fx.ids(RackId::busB).empty());
+    REQUIRE_THAT(target.getParameter("distortion.drive"), WithinAbs(61.0, 1.0e-3));
+    REQUIRE(target.getParameter("eq.enabled") == 1.0f);
+    REQUIRE(target.getParameter("eq2.enabled") == 0.0f); // the new copies start at their defaults
+
+    // Saving it again writes version 2 with the racks and no FxChain.
+    const auto saved = target.project.capture();
+    REQUIRE(static_cast<int>(saved["stateVersion"]) == 2);
+    REQUIRE(saved.getChildWithName("FxRacks").isValid());
+    REQUIRE_FALSE(saved.getChildWithName("FxChain").isValid());
 }

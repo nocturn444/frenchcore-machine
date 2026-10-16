@@ -27,7 +27,7 @@ juce::ValueTree ProjectState::capture() const
 
     putNode(tree, parts.ampEnvelope.toValueTree());
     putNode(tree, parts.pitchEnvelope.toValueTree());
-    putNode(tree, parts.fxOrder.toValueTree());
+    putNode(tree, parts.fxRacks.toValueTree());
     for (auto* wavetable : parts.wavetables)
         putNode(tree, wavetable->toValueTree());
     putNode(tree, parts.tock.toValueTree());
@@ -45,7 +45,7 @@ StateLoadResult ProjectState::restore(const juce::ValueTree& saved)
     parts.ampEnvelope.restoreFrom(saved.getChildWithName(EnvelopeState::nodeType(dsp::EnvelopeKind::amp)));
     parts.pitchEnvelope.restoreFrom(
         saved.getChildWithName(EnvelopeState::nodeType(dsp::EnvelopeKind::pitch)));
-    parts.fxOrder.restoreFrom(saved.getChildWithName(FxOrderState::nodeType()));
+    parts.fxRacks.restoreFrom(saved.getChildWithName(FxRackState::nodeType()));
     parts.tock.restoreFrom(saved.getChildWithName("UserTockSample"));
     parts.tock.update();
 

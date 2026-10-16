@@ -20,7 +20,7 @@ float finiteOrZero(float x) noexcept
 
 const EffectDescriptor& EqEffect::descriptor() const
 {
-    static const EffectDescriptor d{"eq", "EQ", 1};
+    static const EffectDescriptor d{"eq", "EQ", 1, 1.0f, true};
     return d;
 }
 

@@ -31,7 +31,10 @@ void Engine::prepare(const juce::dsp::ProcessSpec& spec)
         sineTable = WavetableData::makeSine();
 
     voice.prepare(sampleRate, sineTable.get());
-    fx.prepare({sampleRate, static_cast<int>(maxBlockSize), static_cast<int>(numChannels)});
+    const EffectSpec fxSpec{sampleRate, static_cast<int>(maxBlockSize), static_cast<int>(numChannels)};
+    pool.prepare(fxSpec);
+    for (auto& rack : racks)
+        rack.prepare(pool, fxSpec);
     glide.prepare(sampleRate);
     outputGain.reset(sampleRate, kOutputGainSmoothSeconds);
 
@@ -42,7 +45,9 @@ void Engine::prepare(const juce::dsp::ProcessSpec& spec)
 
 void Engine::reset() noexcept
 {
-    fx.reset();
+    pool.reset();
+    for (auto& rack : racks)
+        rack.reset();
     notes.allNotesOff();
     glide.reset();
     voice.reset();
@@ -154,6 +159,12 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
     voice.setWavetables(tables);
     voice.setTockSample(tockSource != nullptr ? tockSource->acquire() : nullptr);
 
+    // What effects may want to know about the note: the pitch the tail is settling on, now.
+    EffectContext context;
+    context.noteSemitones =
+        (glide.hasPitch() ? glide.value() : static_cast<float>(parameters.rootNote)) - 60.0f;
+    context.tempoBpm = parameters.bpm;
+
     // The voice is mono: render into the first channel and copy it to the others.
     float* output = buffer.getWritePointer(0);
 
@@ -171,8 +182,10 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
         buffer.copyFrom(channel, 0, buffer, 0, 0, numSamples);
 
     // The effects see the whole block, on every channel.
-    fx.setParameters(parameters.effects, parameters.oversamplingFactor);
-    fx.process(buffer);
+    const auto mainRack = racks[static_cast<size_t>(RackId::main)].value().load();
+    pool.setParameters(parameters.effects, parameters.oversamplingFactor, context,
+                       EffectRack::memberMask(mainRack, pool.instanceCount()));
+    racks[static_cast<size_t>(RackId::main)].process(pool, mainRack, parameters.oversamplingFactor, buffer);
 
     // The chain handles two channels; any further channel (not offered by the plugin's layouts, but
     // harmless to cover) repeats the first.
