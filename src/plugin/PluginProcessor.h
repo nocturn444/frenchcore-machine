@@ -66,6 +66,8 @@ class PluginProcessor : public juce::AudioProcessor,
     core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
     core::FxRackState& getFxRacks() noexcept { return fxRacks; }
     core::PresetManager& getPresets() noexcept { return presetManager; }
+    // The pitch the tail is on, in semitones from C3, for displays that follow the note.
+    float currentNoteSemitones() const noexcept { return engine.currentNoteSemitones(); }
 
     core::WavetableSelector& selectorFor(int oscillator) noexcept
     {

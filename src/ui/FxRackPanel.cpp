@@ -19,10 +19,18 @@ constexpr int kGroupTitleHeight = 16;
 constexpr int kMixWidth = 200;
 constexpr int kOnWidth = 84;
 constexpr int kBodyInset = 6;
+constexpr int kSwitchesPerRow = 2;
+constexpr int kExtraSwitchRowHeight = 26;
 constexpr int kButtonWidth = 30;
 constexpr int kAddButtonHeight = 30;
 constexpr int kEmptyNoteHeight = 26;
 constexpr int kScrollBarWidth = 12;
+
+// A group with more than three knobs gets two rows of them, so they stay wide enough to read.
+int knobRowsFor(int knobs)
+{
+    return knobs > 3 ? 2 : 1;
+}
 
 // The controls that are visible: a control that depends on another parameter may be hidden.
 std::vector<ParameterControl*> shown(const std::vector<std::unique_ptr<ParameterControl>>& controls)
@@ -42,7 +50,8 @@ juce::String withoutGroup(const juce::String& name, const juce::String& group)
 } // namespace
 
 FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
-                        const std::string& instanceId, juce::AudioProcessorValueTreeState& state)
+                        const std::string& instanceId, juce::AudioProcessorValueTreeState& state,
+                        const std::function<float()>& note)
     : rack(owner), instance(instanceId)
 {
     const int instanceIndex = registry.indexOfInstance(instanceId);
@@ -81,7 +90,7 @@ FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
 
     if (const auto* extra = decorationFor(descriptor.id); extra != nullptr && extra->make)
     {
-        decoration = extra->make(state, juce::String(instanceId));
+        decoration = extra->make(state, juce::String(instanceId), note);
         decorationHeight = extra->height;
         addAndMakeVisible(*decoration);
     }
@@ -96,18 +105,25 @@ FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
         const juce::String groupName =
             groupKey.isNotEmpty() ? specName.upToLastOccurrenceOf(" ", false, false) : juce::String();
 
+        // The group is named after its first parameter ("Band 1 On" gives "Band 1").
         auto found =
-            std::find_if(groups.begin(), groups.end(), [&](const Group& g) { return g.name == groupName; });
+            std::find_if(groups.begin(), groups.end(), [&](const Group& g) { return g.key == groupKey; });
         if (found == groups.end())
         {
             groups.emplace_back();
+            groups.back().key = groupKey;
             groups.back().name = groupName;
             found = groups.end() - 1;
         }
 
+        // A control that takes the place of another when a switch is on keeps the other's label
+        // ("Extreme Gain" shows as "Gain").
+        auto label = withoutGroup(specName, found->name);
+        if (!spec.shownWhenSuffix.empty() && label.startsWith("Extreme "))
+            label = label.substring(8);
+
         auto control = std::make_unique<ParameterControl>(
-            state, juce::String(core::ParameterIds::effect(instanceId, spec.idSuffix)),
-            withoutGroup(specName, groupName));
+            state, juce::String(core::ParameterIds::effect(instanceId, spec.idSuffix)), label);
         if (!control->isValid())
             continue;
         addAndMakeVisible(*control);
@@ -129,24 +145,62 @@ FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
                         {
                             shown->setVisible(show);
                             if (ready)
+                            {
+                                updateHeight();
+                                rack.layoutSlots();
                                 resized();
+                            }
                         }
                     });
                 attachment->sendInitialUpdate();
                 conditions.push_back(std::move(attachment));
             }
 
+        // Some switches fill their own wider controls from the ones they replace when they are
+        // clicked on (the EQ's Extreme), see EffectDecorations.h.
+        if (control->kind() == ParameterControl::Kind::toggle)
+            for (const auto& rule : copyOnSwitchRules(descriptor.id))
+                if (rule.switchSuffix == spec.idSuffix)
+                {
+                    auto* from = state.getParameter(
+                        juce::String(core::ParameterIds::effect(instanceId, rule.fromSuffix)));
+                    auto* to = state.getParameter(
+                        juce::String(core::ParameterIds::effect(instanceId, rule.toSuffix)));
+                    if (from != nullptr && to != nullptr)
+                        control->addToggledListener(
+                            [from, to](bool on)
+                            {
+                                if (on)
+                                    to->setValueNotifyingHost(
+                                        to->convertTo0to1(from->convertFrom0to1(from->getValue())));
+                            });
+                }
+
         (control->kind() == ParameterControl::Kind::knob ? found->knobs : found->switches)
             .push_back(std::move(control));
     }
 
-    // The height it needs: the handle, the picture and either one row (an effect without sub-groups) or
-    // a title, a row of switches and a row of knobs.
-    const bool grouped = groups.size() > 1 || (!groups.empty() && groups.front().name.isNotEmpty());
-    height = kHandleHeight + decorationHeight + 2 * kBodyInset;
-    height +=
-        grouped ? kGroupTitleHeight + ParameterControl::kSwitchHeight + kGroupKnobRowHeight : kKnobRowHeight;
+    updateHeight();
     ready = true;
+}
+
+void FxRackPanel::Slot::updateHeight()
+{
+    // The height it needs: the handle, the picture and either one row (an effect without sub-groups) or
+    // a title, a row of switches and as many rows of knobs as the busiest group needs.
+    const bool grouped = groups.size() > 1 || (!groups.empty() && groups.front().name.isNotEmpty());
+    int knobRows = 1;
+    bool extraSwitchRow = false;
+    for (const auto& group : groups)
+    {
+        knobRows = std::max(knobRows, knobRowsFor(static_cast<int>(shown(group.knobs).size())));
+        extraSwitchRow = extraSwitchRow || static_cast<int>(shown(group.switches).size()) > kSwitchesPerRow;
+    }
+
+    height = kHandleHeight + decorationHeight + 2 * kBodyInset;
+    height += grouped ? kGroupTitleHeight + ParameterControl::kSwitchHeight +
+                            (extraSwitchRow ? kExtraSwitchRowHeight : 0) + knobRows * kGroupKnobRowHeight
+                      : kKnobRowHeight;
 }
 
 void FxRackPanel::Slot::paint(juce::Graphics& g)
@@ -213,24 +267,42 @@ void FxRackPanel::Slot::resized()
 
         if (grouped)
         {
-            // Switches and menus on one row, the knobs on the next.
-            auto switchRow = column.removeFromTop(ParameterControl::kSwitchHeight);
+            // The first two switches or menus on one row (the EQ's On and Type), any more on a row of
+            // their own below it (its Extreme), then the knobs.
             const auto switches = shown(group.switches);
             const int numSwitches = static_cast<int>(switches.size());
-            for (int s = 0; s < numSwitches; ++s)
+            auto switchRow = column.removeFromTop(ParameterControl::kSwitchHeight);
+            for (int s = 0; s < std::min(numSwitches, kSwitchesPerRow); ++s)
             {
+                const int remaining = std::min(numSwitches, kSwitchesPerRow) - s;
                 const bool isToggle =
                     switches[static_cast<size_t>(s)]->kind() == ParameterControl::Kind::toggle;
                 // A switch needs only its tick and "On"; the menus share the rest.
-                const int width = isToggle ? juce::jmin(46, switchRow.getWidth() / 3)
-                                           : switchRow.getWidth() / (numSwitches - s);
+                const int width =
+                    isToggle ? juce::jmin(46, switchRow.getWidth() / 3) : switchRow.getWidth() / remaining;
                 switches[static_cast<size_t>(s)]->setBounds(switchRow.removeFromLeft(width));
+            }
+            if (numSwitches > kSwitchesPerRow)
+            {
+                auto extraRow = column.removeFromTop(kExtraSwitchRowHeight);
+                const int extra = numSwitches - kSwitchesPerRow;
+                for (int s = 0; s < extra; ++s)
+                    switches[static_cast<size_t>(kSwitchesPerRow + s)]->setBounds(
+                        extraRow.removeFromLeft(extraRow.getWidth() / (extra - s)));
             }
             const auto knobs = shown(group.knobs);
             const int numKnobs = static_cast<int>(knobs.size());
-            for (int k = 0; k < numKnobs; ++k)
-                knobs[static_cast<size_t>(k)]->setBounds(
-                    column.removeFromLeft(column.getWidth() / (numKnobs - k)));
+            const int rows = knobRowsFor(numKnobs);
+            const int perRow = (numKnobs + rows - 1) / std::max(1, rows);
+            int next = 0;
+            for (int row = 0; row < rows; ++row)
+            {
+                auto rowArea = column.removeFromTop(kGroupKnobRowHeight);
+                const int inRow = std::min(perRow, numKnobs - next);
+                for (int k = 0; k < inRow; ++k)
+                    knobs[static_cast<size_t>(next++)]->setBounds(
+                        rowArea.removeFromLeft(rowArea.getWidth() / (inRow - k)));
+            }
         }
         else
         {
@@ -299,8 +371,9 @@ void FxRackPanel::Content::paint(juce::Graphics& g)
 }
 
 FxRackPanel::FxRackPanel(juce::AudioProcessorValueTreeState& state, core::FxRackState& rackState,
-                         dsp::RackId rack, const dsp::EffectRegistry& effectRegistry)
-    : parameters(state), racks(rackState), rackId(rack), registry(effectRegistry)
+                         dsp::RackId rack, const dsp::EffectRegistry& effectRegistry,
+                         std::function<float()> note)
+    : parameters(state), racks(rackState), noteSource(std::move(note)), rackId(rack), registry(effectRegistry)
 {
     viewport.setViewedComponent(&content, false);
     viewport.setScrollBarsShown(true, false);
@@ -357,7 +430,7 @@ void FxRackPanel::rebuildSlots()
             std::any_of(slots.begin(), slots.end(), [&](const auto& s) { return s->id() == id; });
         if (!present)
         {
-            slots.push_back(std::make_unique<Slot>(*this, registry, id, parameters));
+            slots.push_back(std::make_unique<Slot>(*this, registry, id, parameters, noteSource));
             content.addAndMakeVisible(*slots.back());
         }
     }

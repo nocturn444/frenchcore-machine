@@ -193,6 +193,7 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
     context.noteSemitones =
         (glide.hasPitch() ? glide.value() : static_cast<float>(parameters.rootNote)) - 60.0f;
     context.tempoBpm = parameters.bpm;
+    noteSemitonesNow.store(context.noteSemitones, std::memory_order_relaxed);
 
     // The racks are read once for the whole block. An instance can be in one rack only: a rack that
     // claims one that an earlier rack has is treated as empty (it cannot happen through the plugin's

@@ -129,7 +129,15 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
     for (const char* bus : {"bus.a", "bus.b"})
         for (const char* control : {"level", "region"})
             allowed.insert(std::string(bus) + "." + control);
-    for (const auto& id : expected)
+
+    // Added in 0.2, stage 3 (docs/specs/fx-eq.md section 8.3): the EQ's extreme ranges and Key Track.
+    for (int band = 1; band <= 4; ++band)
+        for (const char* control : {"extreme", "xgain", "xq", "keytrack"})
+            allowed.insert("eq.b" + std::to_string(band) + "." + control);
+
+    // The copies 2 to 4 of every effect have the same IDs as copy 1 with the number after the effect ID.
+    const auto firstCopies = allowed;
+    for (const auto& id : firstCopies)
         for (const char* effect : {"distortion", "eq", "stereo"})
             if (id.rfind(std::string(effect) + ".", 0) == 0)
                 for (int copy = 2; copy <= 4; ++copy)

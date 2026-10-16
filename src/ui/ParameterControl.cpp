@@ -91,6 +91,19 @@ ParameterControl::ParameterControl(juce::AudioProcessorValueTreeState& state, co
     }
 }
 
+void ParameterControl::addToggledListener(std::function<void(bool)> listener)
+{
+    if (toggle == nullptr)
+        return;
+
+    toggledListeners.push_back(std::move(listener));
+    toggle->onClick = [this]
+    {
+        for (const auto& each : toggledListeners)
+            each(toggle->getToggleState());
+    };
+}
+
 void ParameterControl::resized()
 {
     auto area = getLocalBounds();
