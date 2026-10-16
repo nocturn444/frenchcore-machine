@@ -29,6 +29,10 @@ class ParameterControl : public juce::Component
 
     Kind kind() const noexcept { return controlKind; }
 
+    // Whether the mouse wheel turns a knob (the default). Off, the wheel goes to the parent, so a
+    // scrolling list of strips scrolls over its knobs instead of changing them by accident.
+    void setWheelAdjusts(bool adjusts);
+
     // Calls `listener` with the new state when the user clicks a switch (not when automation moves it).
     void addToggledListener(std::function<void(bool)> listener);
     bool isValid() const noexcept { return parameter != nullptr; }

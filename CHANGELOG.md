@@ -41,6 +41,8 @@ Stages 1 and 2 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer
 - **Mixer** (Osc 1, Osc 2, Tock; the Noise channel comes with the noise oscillator): Level, Destination (Main, Bus A, Bus B), Mute and Solo per sound, smooth changes. See `docs/specs/mixer-and-buses.md`.
 - **Bus A and Bus B** with their own rows of effects, a Level and **Apply To** Whole, Punch or Tail (the effects are heard only before or after the Split). New parameters `mixer.<source>.dest|mute|solo`, `bus.a|b.level|region`.
 - The **Effects** box has tabs: Mixer, Bus A, Bus B, Main.
+- **Compressor** effect with a **Multiband** switch: off, a normal compressor (Threshold, Ratio, Attack, Release, Knee, Makeup); on, an OTT-style three-band compressor (Depth, Time, Upward, Downward, In and Out Gain, Low, Mid, High). See `docs/specs/fx-compressor.md`.
+- Knobs in a rack strip no longer change with the mouse wheel (the wheel scrolls the rack); effects with more than seven controls use two rows.
 - **Transient** shaper effect: Attack and Sustain up or down whatever the level, with Speed and Output. See `docs/specs/fx-transient.md`.
 - **Filter** effect: Low Pass, High Pass, Band Pass and Notch at 12 or 24 dB per octave with Cutoff, Resonance and Drive. See `docs/specs/fx-filter.md`.
 - **EQ Extreme and Key Track** per band: Extreme gives Gain from -36 to +36 dB and Q up to 50 for thin, loud peaks (new parameters `eq.bN.extreme`, `xgain`, `xq`); Key Track (0 to 100 %, `eq.bN.keytrack`) moves the band with the note like Serum's filters. The EQ display follows both. See `docs/specs/fx-eq.md` section 8. Defaults leave every 0.1 sound unchanged.

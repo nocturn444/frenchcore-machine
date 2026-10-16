@@ -213,7 +213,7 @@ After the oscillators and the Tock, the kick goes through a row of effects, whic
 - **On**: each effect has its own switch, **off by default**, so the sound does not change until you switch one on.
 - **Mix**: how much of the effect you hear against the untouched sound (0 to 100 %, default 100 %).
 - **Order**: the effects can be dragged into any order. Each effect is a strip, in the order the sound goes through them from top to bottom; grab the handle bar at the top of a strip (the three lines and the name) and drag it up or down, and the others slide to make room. Its controls keep working with automation wherever it sits. The order is saved with the project.
-- **Add, duplicate, remove**: the **+ Add effect** button at the end of the row opens a menu with every effect. A new effect goes at the end, switched on, with its default settings. Each strip has **++** to duplicate it (the copy goes right after it, with the same settings) and **x** to remove it. You can have up to four copies of each effect in all (a menu entry is greyed out when its four are in use) and up to eight effects in the row (the button is greyed out when it is full). The second Distortion is called **Distortion 2** in the window and in your DAW's automation list ("Distortion 2 Drive"). When the row is longer than the box, scroll it with the mouse wheel over a strip's name bar or its scroll bar. Removing an effect takes it out at once.
+- **Add, duplicate, remove**: the **+ Add effect** button at the end of the row opens a menu with every effect. A new effect goes at the end, switched on, with its default settings. Each strip has **++** to duplicate it (the copy goes right after it, with the same settings) and **x** to remove it. You can have up to four copies of each effect in all (a menu entry is greyed out when its four are in use) and up to eight effects in the row (the button is greyed out when it is full). The second Distortion is called **Distortion 2** in the window and in your DAW's automation list ("Distortion 2 Drive"). When the row is longer than the box, scroll it with the mouse wheel (over a strip's knobs the wheel scrolls the row, it does not turn them: drag a knob to change it) or with its scroll bar. Removing an effect takes it out at once.
 - Switching an effect on or off, changing its Mix or moving it never clicks and never shifts the timing of the kick.
 - The effects work on both channels. Projects and presets from version 0.1 open with Distortion, EQ and Stereo in this row, in the order and with the settings they were saved with, and sound the same.
 - They sit before the output gain and the safety limiter, so the limiter always protects the final sound. The effects work on both channels.
@@ -266,6 +266,33 @@ A classic synth filter to carve the kick: take the top off a distorted tail, thi
 | **Drive** | Pushes the sound into a soft saturation inside the filter. 0 % is clean; it thickens the sound without a big change of level. |
 
 With the defaults (Low Pass, fully open, no resonance, no drive) switching it on changes almost nothing until you move **Cutoff**.
+
+### Compressor
+
+Compression evens out the level of a sound: on a kick it makes the tail denser and louder next to the punch, or (with a fast attack) squashes the punch. It has the usual **On** and **Mix** and adds no delay. The **Multiband** switch chooses between two compressors, and the strip shows only the controls of the one in use.
+
+**Multiband off: a normal compressor.**
+
+| Control | What it does |
+|---|---|
+| **Threshold** | Above this level the sound is turned down (-60 to 0 dB, default -18). |
+| **Ratio** | How much: 4:1 means 4 dB over the threshold come out as 1 dB. |
+| **Attack** | How fast it reacts (0.1 to 100 ms). A slower attack lets the hit of the kick through before it clamps down. |
+| **Release** | How fast it lets go (10 to 1000 ms). |
+| **Knee** | 0 dB starts the compression suddenly, up to 12 dB makes it start gradually. |
+| **Makeup** | Gain after the compression to bring the level back up. |
+
+**Multiband on: an OTT-style compressor.** The sound is split in three bands (below 88 Hz, up to 2.5 kHz, above) and in each band loud parts are turned down and quiet parts are turned up, which makes everything dense and "in your face".
+
+| Control | What it does |
+|---|---|
+| **Depth** | How much of the whole effect: 0 % nothing, 100 % full. |
+| **Time** | How fast all the bands react (lower is faster). |
+| **Upward** and **Downward** | How much of each kind of compression. |
+| **In Gain** and **Out Gain** | Level into and out of the effect. |
+| **Low**, **Mid**, **High** | The level of each band after compression. |
+
+The multiband numbers (thresholds and times of each band) are a starting point to be tuned by ear against OTT. The effect is not oversampled and has no side-chain.
 
 ### Transient
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "dsp/fx/EffectRegistry.h"
+#include "dsp/fx/compressor/CompressorEffect.h"
 #include "dsp/fx/distortion/DistortionEffect.h"
 #include "dsp/fx/eq/EqEffect.h"
 #include "dsp/fx/filter/FilterEffect.h"
@@ -18,6 +19,7 @@ void registerEffects(EffectRegistry& registry)
     registry.add<StereoEffect>();
     registry.add<FilterEffect>();
     registry.add<TransientEffect>();
+    registry.add<CompressorEffect>();
 }
 
 } // namespace fcm::dsp
