@@ -5,6 +5,7 @@
 #include "dsp/fx/EffectRegistry.h"
 #include "ui/ParameterControl.h"
 
+#include <functional>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <memory>
 #include <vector>
@@ -21,8 +22,9 @@ namespace fcm::ui
 class FxRackPanel : public juce::Component, private juce::ChangeListener
 {
   public:
+    // `note` gives the pitch the tail is on (semitones from C3) to the pictures that follow it.
     FxRackPanel(juce::AudioProcessorValueTreeState& state, core::FxRackState& racks, dsp::RackId rack,
-                const dsp::EffectRegistry& registry);
+                const dsp::EffectRegistry& registry, std::function<float()> note = {});
     ~FxRackPanel() override;
 
     void resized() override;
@@ -37,11 +39,13 @@ class FxRackPanel : public juce::Component, private juce::ChangeListener
     {
       public:
         Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry, const std::string& instanceId,
-             juce::AudioProcessorValueTreeState& state);
+             juce::AudioProcessorValueTreeState& state, const std::function<float()>& note);
 
         const std::string& id() const noexcept { return instance; }
         int preferredHeight() const noexcept { return height; }
         void setCanDuplicate(bool allowed) { duplicateButton.setEnabled(allowed); }
+        // The height the strip needs now: it grows by a row of knobs when a group has more than three.
+        void updateHeight();
 
         void paint(juce::Graphics& g) override;
         void resized() override;
@@ -53,7 +57,8 @@ class FxRackPanel : public juce::Component, private juce::ChangeListener
         // Controls that belong together (an EQ band); an effect without sub-groups has one, unnamed.
         struct Group
         {
-            juce::String name;
+            juce::String key;  // what the parameter IDs share before the dot ("b1")
+            juce::String name; // its title ("Band 1")
             std::vector<std::unique_ptr<ParameterControl>> switches; // on/off and menus
             std::vector<std::unique_ptr<ParameterControl>> knobs;
         };
@@ -94,6 +99,7 @@ class FxRackPanel : public juce::Component, private juce::ChangeListener
 
     juce::AudioProcessorValueTreeState& parameters;
     core::FxRackState& racks;
+    std::function<float()> noteSource;
     dsp::RackId rackId;
     const dsp::EffectRegistry& registry;
 

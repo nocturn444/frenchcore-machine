@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include <functional>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <memory>
+#include <vector>
 
 namespace fcm::ui
 {
@@ -26,6 +28,9 @@ class ParameterControl : public juce::Component
                      juce::String label = {}, bool compact = false);
 
     Kind kind() const noexcept { return controlKind; }
+
+    // Calls `listener` with the new state when the user clicks a switch (not when automation moves it).
+    void addToggledListener(std::function<void(bool)> listener);
     bool isValid() const noexcept { return parameter != nullptr; }
 
     // Height of a switch or menu cell; knobs take whatever height they are given.
@@ -37,6 +42,7 @@ class ParameterControl : public juce::Component
     Kind controlKind = Kind::knob;
     bool isCompact = false;
     juce::RangedAudioParameter* parameter = nullptr;
+    std::vector<std::function<void(bool)>> toggledListeners;
 
     juce::Label name;
     std::unique_ptr<juce::Slider> slider;

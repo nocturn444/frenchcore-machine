@@ -248,8 +248,10 @@ Every band is the same and free: you choose what it does, where and how much.
 | **Gain** | How much, from -18 to +18 dB. 0 does nothing. Not used by the two cuts. |
 | **Q** | How wide. For a bell, a high Q is a thin notch and a low Q a wide sweep. 0.71 on a shelf or cut is the plain, flat shape. |
 | **On** | Switches the band off without losing its settings. |
+| **Extreme** | For microwave and hardtekk peaks. With it on, the band's Gain goes from -36 to +36 dB and its Q up to 50, for very thin, screaming peaks. The other bands keep the normal ranges. When you switch it on, the extreme Gain and Q start at the band's current ones, so the sound does not jump. The display then shows 36 dB up and down. |
+| **Key Track** | 0 to 100 %. At 0 % the band stays where you put it. At 100 % the band's frequency moves one octave for every octave of the note you play, so a peak tuned to the kick on C stays at the same musical place on every note. **Freq** is the frequency at C3; in between, the band moves part of the way. It follows the note the tail settles on (with glide), not the pitch drop. With the plugin's own Key Track off, the band stays on the Root Note. The display shows the curve at the note being played. |
 
-The bands start as a low shelf at 80 Hz, bells at 400 Hz and 2.5 kHz and a high shelf at 8 kHz, all flat. In the EQ strip the display shows the combined curve with one numbered dot per band: drag a dot sideways for Freq and up or down for Gain, turn the mouse wheel over it for Q, and double-click it to switch the band on or off. With every Gain at 0 and no cut in use the EQ changes nothing, and it adds no delay.
+The bands start as a low shelf at 80 Hz, bells at 400 Hz and 2.5 kHz and a high shelf at 8 kHz, all flat. In the EQ strip the display shows the combined curve with one numbered dot per band: drag a dot sideways for Freq and up or down for Gain, turn the mouse wheel over it for Q, and double-click it to switch the band on or off. With every Gain at 0 and no cut in use the EQ changes nothing, and it adds no delay. A very loud Extreme peak is left to the safety limiter at the output: the EQ does not lower the level by itself.
 
 ### Stereo
 

@@ -7,6 +7,7 @@
 #include "ui/SectionPanel.h"
 
 #include <array>
+#include <functional>
 #include <juce_audio_processors/juce_audio_processors.h>
 
 namespace fcm::ui
@@ -28,7 +29,7 @@ class EffectsBox : public SectionPanel
     };
 
     EffectsBox(juce::AudioProcessorValueTreeState& state, core::FxRackState& racks,
-               const dsp::EffectRegistry& registry);
+               const dsp::EffectRegistry& registry, std::function<float()> note = {});
 
     void resized() override;
 

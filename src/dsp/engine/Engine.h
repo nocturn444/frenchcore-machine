@@ -71,6 +71,10 @@ class Engine
 
     double getSampleRate() const noexcept { return sampleRate; }
 
+    // The pitch the tail is on, in semitones from MIDI note 60, as of the last block: what the effects
+    // that follow the note were given. Any thread may read it (the EQ display does).
+    float currentNoteSemitones() const noexcept { return noteSemitonesNow.load(std::memory_order_relaxed); }
+
     // The contents of a rack (any thread may store a packed value, EffectRack::pack) and the
     // latency the effects add at the current Quality, for the host (docs/specs/fx-chain.md,
     // docs/decisions/0010).
@@ -120,6 +124,7 @@ class Engine
     PublishedPointer<TockSample>* tockSource = nullptr;
     int lastNote = -1; // the note the settling pitch follows when Key Track is on
     juce::SmoothedValue<float> outputGain{1.0f};
+    std::atomic<float> noteSemitonesNow{0.0f};
 };
 
 } // namespace fcm::dsp

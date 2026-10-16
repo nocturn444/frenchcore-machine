@@ -36,16 +36,24 @@ double eqUnitToFrequency(double unit) noexcept
     return kEqMinHz * std::pow(kEqMaxHz / kEqMinHz, t);
 }
 
-double eqGainToUnit(double db) noexcept
+double eqGainToUnit(double db, double rangeDb) noexcept
 {
-    const double clamped = juce::jlimit(-kEqRangeDb, kEqRangeDb, std::isfinite(db) ? db : 0.0);
-    return (clamped + kEqRangeDb) / (2.0 * kEqRangeDb);
+    const double clamped = juce::jlimit(-rangeDb, rangeDb, std::isfinite(db) ? db : 0.0);
+    return (clamped + rangeDb) / (2.0 * rangeDb);
 }
 
-double eqUnitToGain(double unit) noexcept
+double eqUnitToGain(double unit, double rangeDb) noexcept
 {
     const double t = juce::jlimit(0.0, 1.0, std::isfinite(unit) ? unit : 0.5);
-    return t * 2.0 * kEqRangeDb - kEqRangeDb;
+    return t * 2.0 * rangeDb - rangeDb;
+}
+
+double eqDisplayRangeDb(const EqBands& bands) noexcept
+{
+    for (const auto& band : bands)
+        if (band.extreme)
+            return kEqExtremeRangeDb;
+    return kEqRangeDb;
 }
 
 bool EqBand::isActive() const noexcept
@@ -63,26 +71,34 @@ EqBands readEqBands(juce::AudioProcessorValueTreeState& state, const juce::Strin
         band.on = read(state, prefix + "on", 1.0) >= 0.5;
         band.type = juce::jlimit(0, 4, juce::roundToInt(read(state, prefix + "type", 0.0)));
         band.freq = read(state, prefix + "freq", band.freq);
-        band.gain = read(state, prefix + "gain", band.gain);
-        band.q = read(state, prefix + "q", band.q);
+        band.extreme = read(state, prefix + "extreme", 0.0) >= 0.5;
+        band.keyTrack = read(state, prefix + "keytrack", 0.0);
+        // Extreme swaps Gain and Q for its own, wider controls (docs/specs/fx-eq.md section 8).
+        band.gain = read(state, prefix + (band.extreme ? "xgain" : "gain"), band.gain);
+        band.q = read(state, prefix + (band.extreme ? "xq" : "q"), band.q);
     }
     return bands;
 }
 
-double eqBandResponseDb(const EqBand& band, double hz) noexcept
+double EqBand::frequencyAt(double noteSemitones) const noexcept
+{
+    return dsp::EqEffect::keyTrackedFrequency(freq, keyTrack, noteSemitones, kDisplayRate);
+}
+
+double eqBandResponseDb(const EqBand& band, double hz, double noteSemitones) noexcept
 {
     if (!band.isActive())
         return 0.0;
     const auto design = dsp::EqEffect::design(static_cast<dsp::EqEffect::Shape>(band.type), kDisplayRate,
-                                              band.freq, band.q, band.gain);
+                                              band.frequencyAt(noteSemitones), band.q, band.gain);
     return dsp::EqEffect::magnitudeDb(design, kDisplayRate, hz);
 }
 
-double eqResponseDb(const EqBands& bands, double hz) noexcept
+double eqResponseDb(const EqBands& bands, double hz, double noteSemitones) noexcept
 {
     double total = 0.0;
     for (const auto& band : bands)
-        total += eqBandResponseDb(band, hz);
+        total += eqBandResponseDb(band, hz, noteSemitones);
     return total;
 }
 
