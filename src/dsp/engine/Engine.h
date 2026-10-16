@@ -11,6 +11,7 @@
 #include "dsp/envelope/PublishedPointer.h"
 #include "dsp/fx/EffectPool.h"
 #include "dsp/fx/EffectRack.h"
+#include "dsp/noise/NoiseSample.h"
 #include "dsp/oscillator/WavetableData.h"
 #include "dsp/tock/TockSample.h"
 
@@ -62,6 +63,10 @@ class Engine
     // Where the Tock's sample comes from (docs/specs/tock.md). Call before playback; the publisher
     // must outlive the engine. Without it the Tock has no sample in Sample mode.
     void setTockSource(PublishedPointer<TockSample>* source) noexcept { tockSource = source; }
+
+    // Where the noise oscillator's sound comes from (docs/specs/noise-oscillator.md). Call before
+    // playback; the publisher must outlive the engine. Without it the noise is silent.
+    void setNoiseSource(PublishedPointer<NoiseSample>* source) noexcept { noiseSource = source; }
 
     // Real-time safe. Call once per block, before process().
     void setParameters(const EngineParameters& newParameters) noexcept;
@@ -122,6 +127,7 @@ class Engine
     PublishedPointer<EnvelopeShape>* pitchSource = nullptr;
     std::array<PublishedPointer<WavetableData>*, kNumOscillators> wavetableSources{};
     PublishedPointer<TockSample>* tockSource = nullptr;
+    PublishedPointer<NoiseSample>* noiseSource = nullptr;
     int lastNote = -1; // the note the settling pitch follows when Key Track is on
     juce::SmoothedValue<float> outputGain{1.0f};
     std::atomic<float> noteSemitonesNow{0.0f};

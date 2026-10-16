@@ -38,7 +38,7 @@ Stages 1 and 2 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer
 - Controls that only matter for some settings are hidden otherwise (Distortion's Bits and Rate show only for Bitcrush). `docs/decisions/0011-effect-interface-additions.md`.
 - Test data: renders of every factory preset and two Tock projects made with 0.1.1 (`tests/data/reference-0.1.1`) that later versions must reproduce.
 
-- **Mixer** (Osc 1, Osc 2, Tock; the Noise channel comes with the noise oscillator): Level, Destination (Main, Bus A, Bus B), Mute and Solo per sound, smooth changes. See `docs/specs/mixer-and-buses.md`.
+- **Mixer** (Osc 1, Osc 2, Noise, Tock): Level, Destination (Main, Bus A, Bus B), Mute and Solo per sound, smooth changes. See `docs/specs/mixer-and-buses.md`.
 - **Bus A and Bus B** with their own rows of effects, a Level and **Apply To** Whole, Punch or Tail (the effects are heard only before or after the Split). New parameters `mixer.<source>.dest|mute|solo`, `bus.a|b.level|region`.
 - The **Effects** box has tabs: Mixer, Bus A, Bus B, Main.
 - **Reverb** effect: a simple stereo room (Size, Decay, Damping, Pre-delay, Low Cut) whose Mix starts at 30 %. See `docs/specs/fx-reverb.md`.
@@ -47,6 +47,8 @@ Stages 1 and 2 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer
 - **Transient** shaper effect: Attack and Sustain up or down whatever the level, with Speed and Output. See `docs/specs/fx-transient.md`.
 - **Filter** effect: Low Pass, High Pass, Band Pass and Notch at 12 or 24 dB per octave with Cutoff, Resonance and Drive. See `docs/specs/fx-filter.md`.
 - **EQ Extreme and Key Track** per band: Extreme gives Gain from -36 to +36 dB and Q up to 50 for thin, loud peaks (new parameters `eq.bN.extreme`, `xgain`, `xq`); Key Track (0 to 100 %, `eq.bN.keytrack`) moves the band with the note like Serum's filters. The EQ display follows both. See `docs/specs/fx-eq.md` section 8. Defaults leave every 0.1 sound unchanged.
+
+- **Noise oscillator** in the free box of the window: eight generated noises (White, Pink, Brown, Crackle, Metal, Digital, Air Burst, Thump) or your own WAV up to 10 seconds, with Level, Pitch, Key Track, One Shot, Phase and Random. It follows the amp envelope and Punch / Tail, not the pitch envelope, and has its own Mixer strip. New parameters `noise.*` and `mixer.noise.*`; off by default, so 0.1 sounds are unchanged. See `docs/specs/noise-oscillator.md`.
 
 #### Changed
 

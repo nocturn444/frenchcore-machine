@@ -60,6 +60,33 @@ void TockPanel::choose()
                          });
 }
 
+NoisePanel::NoisePanel(juce::AudioProcessorValueTreeState& state,
+                       std::function<void(const juce::File&)> onLoad)
+    : ControlPanel(state, "Noise"), loadRequested(std::move(onLoad))
+{
+    const int top = addRow({{Ids::kNoiseOn, "On"}, {Ids::kNoiseType, "Type"}});
+    addCustom(top, loadButton);
+    addRow({{Ids::kNoiseKeyTrack, "Key Track"}, {Ids::kNoiseOneShot, "One Shot"}});
+    addRow({{Ids::kNoiseLevel, "Level"},
+            {Ids::kNoisePitch, "Pitch"},
+            {Ids::kNoisePhase, "Phase"},
+            {Ids::kNoiseRandom, "Random"}});
+    loadButton.setTooltip("Load a sound of your own from a WAV file (up to 10 seconds)");
+    loadButton.onClick = [this] { choose(); };
+}
+
+void NoisePanel::choose()
+{
+    chooser = std::make_unique<juce::FileChooser>("Choose a noise sound (WAV)", juce::File{}, "*.wav");
+    chooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                         [this](const juce::FileChooser& finished)
+                         {
+                             const auto file = finished.getResult();
+                             if (file != juce::File{})
+                                 loadRequested(file);
+                         });
+}
+
 int PluginEditor::designHeight(bool withAudition)
 {
     return kBodyHeight + (withAudition ? ui::AuditionPanel::kHeight : 0);
@@ -86,7 +113,7 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
           ui::EnvelopePanel::pitchConfig()),
       fxArea(owner.getState(), owner.getFxRacks(), dsp::defaultEffectRegistry(),
              [&owner] { return owner.currentNoteSemitones(); }),
-      lfoPanel("LFO", "Reserved for a later version"),
+      noisePanel(owner.getState(), [&owner](const juce::File& file) { owner.loadUserNoiseSample(file); }),
       tockPanel(owner.getState(), [&owner](const juce::File& file) { owner.loadUserTockSample(file); }),
       punchTailPanel(owner.getState(), "Punch / Tail"), globalPanel(owner.getState(), "Global"),
       otherPanel("Other", core::legalNotice())
@@ -107,7 +134,7 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
     setLookAndFeel(&lookAndFeel);
     addAndMakeVisible(content);
     for (auto* child : std::initializer_list<juce::Component*>{&presetBar, &osc1, &osc2, &ampPanel,
-                                                               &pitchPanel, &fxArea, &lfoPanel, &tockPanel,
+                                                               &pitchPanel, &fxArea, &noisePanel, &tockPanel,
                                                                &punchTailPanel, &globalPanel, &otherPanel})
         content.addAndMakeVisible(*child);
 
@@ -155,7 +182,7 @@ void PluginEditor::layoutContent()
         component.setBounds(x, bottomTop, width, kBottomRowHeight);
         x += width + kGap;
     };
-    place(lfoPanel, kLfoWidth);
+    place(noisePanel, kLfoWidth);
     place(tockPanel, kTockWidth);
     place(punchTailPanel, kPunchTailWidth);
     place(globalPanel, kGlobalWidth);

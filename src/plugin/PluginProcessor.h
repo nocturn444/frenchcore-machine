@@ -80,6 +80,9 @@ class PluginProcessor : public juce::AudioProcessor,
     void loadUserWavetable(int oscillator, const juce::File& file);
     // The same for the Tock's user sample (docs/specs/tock.md §4.1); the message is shared.
     void loadUserTockSample(const juce::File& file);
+    // The same for the noise oscillator's user sound (docs/specs/noise-oscillator.md).
+    void loadUserNoiseSample(const juce::File& file);
+    const core::NoiseSelector& noise() const noexcept { return noiseSelector; }
     const juce::String& wavetableMessage() const noexcept { return lastWavetableMessage; }
     juce::ChangeBroadcaster& wavetableChanged() noexcept { return wavetableBroadcaster; }
 
@@ -93,6 +96,7 @@ class PluginProcessor : public juce::AudioProcessor,
     core::WavetableSelector wavetable1{state, 0};
     core::WavetableSelector wavetable2{state, 1};
     core::TockSelector tockSelector{state};
+    core::NoiseSelector noiseSelector{state};
     // Everything that is saved with the project, gathered (docs/specs/project-state.md).
     core::ProjectState project;
     // The preset list and the current preset (docs/specs/presets.md).

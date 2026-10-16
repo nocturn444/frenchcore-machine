@@ -31,6 +31,7 @@ juce::ValueTree ProjectState::capture() const
     for (auto* wavetable : parts.wavetables)
         putNode(tree, wavetable->toValueTree());
     putNode(tree, parts.tock.toValueTree());
+    putNode(tree, parts.noise.toValueTree());
 
     return tree;
 }
@@ -48,6 +49,8 @@ StateLoadResult ProjectState::restore(const juce::ValueTree& saved)
     parts.fxRacks.restoreFrom(saved.getChildWithName(FxRackState::nodeType()));
     parts.tock.restoreFrom(saved.getChildWithName("UserTockSample"));
     parts.tock.update();
+    parts.noise.restoreFrom(saved.getChildWithName("UserNoiseSample"));
+    parts.noise.update();
 
     // User wavetables first, then the table of each current Wavetable value (the new parameter
     // values schedule that too; doing it now makes the load complete at once).

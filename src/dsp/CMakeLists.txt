@@ -21,6 +21,8 @@ target_sources(fcm_dsp INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/transient/TransientEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/EffectRegistry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/RegisterEffects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/noise/FactoryNoises.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/noise/NoisePlayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/oscillator/FactoryWavetables.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/oscillator/WavetableData.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/oscillator/WavetableOscillator.cpp

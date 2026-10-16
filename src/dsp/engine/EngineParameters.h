@@ -64,6 +64,19 @@ struct TockParameters
     float tone = 0.7f;     // 0 dull .. 1 open
 };
 
+// The noise oscillator (docs/specs/noise-oscillator.md). Type and One Shot, Phase and Random are read at
+// note-on; Level and Pitch move smoothly.
+struct NoiseParameters
+{
+    bool on = false;
+    float level = 1.0f; // linear gain
+    float pitchSemitones = 0.0f;
+    bool keyTrack = false;
+    bool oneShot = false;
+    float phase = 0.0f;  // 0..1 of the length
+    float random = 1.0f; // 0..1
+};
+
 struct OscillatorParameters
 {
     bool on = true;
@@ -100,6 +113,7 @@ struct EngineParameters
     float tailLevel = 1.0f;     // linear gain of the tail region (after the split)
 
     TockParameters tock;
+    NoiseParameters noise;
 
     // The mixer and the two buses (docs/specs/mixer-and-buses.md).
     std::array<MixerSourceParameters, kNumStems> mixer;

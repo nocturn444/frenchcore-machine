@@ -24,8 +24,14 @@ const juce::Identifier kStateVersionProperty{"stateVersion"};
 PluginProcessor::PluginProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       state(*this, nullptr, kStateType, core::createParameterLayout()), parameterReader(state),
-      project(core::ProjectState::Parts{
-          state, kStateType, ampEnvelope, pitchEnvelope, fxRacks, {&wavetable1, &wavetable2}, tockSelector}),
+      project(core::ProjectState::Parts{state,
+                                        kStateType,
+                                        ampEnvelope,
+                                        pitchEnvelope,
+                                        fxRacks,
+                                        {&wavetable1, &wavetable2},
+                                        tockSelector,
+                                        noiseSelector}),
       presetManager(project, core::PresetLibrary(core::PresetLibrary::defaultFolder()), kStateType)
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
@@ -33,6 +39,7 @@ PluginProcessor::PluginProcessor()
     engine.setEnvelopeSources(&ampEnvelope.source(), &pitchEnvelope.source());
     engine.setWavetableSources(&wavetable1.source(), &wavetable2.source());
     engine.setTockSource(&tockSelector.source());
+    engine.setNoiseSource(&noiseSelector.source());
 }
 
 double PluginProcessor::getTailLengthSeconds() const
@@ -228,6 +235,30 @@ void PluginProcessor::loadUserTockSample(const juce::File& file)
                     parameter->convertTo0to1(static_cast<float>(core::TockSelector::userEntry())));
                 tockSelector.update();
                 lastWavetableMessage = label + "loaded " + tockSelector.userName();
+            }
+            wavetableBroadcaster.sendChangeMessage();
+        });
+}
+
+void PluginProcessor::loadUserNoiseSample(const juce::File& file)
+{
+    wavetableLoader.loadNoise(
+        file,
+        [this](core::NoiseImportResult result, juce::String name)
+        {
+            const juce::String label = "Noise: ";
+            if (!result.ok() || !noiseSelector.loadUser(std::move(result.sample), name))
+            {
+                lastWavetableMessage =
+                    label + (result.error.isNotEmpty() ? result.error : "The file is not usable");
+            }
+            else
+            {
+                auto* parameter = state.getParameter(core::ParameterIds::kNoiseType);
+                parameter->setValueNotifyingHost(
+                    parameter->convertTo0to1(static_cast<float>(core::NoiseSelector::userEntry())));
+                noiseSelector.update();
+                lastWavetableMessage = label + "loaded " + noiseSelector.userName();
             }
             wavetableBroadcaster.sendChangeMessage();
         });

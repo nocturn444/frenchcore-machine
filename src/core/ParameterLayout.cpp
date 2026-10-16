@@ -3,6 +3,7 @@
 
 #include "core/ParameterIds.h"
 #include "dsp/engine/EngineParameters.h"
+#include "dsp/noise/FactoryNoises.h"
 #include "dsp/oscillator/FactoryWavetables.h"
 #include "dsp/tock/FactoryTocks.h"
 
@@ -168,6 +169,36 @@ void addTockParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layo
     layout.add(std::make_unique<juce::AudioParameterFloat>(id(ParameterIds::kTockTone), "Tock Tone",
                                                            juce::NormalisableRange<float>{0.0f, 1.0f}, 0.7f));
 }
+void addNoiseParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+{
+    layout.add(std::make_unique<juce::AudioParameterBool>(id(ParameterIds::kNoiseOn), "Noise On", false));
+
+    // The list is append-only: the saved value is the entry number (docs/specs/noise-oscillator.md).
+    juce::StringArray typeNames;
+    for (int i = 0; i < dsp::FactoryNoises::count(); ++i)
+        typeNames.add(dsp::FactoryNoises::name(i));
+    typeNames.add("User"); // the sound the user loaded; see NoiseSelector::userEntry()
+    layout.add(std::make_unique<juce::AudioParameterChoice>(id(ParameterIds::kNoiseType), "Noise Type",
+                                                            typeNames, 0));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kNoiseLevel), "Noise Level", juce::NormalisableRange<float>{-48.0f, 12.0f, 0.1f},
+        0.0f, juce::AudioParameterFloatAttributes{}.withLabel("dB")));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kNoisePitch), "Noise Pitch", juce::NormalisableRange<float>{-48.0f, 48.0f, 0.01f},
+        0.0f, juce::AudioParameterFloatAttributes{}.withLabel("st")));
+    layout.add(std::make_unique<juce::AudioParameterBool>(id(ParameterIds::kNoiseKeyTrack), "Noise Key Track",
+                                                          false));
+    layout.add(
+        std::make_unique<juce::AudioParameterBool>(id(ParameterIds::kNoiseOneShot), "Noise One Shot", false));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kNoisePhase), "Noise Phase", juce::NormalisableRange<float>{0.0f, 100.0f, 0.1f},
+        0.0f, juce::AudioParameterFloatAttributes{}.withLabel("%")));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        id(ParameterIds::kNoiseRandom), "Noise Random", juce::NormalisableRange<float>{0.0f, 100.0f, 0.1f},
+        100.0f, juce::AudioParameterFloatAttributes{}.withLabel("%")));
+}
+
 void addMixerParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout)
 {
     // The choice lists are append-only (the saved value is the entry number). Where a source goes is
@@ -273,6 +304,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout(const 
     for (int index = 0; index < dsp::kNumOscillators; ++index)
         addOscillatorParameters(layout, index);
     addTockParameters(layout);
+    addNoiseParameters(layout);
     addMixerParameters(layout);
     addEffectParameters(layout, registry);
 

@@ -27,8 +27,8 @@ const juce::Identifier kRoot{"FrenchcoreMachineState"};
 struct Rig
 {
     explicit Rig(const juce::File& folder)
-        : project(
-              ProjectState::Parts{processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock}),
+        : project(ProjectState::Parts{
+              processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock, noise}),
           presets(project, PresetLibrary(folder), kRoot)
     {
     }
@@ -59,6 +59,7 @@ struct Rig
     fcm::core::WavetableSelector wavetable1{processor.state, 0};
     fcm::core::WavetableSelector wavetable2{processor.state, 1};
     fcm::core::TockSelector tock{processor.state};
+    fcm::core::NoiseSelector noise{processor.state};
     ProjectState project;
     PresetManager presets;
 };
@@ -438,6 +439,7 @@ TEST_CASE("Every factory preset plays a finite, audible, limited kick", "[core][
     rig.engine.setEnvelopeSources(&rig.amp.source(), &rig.pitch.source());
     rig.engine.setWavetableSources(&rig.wavetable1.source(), &rig.wavetable2.source());
     rig.engine.setTockSource(&rig.tock.source());
+    rig.engine.setNoiseSource(&rig.noise.source());
     fcm::core::EngineParameterReader reader(rig.processor.state);
 
     constexpr double kSampleRate = 48000.0;
