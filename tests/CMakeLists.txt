@@ -13,6 +13,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/fx/EqTests.cpp
     dsp/fx/FilterTests.cpp
     dsp/fx/StereoTests.cpp
+    dsp/fx/TransientTests.cpp
     dsp/fx/RegisteredEffectsTests.cpp
     dsp/EngineTests.cpp
     dsp/EnvelopeEngineTests.cpp
