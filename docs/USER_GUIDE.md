@@ -196,13 +196,16 @@ The shapes are saved with your project, so the kick comes back exactly as you le
 
 ## Effects
 
-After the oscillators and the Tock, the kick goes through a row of effects: Distortion, EQ and Stereo. They live in the **Effects** box on the right, and every one works the same way:
+After the oscillators and the Tock, the kick goes through a row of effects, which starts with Distortion, EQ and Stereo. They live in the **Effects** box on the right, and every one works the same way:
 
 - **On**: each effect has its own switch, **off by default**, so the sound does not change until you switch one on.
 - **Mix**: how much of the effect you hear against the untouched sound (0 to 100 %, default 100 %).
-- **Order**: the effects can be dragged into any order. Each effect is a strip, in the order the sound goes through them from top to bottom; grab the handle bar at the top of a strip (the three lines and the name) and drag it up or down, and the others slide to make room. Each effect exists once, and its controls keep working with automation wherever it sits. The order is saved with the project.
+- **Order**: the effects can be dragged into any order. Each effect is a strip, in the order the sound goes through them from top to bottom; grab the handle bar at the top of a strip (the three lines and the name) and drag it up or down, and the others slide to make room. Its controls keep working with automation wherever it sits. The order is saved with the project.
+- **Add, duplicate, remove**: the **+ Add effect** button at the end of the row opens a menu with every effect. A new effect goes at the end, switched on, with its default settings. Each strip has **++** to duplicate it (the copy goes right after it, with the same settings) and **x** to remove it. You can have up to four copies of each effect in all (a menu entry is greyed out when its four are in use) and up to eight effects in the row (the button is greyed out when it is full). The second Distortion is called **Distortion 2** in the window and in your DAW's automation list ("Distortion 2 Drive"). When the row is longer than the box, scroll it with the mouse wheel over a strip's name bar or its scroll bar. Removing an effect takes it out at once.
 - Switching an effect on or off, changing its Mix or moving it never clicks and never shifts the timing of the kick.
-- The effects work on both channels. They sit before the output gain and the safety limiter, so the limiter always protects the final sound.
+- The effects work on both channels. Projects and presets from version 0.1 open with Distortion, EQ and Stereo in this row, in the order and with the settings they were saved with, and sound the same.
+- They sit before the output gain and the safety limiter, so the limiter always protects the final sound. The effects work on both channels.
+
 ### Distortion
 
 The first effect. Switch it on with **Distortion On** (the Distortion column of the controls).
@@ -214,11 +217,11 @@ The first effect. Switch it on with **Distortion On** (the Distortion column of 
 | **Pre-gain** | Extra gain before the distortion, -24 to +24 dB. |
 | **Post-gain** | Volume after the distortion, -48 to +12 dB (default -6 dB): distortion makes things louder. |
 | **Tone** | How bright the result is. 100 % (default) filters nothing; lower values take off the high end, down to a low-pass at 1 kHz. |
-| **Bits** | Bitcrush only: bit depth, 2 to 16. |
-| **Rate** | Bitcrush only: rate reduction, 1x (none) to 32x. |
+| **Bits** | Bitcrush only (shown only when Type is Bitcrush): bit depth, 2 to 16. |
+| **Rate** | Bitcrush only (shown only when Type is Bitcrush): rate reduction, 1x (none) to 32x. |
 | **Mix** | How much distorted sound you hear against the clean kick. |
 
-The clipping types are oversampled according to **Quality** to avoid harsh aliasing; Bitcrush is not, because its roughness is the point. Changing **Type** while a kick rings can click, so set it before you play. With effects in the plugin, your DAW is told about a small delay (a few samples at the default Quality) that it compensates; nothing shifts when you switch an effect on or off.
+The clipping types are oversampled according to **Quality** to avoid harsh aliasing; Bitcrush is not, because its roughness is the point. Changing **Type** while a kick rings can click, so set it before you play. With effects in the plugin, your DAW is told about a small delay (16 samples at the default Quality, because the plugin keeps room for four copies of every effect) that it compensates; nothing shifts when you switch an effect on or off.
 
 ### EQ
 

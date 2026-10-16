@@ -1,6 +1,6 @@
 # Spec: Mixer, effect buses and multiple effect copies
 
-- Status: Approved (product owner's answers of 2026-10-16, questions 2.1 to 2.6); not implemented. Version 0.2, stages 1 and 2 of [PLAN](../PLAN.md).
+- Status: Approved (product owner's answers of 2026-10-16, questions 2.1 to 2.6). Version 0.2, stages 1 and 2 of [PLAN](../PLAN.md). Stage 1 (copies, racks in the state, the Main rack and its UI, state version 2) is implemented; stage 2 (voice stems, mixer, Bus A and Bus B, tabs) is not.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ADR 0010](../decisions/0010-effect-instances-buses-and-mixer.md), [ADR 0011](../decisions/0011-effect-interface-additions.md), [ADR 0009](../decisions/0009-effect-parameters-and-chain-latency.md), [fx-chain](fx-chain.md) (0.1 machinery, still the base of one rack), [fx-rack](fx-rack.md) (0.1 UI, replaced by section 2 here), [voice-punch-tail](voice-punch-tail.md), [noise-oscillator](noise-oscillator.md), [tock](tock.md)
 
@@ -79,6 +79,17 @@ Non-parameter state: node `FxRacks` with three children `Rack` (`id` = `busA`, `
 - **Messages and state.** `core::FxRackState` replaces `core::FxOrderState`: add (lowest free copy; resets that instance's parameters to defaults through the APVTS, then switches it on), remove (switches it off), duplicate (copies values), move inside a rack, the lists, the packed values, and save/restore of `FxRacks`. Restore is untrusted input: unknown instance IDs dropped, an instance listed twice kept only the first time, more than 8 entries cut, nothing allocates per block.
 - **Migration 1 → 2** in `StateMigrations.cpp` ([ADR 0010](../decisions/0010-effect-instances-buses-and-mixer.md) item 8), also used for 0.1 preset files.
 - **Real-time:** no allocation, locks or waits; the packed rack values and parameters are read once per block.
+
+### Decisions made in stage 1 (technical, by the agent)
+
+- **Default rack content is data, not code.** `EffectDescriptor::inDefaultMain` marks the effects a new project starts with in Main (Distortion, EQ and Stereo, in registration order). New effects leave it false, so adding one never changes the default sound or racks.
+- **IDs read back unambiguously.** The registry refuses an effect ID that equals another effect's ID plus a copy number 2 to 4 (so `eq2` can never be both "copy 2 of eq" and an effect of its own).
+- **Padding.** A rack's padding is `P(q)` minus the latency of the effects it holds, in a delay line that is always fed, so any change of contents keeps the total delay at `P(q)`. Adding or removing an effect that has latency can make one small discontinuity at that moment (the effect's own dry delay line starts empty); it is a user edit, not a steady state.
+- **An instance joining a rack** starts with an empty dry delay line and a reset effect. **Removing** one switches it off and drops it from the rack at once (no tail fade); the wet tail of a Reverb will therefore be cut when removed.
+- **Duplicate copies every setting, including On.** Add resets to defaults and switches on.
+- **Restoring `FxRacks`** ignores a rack whose text is over 2048 characters, at most 16 child nodes are read, and an instance listed twice keeps its first place (rack order busA, busB, main).
+- **Processing set-up.** Only instances that are in a rack get `setParameters`/`setContext` each block, so unused copies cost nothing; their mix smoothing and `setOversampling` are still kept current.
+- In stage 1 the engine reports the latency of the whole pool (`P(q)`, four copies of every effect), not yet `2 * P(q)`.
 
 ## 5. Tests
 

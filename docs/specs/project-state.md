@@ -27,8 +27,8 @@ None.
 
 ## 4. DSP / implementation approach
 
-- `core::ProjectState` (`src/core/ProjectState.h`) gathers the pieces of the plugin's state that are not the audio engine: the parameter tree, the two `EnvelopeState`s, the `FxOrderState`, the two `WavetableSelector`s and the `TockSelector`. It has two operations, which are all the processor and the presets need:
-  - `capture()` returns the whole state as one `ValueTree` (the parameters plus the nodes `AmpEnvelope`, `PitchEnvelope`, `FxChain`, `UserWavetable1/2` and `UserTockSample` that exist), with `stateVersion` always written;
+- `core::ProjectState` (`src/core/ProjectState.h`) gathers the pieces of the plugin's state that are not the audio engine: the parameter tree, the two `EnvelopeState`s, the `FxRackState`, the two `WavetableSelector`s and the `TockSelector`. It has two operations, which are all the processor and the presets need:
+  - `capture()` returns the whole state as one `ValueTree` (the parameters plus the nodes `AmpEnvelope`, `PitchEnvelope`, `FxRacks` (`FxChain` in version 1), `UserWavetable1/2` and `UserTockSample` that exist), with `stateVersion` always written;
   - `restore(tree)` loads a tree into everything, as untrusted input ([ARCHITECTURE §12](../ARCHITECTURE.md)): the parameters through `core::loadState`, then each node through its own `restoreFrom`, which falls back to a default or to "nothing" for a missing or damaged node. A rejected tree (not our state) changes nothing.
   `toXml()` and `restoreFromXml()` do the same for the XML form that the host stores.
 - `PluginProcessor::getStateInformation` and `setStateInformation` become thin: size limit, XML parse, `ProjectState`.
@@ -43,7 +43,7 @@ Catch2 (`fcm_core_tests`):
 - The XML form round-trips too (`toXml()` then `restoreFromXml()`), with `stateVersion` present.
 - A state with no `stateVersion`, a newer one and a damaged one load as in the state-safe-loading spec.
 - Missing parameters become defaults: load a state that mentions only two parameters into an instance where many others are away from their defaults: those two take the saved values and every other parameter is its default; a project from before the Tock (no `tock.*` entries, no `UserTockSample`) loads with the Tock at its defaults.
-- Missing nodes: no `AmpEnvelope` gives the default amp shape, no `FxChain` gives the registration order, no user nodes give no user wavetable or Tock sample, even if a previous state had them.
+- Missing nodes: no `AmpEnvelope` gives the default amp shape, no `FxRacks` gives the default racks (Distortion, EQ and Stereo in Main, the buses empty), no user nodes give no user wavetable or Tock sample, even if a previous state had them.
 - A damaged node (an envelope with NaN, an order with unknown IDs, a wavetable text that is not base64) never fails the load of the rest.
 - A rejected state (wrong root, empty tree) changes nothing at all.
 

@@ -99,7 +99,7 @@ MIDI ──► NoteHandler (mono, last-note priority, optional glide)
                         Host output
 ```
 
-Version 0.2 replaced the single FX chain with this mixer and three racks ([ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md), [mixer-and-buses](specs/mixer-and-buses.md)). Until stage 2 of the 0.2 plan is merged, the code still has the 0.1 flow (one mono sum into one chain).
+Version 0.2 replaced the single FX chain with this mixer and three racks ([ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md), [mixer-and-buses](specs/mixer-and-buses.md)). Until stage 2 of the 0.2 plan is merged, the code has the voice's single mono sum going into the Main rack only; the pool, the packed racks and the `FxRacks` state exist since stage 1.
 
 ### 4.1 Voice and note handling
 
@@ -161,7 +161,7 @@ Details and tests in [voice-punch-tail](specs/voice-punch-tail.md).
 
 ### 4.6 FX chain (main extension point)
 
-> **Version 0.2:** [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md) supersedes the "one slot per effect type" model below: every effect type has four copies with fixed IDs (`distortion`, `distortion2` ... `distortion4`), and three racks (Bus A, Bus B, Main) each hold up to eight of them in a user order, with add, remove and duplicate. One rack works like the chain described here (per-slot dry compensation and mix), padded to a constant latency. [ADR 0011](decisions/0011-effect-interface-additions.md) adds `setContext(EffectContext)` (the note pitch, for Key Track), `ParameterSpec::shownWhen`, `EffectDescriptor::defaultMix` and raises the parameter limit to 48. The 0.2 effects are Filter, Compressor (with Multiband), Transient shaper and Reverb ([specs](specs/)). This section describes 0.1 until stage 2 of the 0.2 plan is merged.
+> **Version 0.2:** [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md) supersedes the "one slot per effect type" model below: every effect type has four copies with fixed IDs (`distortion`, `distortion2` ... `distortion4`), and three racks (Bus A, Bus B, Main) each hold up to eight of them in a user order, with add, remove and duplicate. One rack works like the chain described here (per-slot dry compensation and mix), padded to a constant latency. [ADR 0011](decisions/0011-effect-interface-additions.md) adds `setContext(EffectContext)` (the note pitch, for Key Track), `ParameterSpec::shownWhen`, `EffectDescriptor::defaultMix` and raises the parameter limit to 48. The 0.2 effects are Filter, Compressor (with Multiband), Transient shaper and Reverb ([specs](specs/)). Implemented since stage 1: the pool, the racks' packed values, `core::FxRackState` and the Main rack panel (`EffectPool`/`EffectRack` replace the 0.1 `EffectChain`, `FxRackState` replaces `FxOrderState`). The text below still describes the one-slot-per-type model of 0.1 where it says "chain"; read it as "one rack". Bus A and Bus B are stored but not processed until stage 2.
 
 The effects system follows the "one slot per effect type" model used by Serum: each effect type exists exactly once, the user can enable it, bypass it and drag it to any position in the chain.
 
@@ -189,7 +189,7 @@ public:
 
 - **`EffectRegistry`** holds one factory function per effect type. Each effect registers itself with a single line in `src/dsp/fx/RegisterEffects.cpp`, whose order is the default chain order and the effect's index. Nothing else in the codebase lists effects by name.
 - **Parameters** for an effect are described by its `parameters()` (plain data) and prefixed with the effect ID (`distortion.drive`, `eq.low.gain`). `fcm_core` turns the specs of every registered effect into APVTS parameters when it builds the layout, and `EngineParameterReader` hands the values to the chain as a flat array in spec order.
-- **`EffectChain`** owns one instance of every registered effect and an order. The order is a packed value (4 bits per position, up to 16 effects) in one `std::atomic<uint64_t>`, written by the message thread (`core::FxOrderState`, also saved as the `FxChain` node) and read once per block by the audio thread. Reordering never allocates and never pauses audio.
+- **`EffectPool`** owns four instances of every registered effect (`dsp::kInstancesPerEffect`) and what each needs between blocks. **`EffectRack`** processes the instances listed in a packed value (4-bit count, six bits per instance index, at most eight) in one `std::atomic<uint64_t>`, written by the message thread (`core::FxRackState`, also saved as the `FxRacks` node) and read once per block by the audio thread. Reordering, adding and removing never allocate and never pause audio. (0.1 had one `EffectChain` with a 4-bit permutation and the `FxChain` node.)
 - **Per-slot common controls** are added by the layout code for every effect: `<id>.enabled` (default off) and `<id>.mix` (dry/wet, default 100 %). A slot that is off and faded out is skipped.
 - **Latency:** every slot delays its dry signal by the effect's latency for the current Quality whether it is on, bypassed or mixed, so timing never changes when something is toggled, mixed or reordered. The chain reports the sum over all registered effects to the host whenever Quality changes.
 - **Oversampling:** effects that create harmonics (distortion) run inside `juce::dsp::Oversampling`. The factor (1x/2x/4x/8x, 2x default) is one global `Quality` parameter in the Global panel (`global.quality`); the chain tells each effect through `setOversampling`.
@@ -221,9 +221,9 @@ MVP effects:
   - `UserWavetable1`, `UserWavetable2`: display name and embedded frames (base64), see [wavetable-user](specs/wavetable-user.md).
   - `UserTockSample`: display name, sample rate and the embedded sample (base64), see [tock](specs/tock.md).
   - `AmpEnvelope`, `PitchEnvelope`: point lists.
-  - `FxChain`: order of effect IDs (state version 1; replaced in version 2 by `FxRacks`: three `Rack` children with ordered instance IDs, [mixer-and-buses](specs/mixer-and-buses.md)).
+  - `FxRacks` (state version 2): three `Rack` children (`busA`, `busB`, `main`) with ordered instance IDs, [mixer-and-buses](specs/mixer-and-buses.md). Version 1 had `FxChain`, the order of the three 0.1 effects; the migration turns it into the Main rack.
   - `UserNoiseSample` (version 0.2): like `UserTockSample`, see [noise-oscillator](specs/noise-oscillator.md).
-- **Versioning:** the root state node carries `stateVersion`, always written on save (`core::kStateVersion`, currently 1; version 0.2 makes it 2 with a migration that turns the 0.1 effect order into the Main rack and keeps every 0.1 sound, [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)). A missing or damaged value counts as version 1. Loading older state runs the steps of `stateMigrations()` in `src/core/StateMigrations.cpp` in order (the list is empty while only version 1 exists); a state whose version is newer than this build is still loaded: the controls this build knows are applied and the rest is ignored. Each effect also carries its descriptor `version`.
+- **Versioning:** the root state node carries `stateVersion`, always written on save (`core::kStateVersion`, currently 2: the migration from 1 turns the 0.1 effect order into the Main rack and keeps every 0.1 sound, [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)). A missing or damaged value counts as version 1. Loading older state runs the steps of `stateMigrations()` in `src/core/StateMigrations.cpp` in order (one step so far: 1 to 2); a state whose version is newer than this build is still loaded: the controls this build knows are applied and the rest is ignored. Each effect also carries its descriptor `version`.
 - **One load path** (`core::ProjectState`, [project-state](specs/project-state.md)): it gathers the parameter tree, both envelopes, the effect order and the user wavetable and Tock nodes, and offers `capture()` and `restore()` (and the XML form). The processor, the presets and the tests all use it. A saved state describes everything: a parameter it does not mention becomes its default.
 - **Loading is always sanitized** (`core::loadState` in `src/core/StateLoader.cpp`, spec [state-safe-loading](specs/state-safe-loading.md)): the root type must match; unknown or value-less `PARAM` entries are dropped; every parameter value that is not a plain finite number becomes the parameter's default, and every other value is clamped to the parameter's range and snapped to its step. `EngineParameterReader` and the oscillator repeat these guards as a second layer, so a bad value can never index outside memory on the audio thread. State blobs above `core::kMaxStateBytes` (32 MiB) are rejected before parsing.
 - **Presets** ([presets](specs/presets.md)) are the same state wrapped in a small XML file with a name and a `presetFormat` version (`.fcmpreset`, `core::PresetFile`). Factory presets are a table in code (`core::FactoryPresets`: parameter overrides plus envelope shape names) applied over the defaults, so they follow new controls and need no embedded files. User presets go to the platform's user documents folder (`Frenchcore Machine/Presets`) through `core::PresetLibrary`; `core::PresetManager` presents factory then user presets as one list with next/previous and save. Preset files are untrusted input (§12): size cap, nesting-depth scan before XML parsing, strict file-name whitelist.
@@ -242,7 +242,7 @@ Three threads matter:
 Patterns used:
 
 - **Atomic pointer swap + deferred release** for large immutable data (wavetables, envelope shapes): the producer builds a new object and publishes it with an atomic exchange (`PublishedPointer`); the audio thread records the pointer it reads as a hazard pointer, and the old object is freed on the publishing thread once it is no longer that one ([ADR 0006](decisions/0006-envelope-model-and-publishing.md)).
-- **Atomic packed values** for small state (FX order; from 0.2 one packed value per rack, [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)).
+- **Atomic packed values** for small state (one packed value per rack, [ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)).
 - **APVTS raw parameter pointers** (`std::atomic<float>*`) are read once per block, and parameters that cause clicks are smoothed (`juce::SmoothedValue`).
 - **Debug check:** in debug builds a scoped guard flags any allocation on the audio thread.
 
@@ -259,7 +259,7 @@ Patterns used:
 
 - Unit tests (Catch2) for every DSP block: frequency and level checks, no NaN/Inf, silence in gives silence out where expected, reset is deterministic.
 - State tests: save then load reproduces identical state; old state versions migrate.
-- FX chain tests: every order permutation of MVP effects processes without allocation and produces finite output.
+- Rack tests: every order of the effects in a rack processes without allocation and produces finite output; the reference renders of 0.1.1 (`tests/data/reference-0.1.1`) must keep matching within 1e-6 ([mixer-and-buses](specs/mixer-and-buses.md) section 5).
 - pluginval at strictness 10 on every CI build.
 - Manual test checklist per release in [TESTING.md](TESTING.md).
 

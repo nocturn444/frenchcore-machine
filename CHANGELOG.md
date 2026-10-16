@@ -27,6 +27,22 @@ To be released as 0.1.1: security fixes and finishing touches after the 0.1.0 re
 - The release notes now list the known limitations; the user guide says the Linux build needs glibc 2.38 or newer and that shared projects and presets include your own wavetables and Tock sample.
 
 
+### Version 0.2.0 (in progress)
+
+Stage 1 of the 0.2 plan (`docs/PLAN.md`): effect copies and racks. Projects and presets from 0.1 open and sound the same (checked by tests against renders made with 0.1.1).
+
+#### Added
+
+- **Effect copies**: every effect has four copies, called Distortion, Distortion 2 and so on (in the window and in the DAW's automation list). The first copy keeps its 0.1 parameter IDs. See `docs/specs/mixer-and-buses.md`.
+- **Add, duplicate, remove** effects in the Effects box (**+ Add effect**, **++**, **x**), up to eight effects in a row and four copies of each effect; the row scrolls when it does not fit.
+- Controls that only matter for some settings are hidden otherwise (Distortion's Bits and Rate show only for Bitcrush). `docs/decisions/0011-effect-interface-additions.md`.
+- Test data: renders of every factory preset and two Tock projects made with 0.1.1 (`tests/data/reference-0.1.1`) that later versions must reproduce.
+
+#### Changed
+
+- The project state is version 2: the effect order is saved as three racks (`FxRacks`; only Main is used until the mixer arrives). Projects from version 1 are migrated when they load. A project saved with 0.2 does not open correctly in 0.1.
+- The plugin reports 16 samples of latency at the default Quality (4 in 0.1), because it keeps room for four copies of every effect.
+
 ## [0.1.0] - 2026-10-13
 
 First release. VST3, AU and Standalone for Windows, macOS and Linux (the plugins are not signed yet; see the installation steps in the user guide).

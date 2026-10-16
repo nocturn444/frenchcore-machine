@@ -2,7 +2,7 @@
 
 Living summary for the product owner (nocturn4). Updated by the agent in every PR that changes something listed here. It is in English like the rest of the repository; the agent explains the important parts in Spanish in the chat.
 
-Last updated: 2026-10-16.
+Last updated: 2026-10-16 (0.2 stage 1).
 
 ## 1. Where the project is
 
@@ -17,13 +17,13 @@ Last updated: 2026-10-16.
 | Feedback round 2026-10-13 (Punch/Tail balance removed, EQ made parametric, window rebuilt on the agreed grid and scaled to the window) | Done and merged |
 | 7 Hardening and release | Done. Version 0.1.0 was published on 2026-10-14 with zips for Windows, macOS and Linux. It was tried in FL Studio only (works well, reasonable RAM, saving and presets fine); not tried: automation, other sample rates, the Quality setting, other DAWs. CPU measured offline (3 % of one core at 8x with all effects on) |
 | 0.1.1 security and finishing fixes (JUCE 9.0.4, safe loading of embedded audio and of the DAW state, release zips with licence and checksums, auval in CI, licence notice in the window) | Merged on 2026-10-16 (#34, merged by the agent on the owner's instruction). Not released yet: the owner tags and publishes 0.1.1 when they want |
-| Version 0.2.0 (mixer and buses, effect copies, Filter, Compressor with Multiband, Transient shaper, Reverb, noise oscillator, Tock rework, extreme EQ) | Planned and documented on 2026-10-16 from the owner's answers ([PLAN](PLAN.md), section "Version 0.2.0"). Stage 0 (documentation) in review; stages 1 to 7 are to be built in claude.ai/code sessions, one pull request per stage |
+| Version 0.2.0 (mixer and buses, effect copies, Filter, Compressor with Multiband, Transient shaper, Reverb, noise oscillator, Tock rework, extreme EQ) | Planned and documented on 2026-10-16 from the owner's answers ([PLAN](PLAN.md), section "Version 0.2.0"). Stage 0 (documentation) merged. Stage 1 (effect copies and the Main rack, state version 2) is built and in review; stages 2 to 7 follow one pull request each (stage 4: one per effect) |
 
 ## 2. Open pull requests
 
-- The 0.2 documentation pull request (branch `claude/project-thread-xe9kgr`): specs, ADRs 0010 and 0011, plan, architecture and layout for version 0.2. Documentation only.
+- Stage 1 of version 0.2 (branch `feat/effect-copies-racks`): the 0.1.1 reference renders as test data, effect copies, racks and state version 2, the Main rack with Add, duplicate, remove and scrolling. Feature: the owner reviews and merges.
 
-Everything else is merged into `main`, including 0.1.1 (#34).
+Everything else is merged into `main`, including 0.1.1 (#34) and the 0.2 documentation.
 
 Merge rule (decided by the owner on 2026-10-13, written in `CLAUDE.md`): features and important changes are reviewed and merged by the owner; documentation-only pull requests and minor fixes may be merged by the agent once CI is green.
 
@@ -62,6 +62,7 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-16 | Version 0.2 technical choices: four copies of every effect with fixed IDs (copy 1 keeps the 0.1 IDs), three racks of up to eight effects stored as state, constant latency padded per rack, state version 2 with a migration that keeps every 0.1 sound; effects get the note pitch, conditional controls and a per-effect default Mix. | ADR 0010, ADR 0011, `docs/specs/mixer-and-buses.md` |
 | 2026-10-16 | 0.2 sound starting points for the owner's ears: Filter (TPT state variable), Compressor (OTT-like band curves to be voiced by ear), Transient shaper (envelope difference), Reverb (8-line FDN, Mix 30 %), eight generated noises, the Pogo curve, the Detect rule. | `docs/specs/fx-*.md`, `noise-oscillator.md`, `tock.md` §8 |
 | 2026-10-16 | The EQ's extreme ranges are separate parameters (`eq.bN.xgain`, `eq.bN.xq`) because changing the range of a released parameter would change automation in saved projects. | `docs/specs/fx-eq.md` §8 |
+| 2026-10-16 | Stage 1 choices: the effects a new project starts with in Main are marked on the effect itself (`inDefaultMain`), so new effects never change the default; an effect ID cannot be another one plus 2, 3 or 4; every rack pads to the latency of the whole pool (the plugin now reports 16 samples at 2x, four copies of Distortion's 4); duplicate copies every setting including On; removing an effect cuts it at once; the 0.1.1 reference renders are committed as test data (about 50 KB each, left channel, 0.3 s) and must match within 1e-6. | `docs/specs/mixer-and-buses.md` section 4 |
 | 2026-10-16 | The mixer goes in a tab of the Effects box and the noise in the free LFO box, so the window keeps its size (owner: "it has to fit my screen"). | `docs/specs/ui-grid-layout.md` §8 |
 
 ## 4. What the owner needs to do or listen to
@@ -81,6 +82,13 @@ Things to look at and listen to (feedback round):
 - Open the latest build of `main` in the Standalone and check the layout against your sketch: box sizes, what is in Global, the free LFO and Other boxes, the EQ display. Resize the window to the smallest and largest and check nothing breaks.
 - The amp envelope: the Punch/Tail balance is gone and the Split only divides the kick for the two levels. If the amp envelope still feels wrong, say what you do and what you hear (for example "I move X and Y happens"); I could not find a difference in the envelope itself between your last tested version and now, so I need the symptom.
 - The EQ: it now has four free bands. Tell me if you wanted something different (more bands, steeper cuts, a spectrum behind the curve).
+
+Stage 1 of 0.2 (effect copies), to try in the Standalone:
+
+- Open the Effects box: scroll it, press **+ Add effect** and add a second Distortion; it appears as "Distortion 2" at the end, on, with default settings. Try **++** (duplicate) and **x** (remove) on a strip, and drag a strip by its bar. Tell the agent if the buttons are where you want them.
+- Load each factory preset and an old project or preset of yours from 0.1: they should sound exactly as before (the tests compare them with the 0.1.1 sound).
+- Switch Distortion's Type to Bitcrush: Bits and Rate appear; with any other Type they are hidden.
+- The buses and the mixer are not there yet: stage 2.
 
 Things to listen to (sound):
 

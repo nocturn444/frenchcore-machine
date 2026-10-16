@@ -36,22 +36,31 @@ Adding a new effect to the plugin adds its strip here automatically.
 - A strip highlights while you drag it.
 - The strips keep their own height (a strip with a picture is taller); the box has room for all the registered effects.
 
+## 2b. Version 0.2: copies, add, duplicate, remove, scrolling (stage 1)
+
+Implemented as described in [mixer-and-buses](mixer-and-buses.md) section 1 for the Main rack (the Bus A and Bus B tabs come with the mixer stage):
+
+- Every strip's bar has, from the right: **x** (remove), **++** (duplicate; greyed when no copy of that effect is free or the rack is full), Mix and On. The name carries the copy number ("Distortion 2").
+- **+ Add effect** at the end opens a menu with every effect type; an entry is greyed when its four copies are in use, the button when the rack has eight effects. An empty rack shows "Empty: the sound passes through".
+- The strips sit in a vertical scroll area; the Effects box keeps its size.
+- A control with `shownWhen` is hidden unless the controlling parameter has one of the listed values (the Distortion's Bits and Rate show only for Bitcrush).
+
 ## 3. Parameters
 
 None new. The strips show the parameters of the effects (`<id>.enabled`, `<id>.mix` and the effect's own).
 
 ## 4. DSP / implementation approach
 
-- No DSP. `ui::FxRackPanel` builds one slot per registered effect from the effect's parameter descriptions (so a new effect needs no UI code). Every parameter becomes a `ui::ParameterControl` (a knob for a number, a switch for an on/off, a menu for a choice), attached to the parameter in the usual way ([ARCHITECTURE §7](../ARCHITECTURE.md)).
+- No DSP. `ui::FxRackPanel` builds one strip per effect instance in its rack from the effect's parameter descriptions (so a new effect needs no UI code). Every parameter becomes a `ui::ParameterControl` (a knob for a number, a switch for an on/off, a menu for a choice), attached to the parameter in the usual way ([ARCHITECTURE §7](../ARCHITECTURE.md)).
 - **Groups.** A parameter whose ID suffix has a dot ("b1.freq") belongs to the group before the dot; the group's title is the parameter name without its last word ("Band 1 Freq" gives "Band 1"). An effect with groups shows a column per group (switches and menus on a row, knobs below); one without shows a single row (menus, switches, then knobs).
 - **Pictures.** `ui/EffectDecorations.cpp` is a table from an effect ID to an optional component and its height. An effect without an entry shows only its controls. Adding an entry does not touch the rack.
-- The rack reads and changes the order only through `core::FxOrderState` (`move`), which publishes it to the audio thread ([fx-chain](fx-chain.md)); it repositions the strips when `FxOrderState` announces a change.
-- **Dragging**: while the handle is dragged, the position under the mouse is computed from the vertical position and the heights of the strips in the current order (`core::FxOrderState::positionIn`, a pure function) and the effect is moved there whenever it differs from its current position.
+- The rack reads and changes its contents only through `core::FxRackState` (`add`, `duplicate`, `remove`, `move`), which publishes them to the audio thread ([fx-chain](fx-chain.md)); it builds and repositions the strips when `FxRackState` announces a change. A strip is kept while its effect stays in the rack, so a drag in progress is not interrupted.
+- **Dragging**: while the handle is dragged, the position under the mouse is computed from the vertical position and the heights of the strips in the current order (`core::FxRackState::positionIn`, a pure function) and the effect is moved there whenever it differs from its current position.
 
 ## 5. Tests
 
-- `core::FxOrderState::positionIn(sizes, offset)` (`fcm_core_tests`): the first slot for an offset inside it and for negative offsets; the last slot beyond the end; the correct slot at every boundary (a boundary belongs to the next slot); sizes that are not finite positive numbers count as 0; an offset that is not a number, an empty list and a single slot are all safe (position 0). `positionAt` keeps its tests for slots of equal size.
-- Dragging logic combined with `FxOrderState::move`: dragging effect 0 across a three-slot row to the far end gives the order 1, 2, 0 and publishes it; dragging it back restores the registration order.
+- `core::FxRackState::positionIn(sizes, offset)` (`fcm_core_tests`): the first slot for an offset inside it and for negative offsets; the last slot beyond the end; the correct slot at every boundary (a boundary belongs to the next slot); sizes that are not finite positive numbers count as 0; an offset that is not a number, an empty list and a single slot are all safe (position 0). `positionAt` keeps its tests for slots of equal size.
+- Dragging logic combined with `FxRackState::move`: dragging effect 0 across a three-slot row to the far end gives the order 1, 2, 0 and publishes it; dragging it back restores the registration order.
 - UI behaviour is checked by running the Standalone under a virtual display: one strip per registered effect with its On, Mix and own controls, the EQ picture and band columns, and every strip inside the box. (Screenshots are not committed.)
 - Existing tests keep passing: the layout and the generic tests for every registered effect are unchanged.
 
