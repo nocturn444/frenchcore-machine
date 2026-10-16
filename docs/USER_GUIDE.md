@@ -253,6 +253,20 @@ Every band is the same and free: you choose what it does, where and how much.
 
 The bands start as a low shelf at 80 Hz, bells at 400 Hz and 2.5 kHz and a high shelf at 8 kHz, all flat. In the EQ strip the display shows the combined curve with one numbered dot per band: drag a dot sideways for Freq and up or down for Gain, turn the mouse wheel over it for Q, and double-click it to switch the band on or off. With every Gain at 0 and no cut in use the EQ changes nothing, and it adds no delay. A very loud Extreme peak is left to the safety limiter at the output: the EQ does not lower the level by itself.
 
+### Filter
+
+A classic synth filter to carve the kick: take the top off a distorted tail, thin out the low end of a layer or isolate a band. Add it with **+ Add effect**; it has the usual **On** and **Mix** and adds no delay.
+
+| Control | What it does |
+|---|---|
+| **Type** | **Low Pass** keeps the lows, **High Pass** keeps the highs, **Band Pass** keeps a band around the cutoff, **Notch** removes a band around the cutoff. |
+| **Slope** | **12 dB** (gentle) or **24 dB** (steep) per octave. |
+| **Cutoff** | Where the filter acts, 20 Hz to 20 kHz (default 20 kHz: wide open). |
+| **Resonance** | A peak at the cutoff, from none to a strong whistle. It never turns into a runaway tone. |
+| **Drive** | Pushes the sound into a soft saturation inside the filter. 0 % is clean; it thickens the sound without a big change of level. |
+
+With the defaults (Low Pass, fully open, no resonance, no drive) switching it on changes almost nothing until you move **Cutoff**.
+
 ### Stereo
 
 A multiband stereo effect. It splits the sound into three bands (low, mid, high) and sets the stereo width of each. Switch it on with **Stereo On**.

@@ -135,10 +135,14 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
         for (const char* control : {"extreme", "xgain", "xq", "keytrack"})
             allowed.insert("eq.b" + std::to_string(band) + "." + control);
 
+    // Added in 0.2, stage 4: the Filter (docs/specs/fx-filter.md section 3).
+    for (const char* control : {"enabled", "mix", "type", "slope", "cutoff", "resonance", "drive"})
+        allowed.insert(std::string("filter.") + control);
+
     // The copies 2 to 4 of every effect have the same IDs as copy 1 with the number after the effect ID.
     const auto firstCopies = allowed;
     for (const auto& id : firstCopies)
-        for (const char* effect : {"distortion", "eq", "stereo"})
+        for (const char* effect : {"distortion", "eq", "stereo", "filter"})
             if (id.rfind(std::string(effect) + ".", 0) == 0)
                 for (int copy = 2; copy <= 4; ++copy)
                     allowed.insert(effect + std::to_string(copy) + id.substr(std::string(effect).size()));
