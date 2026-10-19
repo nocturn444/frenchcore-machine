@@ -1,6 +1,6 @@
 # Spec: Mixer, effect buses and multiple effect copies
 
-- Status: Approved (product owner's answers of 2026-10-16, questions 2.1 to 2.6). Version 0.2, stages 1 and 2 of [PLAN](../PLAN.md). Stage 1 (copies, racks in the state, the Main rack and its UI, state version 2) is implemented; stage 2 (voice stems, mixer, Bus A and Bus B, tabs) is not.
+- Status: Approved (product owner's answers of 2026-10-16, questions 2.1 to 2.6). Version 0.2, stages 1 and 2 of [PLAN](../PLAN.md). Implemented: stage 1 (copies, racks in the state, the Main rack and its UI, state version 2) and stage 2 (voice stems, mixer, Bus A and Bus B, tabs). The Noise channel of the mixer comes with the noise oscillator (stage 5).
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ADR 0010](../decisions/0010-effect-instances-buses-and-mixer.md), [ADR 0011](../decisions/0011-effect-interface-additions.md), [ADR 0009](../decisions/0009-effect-parameters-and-chain-latency.md), [fx-chain](fx-chain.md) (0.1 machinery, still the base of one rack), [fx-rack](fx-rack.md) (0.1 UI, replaced by section 2 here), [voice-punch-tail](voice-punch-tail.md), [noise-oscillator](noise-oscillator.md), [tock](tock.md)
 
@@ -89,7 +89,17 @@ Non-parameter state: node `FxRacks` with three children `Rack` (`id` = `busA`, `
 - **Duplicate copies every setting, including On.** Add resets to defaults and switches on.
 - **Restoring `FxRacks`** ignores a rack whose text is over 2048 characters, at most 16 child nodes are read, and an instance listed twice keeps its first place (rack order busA, busB, main).
 - **Processing set-up.** Only instances that are in a rack get `setParameters`/`setContext` each block, so unused copies cost nothing; their mix smoothing and `setOversampling` are still kept current.
-- In stage 1 the engine reports the latency of the whole pool (`P(q)`, four copies of every effect), not yet `2 * P(q)`.
+- In stage 1 the engine reported the latency of the whole pool (`P(q)`); from stage 2 it reports `2 * P(q)` as specified.
+
+### Decisions made in stage 2 (technical, by the agent)
+
+- **The Noise channel has no parameters yet.** The mixer's source list is a table (`ParameterIds::kMixerSources`); stage 5 adds a `noise` row, with its `mixer.noise.*` IDs and `noise.level`. The voice already has a (silent) noise stem so the mixer and the engine need no change then.
+- **The punch weight follows the newest kick whether or not it is still sounding** (a counter since the last note-on, not tied to the amp envelope ending), so a reverb on a Punch-only bus is cut at the Split like the rest.
+- **Chunking.** The engine renders in chunks of the announced block size, so a host that sends a longer block gets the same sound as small blocks (tested); MIDI events keep their sample position.
+- **A bus rack always runs**, even when nothing is sent to it, so tails of what was sent before keep ringing out.
+- **Bus Level 0 dB is unity and -48 dB is silence** (gain 0); the three region weights (Whole, Punch, Tail) crossfade over 10 ms when Apply To changes.
+- **Racks that claim the same instance** (only possible through a bug) leave the later rack empty for that block.
+- **Solo and Mute are mixer-level.** Mute and Solo act on the stems before they are routed; they never touch the sources' own On switch.
 
 ## 5. Tests
 

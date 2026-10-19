@@ -72,6 +72,17 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
         effects.push_back(std::move(pointers));
     }
 
+    for (size_t i = 0; i < ParameterIds::kMixerSources.size(); ++i)
+    {
+        const auto& source = ParameterIds::kMixerSources[i];
+        mixer[i] = {lookup(state, ParameterIds::mixerDestination(source)),
+                    lookup(state, ParameterIds::mixerMute(source)),
+                    lookup(state, ParameterIds::mixerSolo(source))};
+    }
+    for (int bus = 0; bus < 2; ++bus)
+        buses[static_cast<size_t>(bus)] = {lookup(state, ParameterIds::busLevel(bus)),
+                                           lookup(state, ParameterIds::busRegion(bus))};
+
     namespace Osc = ParameterIds::Oscillator;
     for (int index = 0; index < dsp::kNumOscillators; ++index)
     {
@@ -115,6 +126,25 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.tock.startMs = finiteOr(tockStart, defaults.tock.startMs);
     result.tock.decayMs = finiteOr(tockDecay, defaults.tock.decayMs);
     result.tock.tone = finiteOr(tockTone, defaults.tock.tone);
+
+    // The mixer: a destination or region that is not one of the entries goes to the first (Main, Whole).
+    for (size_t i = 0; i < mixer.size(); ++i)
+    {
+        auto& target = result.mixer[static_cast<size_t>(ParameterIds::kMixerSources[i].stem)];
+        const int destination = toInt(mixer[i].destination, 0);
+        target.destination = destination >= 0 && destination < dsp::kNumDestinations
+                                 ? static_cast<dsp::Destination>(destination)
+                                 : dsp::Destination::main;
+        target.mute = toBool(mixer[i].mute, false);
+        target.solo = toBool(mixer[i].solo, false);
+    }
+    for (size_t b = 0; b < buses.size(); ++b)
+    {
+        result.buses[b].level = juce::Decibels::decibelsToGain(finiteOr(buses[b].level, 0.0f), -48.0f);
+        const int region = toInt(buses[b].region, 0);
+        result.buses[b].region =
+            region >= 0 && region <= 2 ? static_cast<dsp::BusRegion>(region) : dsp::BusRegion::whole;
+    }
 
     // The effect instances: a value that is not a finite number becomes the effect's default.
     for (size_t i = 0; i < effects.size() && i < result.effects.size(); ++i)

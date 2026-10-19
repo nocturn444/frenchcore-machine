@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "core/ParameterIds.h"
 #include "dsp/engine/EngineParameters.h"
 #include "dsp/fx/EffectRegistry.h"
 
@@ -43,7 +44,21 @@ class EngineParameterReader
         float defaultMixPercent = 100.0f;
     };
 
+    struct MixerPointers
+    {
+        std::atomic<float>* destination;
+        std::atomic<float>* mute;
+        std::atomic<float>* solo;
+    };
+    struct BusPointers
+    {
+        std::atomic<float>* level;
+        std::atomic<float>* region;
+    };
+
     std::vector<EffectPointers> effects;
+    std::array<MixerPointers, ParameterIds::kMixerSources.size()> mixer;
+    std::array<BusPointers, 2> buses;
     std::atomic<float>* quality;
     std::atomic<float>* outputGain;
     std::atomic<float>* limiterOn;

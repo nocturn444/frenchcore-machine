@@ -121,6 +121,14 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
     // Version 0.2 gives every effect four copies; copy 1 keeps the 0.1 IDs and copies 2 to 4 add
     // the number after the effect ID (docs/decisions/0010). Each stage adds its new IDs here.
     std::set<std::string> allowed = expected;
+
+    // Added in 0.2, stage 2 (docs/specs/mixer-and-buses.md section 3): the mixer and the two buses.
+    for (const char* source : {"osc1", "osc2", "tock"})
+        for (const char* control : {"dest", "mute", "solo"})
+            allowed.insert(std::string("mixer.") + source + "." + control);
+    for (const char* bus : {"bus.a", "bus.b"})
+        for (const char* control : {"level", "region"})
+            allowed.insert(std::string(bus) + "." + control);
     for (const auto& id : expected)
         for (const char* effect : {"distortion", "eq", "stereo"})
             if (id.rfind(std::string(effect) + ".", 0) == 0)

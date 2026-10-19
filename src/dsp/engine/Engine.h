@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "dsp/engine/BusStage.h"
 #include "dsp/engine/EngineParameters.h"
+#include "dsp/engine/Mixer.h"
 #include "dsp/engine/NoteHandler.h"
 #include "dsp/engine/PitchGlide.h"
 #include "dsp/engine/Voice.h"
@@ -18,6 +20,7 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
 #include <memory>
+#include <vector>
 
 namespace fcm::dsp
 {
@@ -75,17 +78,20 @@ class Engine
     {
         return racks[static_cast<size_t>(rack)].value();
     }
+    // Every sound passes one rack-sized delay on its way to Main and one in the Main rack itself
+    // (docs/decisions/0010 item 6), so the total is twice the pool's.
     int latencySamples(int oversamplingFactor) const noexcept
     {
-        return pool.latencySamples(oversamplingFactor);
+        return 2 * pool.latencySamples(oversamplingFactor);
     }
 
   private:
     void handleMidi(const juce::MidiMessageMetadata& event) noexcept;
+    // Renders `count` samples starting at `offset` of the current chunk into the mixer's sums.
+    void renderStems(int offset, int count) noexcept;
     void noteOn(int note, int velocity) noexcept;
     void noteOff(int note) noexcept;
     void updatePitchTarget() noexcept;
-    void renderSegment(float* output, int numSamples) noexcept;
 
     double sampleRate = 44100.0;
     juce::uint32 maxBlockSize = 0;
@@ -98,6 +104,14 @@ class Engine
     NoteHandler notes;
     EffectPool pool;
     std::array<EffectRack, kNumRacks> racks;
+    Mixer mixer;
+    std::array<BusStage, 2> buses;
+    DelayRing mainDirectRing;
+    // Per chunk (at most maxBlockSize samples): one mono sum per destination, the punch weight and
+    // the stereo input of each bus rack.
+    std::array<std::vector<float>, kNumDestinations> sums;
+    std::vector<float> punchWeights;
+    std::array<juce::AudioBuffer<float>, 2> busBuffers;
     PitchGlide glide;
     Voice voice;
     PublishedPointer<EnvelopeShape>* ampSource = nullptr;

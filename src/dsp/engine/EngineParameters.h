@@ -10,6 +10,48 @@ namespace fcm::dsp
 
 inline constexpr int kNumOscillators = 2;
 
+// The sounds of a kick that the mixer routes (docs/specs/mixer-and-buses.md): each is a mono stem
+// that comes out of the voice already through its own level, the amp envelope and the Punch / Tail
+// levels. The order is the order of the mixer's channels.
+enum Stem
+{
+    stemOsc1,
+    stemOsc2,
+    stemNoise,
+    stemTock,
+    kNumStems
+};
+
+// Where a stem goes. The numbers are the entries of the Destination choice (append-only).
+enum class Destination
+{
+    main = 0,
+    busA = 1,
+    busB = 2
+};
+inline constexpr int kNumDestinations = 3;
+
+// How much of a bus's sound is processed by its effects (the entries of Apply To, append-only).
+enum class BusRegion
+{
+    whole = 0,
+    punch = 1,
+    tail = 2
+};
+
+struct MixerSourceParameters
+{
+    Destination destination = Destination::main;
+    bool mute = false;
+    bool solo = false;
+};
+
+struct BusParameters
+{
+    float level = 1.0f; // linear gain
+    BusRegion region = BusRegion::whole;
+};
+
 // The Tock, the click layer (docs/specs/tock.md). Everything but `level` is read at note-on.
 struct TockParameters
 {
@@ -58,6 +100,10 @@ struct EngineParameters
     float tailLevel = 1.0f;     // linear gain of the tail region (after the split)
 
     TockParameters tock;
+
+    // The mixer and the two buses (docs/specs/mixer-and-buses.md).
+    std::array<MixerSourceParameters, kNumStems> mixer;
+    std::array<BusParameters, 2> buses; // Bus A, Bus B
 
     // The effects (docs/specs/fx-chain.md): the state of every effect instance by pool index
     // (docs/decisions/0010), and the oversampling factor (1, 2, 4 or 8) of the global Quality setting.

@@ -71,7 +71,7 @@ UI components are not unit tested in this project. What can be tested without a 
 Approved by the product owner on 2026-10-16 ("it has to fit my screen"; the mixer may go in a tab, the agent's choice). The grid, the window size and the aspect ratio do not change.
 
 - **LFO box → Noise panel** ([noise-oscillator](noise-oscillator.md)).
-- **Effects box → four tabs** at its top (about 24 points high): Mixer, Bus A, Bus B, Main ([mixer-and-buses](mixer-and-buses.md)). The rack tabs scroll vertically when their strips do not fit.
+- **Effects box → four tabs** (implemented in 0.2 stage 2: `ui::EffectsBox`) at its top (about 24 points high): Mixer, Bus A, Bus B, Main ([mixer-and-buses](mixer-and-buses.md)). The rack tabs scroll vertically when their strips do not fit.
 - **Tock box**: three rows (controls, waveform with Trim handles, knobs), [tock](tock.md) section 8.
 - The Other box keeps the licence notice ([legal-notice](legal-notice.md)).
 - Check, as in section 5: at the design size and at the smallest window (60 %) every control of the new panels is readable and reachable; the tabs and the waveform handles can be clicked at 60 %.
