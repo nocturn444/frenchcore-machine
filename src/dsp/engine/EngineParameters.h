@@ -66,6 +66,7 @@ struct TockParameters
     float trimStart = 0.0f; // 0..1 of the sample
     float trimEnd = 1.0f;
     float pogoSemitones = 0.0f;
+    bool keyTrack = false; // add the played note, relative to C3, to the Tune (docs/specs/tock.md section 9)
 };
 
 // The noise oscillator (docs/specs/noise-oscillator.md). Type and One Shot, Phase and Random are read at

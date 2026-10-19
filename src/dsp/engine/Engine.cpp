@@ -109,7 +109,10 @@ void Engine::noteOn(int note, int velocity) noexcept
     updatePitchTarget();
 
     const float velocity01 = static_cast<float>(velocity) / 127.0f;
-    voice.trigger(1.0f - parameters.velocitySensitivity * (1.0f - velocity01));
+    // The note the kick settles on (the root note when the global Key Track is off), relative to C3.
+    const int settleNote = parameters.keyTrack ? note : parameters.rootNote;
+    voice.trigger(1.0f - parameters.velocitySensitivity * (1.0f - velocity01),
+                  static_cast<float>(settleNote - 60));
 }
 
 void Engine::noteOff(int note) noexcept

@@ -18,6 +18,20 @@ namespace fcm
 
 class PluginProcessor;
 
+// The waveform with the Amp Env and Key Track switches stacked at its right, so the box keeps its size.
+class TockWaveRow : public juce::Component
+{
+  public:
+    TockWaveRow(juce::AudioProcessorValueTreeState& state, const core::TockSelector& selector);
+
+    void resized() override;
+
+  private:
+    ui::TockWaveform waveform;
+    ui::ParameterControl ampEnv;
+    ui::ParameterControl keyTrack;
+};
+
 // The tock's box (docs/specs/tock.md): its controls, a button to load a sample of your own, the
 // waveform with the Trim handles and the Detect button.
 class TockPanel : public ui::ControlPanel
@@ -35,7 +49,7 @@ class TockPanel : public ui::ControlPanel
     std::function<void(const juce::File&)> loadRequested;
     juce::TextButton loadButton{"Load sample..."};
     juce::TextButton detectButton{"Detect"};
-    ui::TockWaveform waveform;
+    TockWaveRow waveRow;
     std::unique_ptr<juce::FileChooser> chooser;
 };
 

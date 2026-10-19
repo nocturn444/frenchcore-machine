@@ -627,3 +627,64 @@ TEST_CASE("With Amp Env off the Tock ignores the amp envelope", "[dsp][tock][eng
     REQUIRE(tockOnly(false, 0.25f) == tockOnly(false, 1.0f));
     REQUIRE(tockOnly(true, 0.25f) != tockOnly(true, 1.0f));
 }
+
+// ---- Key Track (docs/specs/tock.md section 9) ----
+
+TEST_CASE("Key Track moves the Tock by octaves like Tune does", "[dsp][tock][keytrack]")
+{
+    const auto frequencyAt = [&](float keyTrackSemitones)
+    {
+        Tock tock;
+        tock.prepare(kSampleRate);
+        TockSettings settings;
+        settings.decayMs = 200.0f;
+        settings.tone = 1.0f;
+        settings.keyTrackSemitones = keyTrackSemitones;
+        tock.start(settings);
+        // From 100 ms on the tone dominates the noise, as in the Tune test.
+        const auto out = render(tock, static_cast<int>(0.12 * kSampleRate));
+        const auto from = static_cast<size_t>(0.1 * kSampleRate);
+        return fcm::test::measureFrequency(out.data() + from, static_cast<int>(out.size() - from),
+                                           kSampleRate);
+    };
+    const double base = frequencyAt(0.0f);
+    REQUIRE_THAT(frequencyAt(12.0f) / base, WithinAbs(2.0, 0.3));
+    REQUIRE_THAT(frequencyAt(-12.0f) / base, WithinAbs(0.5, 0.15));
+}
+
+TEST_CASE("The engine follows the note with the Tock only when its Key Track is on",
+          "[dsp][tock][keytrack][engine]")
+{
+    const auto tockOnly = [](bool keyTrack, int note)
+    {
+        constexpr int kBlock = 256;
+        EngineParameters parameters;
+        parameters.oscillators[0].on = false;
+        parameters.tock.on = true;
+        parameters.tock.level = 1.0f;
+        parameters.tock.decayMs = 100.0f;
+        parameters.tock.keyTrack = keyTrack;
+
+        Engine engine{fcm::test::noEffects()};
+        engine.setParameters(parameters);
+        engine.prepare({kSampleRate, kBlock, 2});
+        std::vector<float> out;
+        juce::AudioBuffer<float> buffer(2, kBlock);
+        for (int block = 0; block < 8; ++block)
+        {
+            juce::MidiBuffer midi;
+            if (block == 0)
+                midi.addEvent(juce::MidiMessage::noteOn(1, note, (juce::uint8)100), 0);
+            buffer.clear();
+            engine.process(buffer, midi);
+            out.insert(out.end(), buffer.getReadPointer(0), buffer.getReadPointer(0) + kBlock);
+        }
+        return out;
+    };
+
+    // Off: the same Tock on every note. On: a different one, and C3 (note 60) is the neutral note.
+    REQUIRE(tockOnly(false, 36) == tockOnly(false, 60));
+    REQUIRE(tockOnly(true, 36) != tockOnly(false, 36));
+    REQUIRE(tockOnly(true, 60) == tockOnly(false, 60));
+    REQUIRE(tockOnly(true, 48) != tockOnly(true, 60));
+}

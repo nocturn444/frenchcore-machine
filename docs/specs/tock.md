@@ -173,3 +173,14 @@ If Trim End is not at least 1 ms after Trim Start, the Tock plays 1 ms from Trim
 ### 8.7 Out of scope for 0.2
 
 - Several samples layered, a sample editor beyond the two handles, stereo Tock, Pogo with a separate time control (question 4.3 B).
+
+## 9. Key Track (owner's request after trying 0.2, 2026-10-19)
+
+The owner asked for a Key Track for Tocks that have a pitch. Same idea as the noise's Key Track ([noise-oscillator](noise-oscillator.md)).
+
+- **What the user gets**: a **Key Track** switch next to Amp Env in the Tock box. Off by default, so every sound stays as it was. On, the Tock also moves with the note you play, one octave per octave, relative to C3 (note 60): at C3 nothing changes, at C2 it is an octave lower. It adds to Tune, in Synth mode (the tone of the click) and in Sample mode (the sample plays faster or slower, so a pitched sample follows the note).
+- **Parameter**: `tock.keyTrack`, off / on, default off, read at note-on, automatable.
+- **Which note**: the note the kick settles on, as for the noise: the played note when the global Key Track is on, the Root Note when it is off. The Tock is fixed for the whole kick, so glide does not bend it.
+- **How**: `Engine::noteOn` hands the voice the settling note relative to C3 and `Voice::trigger` passes it to `Tock::start` as `keyTrackSemitones` when the switch is on (clamped to +-72, added to Tune after Tune's own clamp). No allocation.
+- **UI**: the Amp Env and Key Track switches are stacked at the right of the waveform, so the box keeps its size.
+- **Tests**: the Tock moves an octave for 12 semitones; in the engine the Tock is identical on every note with the switch off, differs with it on, and is unchanged at C3; the parameter's ID, default and reading are in the parameter tests.

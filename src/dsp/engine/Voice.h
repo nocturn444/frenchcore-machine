@@ -56,7 +56,8 @@ class Voice
     void setNoiseSample(const NoiseSample* sample) noexcept;
 
     // Starts a kick. `velocityGain` is the final level factor (already scaled by sensitivity).
-    void trigger(float velocityGain) noexcept;
+    // `noteSemitones` is the played note relative to C3 (what Key Track of the Tock follows).
+    void trigger(float velocityGain, float noteSemitones = 0.0f) noexcept;
 
     // The last held key was released: fades the current kick out with the envelope's short release.
     void release() noexcept { core.amp.release(); }
@@ -137,6 +138,7 @@ class Voice
     TockSettings tockSettings;
     bool tockOn = false;
     bool tockAmpEnv = false;
+    bool tockKeyTrack = false;
     float bpm = 120.0f;
     const EnvelopeShape* ampShapeInUse = nullptr; // for the tempo sync scale at note-on
     const EnvelopeShape* pitchShapeInUse = nullptr;

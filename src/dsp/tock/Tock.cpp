@@ -17,10 +17,11 @@ constexpr double kMaxDecayMs = 200.0;
 constexpr double kMaxStartMs = 20.0;
 constexpr float kMaxTuneSemitones = 24.0f;
 constexpr double kMaxPogoSemitones = 24.0;
-constexpr double kMinPlayedMs = 1.0;   // a trim shorter than this plays this much
-constexpr double kTrimFadeInMs = 0.5;  // only when the trim starts after the sample's beginning
-constexpr double kTrimFadeOutMs = 2.0; // only when the trim ends before the sample's end
-constexpr double kPogoCurve = 4.0;     // the bend is exponential: fast at first
+constexpr double kMaxKeyTrackSemitones = 72.0; // the whole MIDI range around C3
+constexpr double kMinPlayedMs = 1.0;           // a trim shorter than this plays this much
+constexpr double kTrimFadeInMs = 0.5;          // only when the trim starts after the sample's beginning
+constexpr double kTrimFadeOutMs = 2.0;         // only when the trim ends before the sample's end
+constexpr double kPogoCurve = 4.0;             // the bend is exponential: fast at first
 
 double finiteClamp(double value, double low, double high, double fallback) noexcept
 {
@@ -49,7 +50,9 @@ void Tock::start(const TockSettings& settings) noexcept
 {
     sampleMode = settings.sampleMode;
 
-    const double tune = finiteClamp(settings.tuneSemitones, -kMaxTuneSemitones, kMaxTuneSemitones, 0.0);
+    const double tune =
+        finiteClamp(settings.tuneSemitones, -kMaxTuneSemitones, kMaxTuneSemitones, 0.0) +
+        finiteClamp(settings.keyTrackSemitones, -kMaxKeyTrackSemitones, kMaxKeyTrackSemitones, 0.0);
     const double startMs = finiteClamp(settings.startMs, 0.0, kMaxStartMs, 0.0);
     const double decayMs = finiteClamp(settings.decayMs, kMinDecayMs, kMaxDecayMs, 25.0);
     const double tone = finiteClamp(settings.tone, 0.0, 1.0, 0.7);
