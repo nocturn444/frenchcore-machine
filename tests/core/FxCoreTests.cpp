@@ -434,26 +434,62 @@ TEST_CASE("Dragging an effect across the row reorders and publishes the rack", "
     REQUIRE(rig.main.load() == fcm::dsp::EffectRack::pack(std::vector<int>{4, 8, 0}));
 }
 
-TEST_CASE("The position under a point in a stack of slots of different sizes", "[core][fx][rack]")
+TEST_CASE("Where a dragged slot goes among others of different sizes", "[core][fx][rack]")
 {
-    const std::vector<double> sizes{130.0, 290.0, 130.0};
-    REQUIRE(FxRackState::positionIn(sizes, 0.0) == 0);
-    REQUIRE(FxRackState::positionIn(sizes, 129.9) == 0);
-    REQUIRE(FxRackState::positionIn(sizes, 130.0) == 1); // each boundary belongs to the next slot
-    REQUIRE(FxRackState::positionIn(sizes, 419.9) == 1);
-    REQUIRE(FxRackState::positionIn(sizes, 420.0) == 2);
-    REQUIRE(FxRackState::positionIn(sizes, 549.0) == 2);
+    // The others: a short, a tall and a short strip, one after the other (middles at 65, 275, 485).
+    const std::vector<double> others{130.0, 290.0, 130.0};
+    REQUIRE(FxRackState::insertionIndex(others, 0.0) == 0);
+    REQUIRE(FxRackState::insertionIndex(others, 64.9) == 0);
+    REQUIRE(FxRackState::insertionIndex(others, 65.0) == 1); // a middle belongs to the slot after it
+    REQUIRE(FxRackState::insertionIndex(others, 274.9) == 1);
+    REQUIRE(FxRackState::insertionIndex(others, 275.0) == 2);
+    REQUIRE(FxRackState::insertionIndex(others, 485.0) == 3);
 
-    // Outside the stack the first or last slot.
-    REQUIRE(FxRackState::positionIn(sizes, -30.0) == 0);
-    REQUIRE(FxRackState::positionIn(sizes, 5000.0) == 2);
+    // Outside the stack: the start or the end.
+    REQUIRE(FxRackState::insertionIndex(others, -30.0) == 0);
+    REQUIRE(FxRackState::insertionIndex(others, 5000.0) == 3);
 
     // Unusable input is safe.
     const double nan = std::numeric_limits<double>::quiet_NaN();
-    REQUIRE(FxRackState::positionIn(sizes, nan) == 0);
-    REQUIRE(FxRackState::positionIn({}, 10.0) == 0);
-    REQUIRE(FxRackState::positionIn({100.0}, 900.0) == 0);
-    REQUIRE(FxRackState::positionIn({nan, 100.0, -5.0}, 50.0) == 1); // bad sizes count as 0
+    REQUIRE(FxRackState::insertionIndex(others, nan) == 0);
+    REQUIRE(FxRackState::insertionIndex({}, 10.0) == 0);
+    REQUIRE(FxRackState::insertionIndex({nan, 100.0, -5.0}, 80.0) ==
+            2); // bad sizes count as 0: middles at 0, 50, 100
+}
+
+TEST_CASE("Dragging a tall strip past a short one does not make them swap back and forth", "[core][fx][rack]")
+{
+    // Three strips: A short (130), B tall (290), C short (130). Drag B with the mouse at a fixed y and
+    // replay the drag handler many times: the order must settle at once and stay put.
+    const std::vector<double> heights{130.0, 290.0, 130.0};
+    std::vector<int> order{0, 1, 2}; // A B C, by strip
+    const int dragged = 1;
+    for (const double mouseY : {10.0, 100.0, 200.0, 300.0, 400.0, 520.0})
+    {
+        std::vector<int> previous;
+        for (int repeat = 0; repeat < 6; ++repeat)
+        {
+            std::vector<double> others;
+            int current = 0;
+            for (size_t i = 0; i < order.size(); ++i)
+            {
+                if (order[i] == dragged)
+                    current = static_cast<int>(i);
+                else
+                    others.push_back(heights[static_cast<size_t>(order[i])]);
+            }
+            const int target = FxRackState::insertionIndex(others, mouseY);
+            if (target != current)
+            {
+                const int value = order[static_cast<size_t>(current)];
+                order.erase(order.begin() + current);
+                order.insert(order.begin() + target, value);
+            }
+            if (repeat > 0)
+                REQUIRE(order == previous); // the same mouse position gives the same order
+            previous = order;
+        }
+    }
 }
 
 TEST_CASE("Every effect has four copies with the same ranges and defaults", "[core][fx][layout]")
