@@ -149,10 +149,15 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
           "time", "upward", "downward", "ingain", "outgain", "low", "mid", "high"})
         allowed.insert(std::string("compressor.") + control);
 
+    // Added in 0.2, stage 4: the Reverb (docs/specs/fx-reverb.md section 3).
+    for (const char* control : {"enabled", "mix", "size", "decay", "damping", "predelay", "lowcut"})
+        allowed.insert(std::string("reverb.") + control);
+
     // The copies 2 to 4 of every effect have the same IDs as copy 1 with the number after the effect ID.
     const auto firstCopies = allowed;
     for (const auto& id : firstCopies)
-        for (const char* effect : {"distortion", "eq", "stereo", "filter", "transient", "compressor"})
+        for (const char* effect :
+             {"distortion", "eq", "stereo", "filter", "transient", "compressor", "reverb"})
             if (id.rfind(std::string(effect) + ".", 0) == 0)
                 for (int copy = 2; copy <= 4; ++copy)
                     allowed.insert(effect + std::to_string(copy) + id.substr(std::string(effect).size()));

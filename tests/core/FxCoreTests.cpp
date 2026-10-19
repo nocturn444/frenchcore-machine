@@ -490,3 +490,33 @@ TEST_CASE("Every effect has four copies with the same ranges and defaults", "[co
         REQUIRE(first->get() == fourth->get());
     }
 }
+
+TEST_CASE("The default Mix of an effect is its descriptor's, for every copy", "[core][fx][layout]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    fcm::test::TestProcessor processor;
+    fcm::core::EngineParameterReader reader(processor.state);
+    const auto& registry = fcm::dsp::defaultEffectRegistry();
+
+    for (int effect = 0; effect < registry.count(); ++effect)
+        for (int copy = 1; copy <= fcm::dsp::kInstancesPerEffect; ++copy)
+        {
+            const std::string id = registry.instanceId(fcm::dsp::EffectRegistry::instanceIndex(effect, copy));
+            auto* mix = dynamic_cast<juce::AudioParameterFloat*>(processor.state.getParameter(id + ".mix"));
+            INFO(id);
+            REQUIRE(mix != nullptr);
+            REQUIRE_THAT(mix->get(), WithinAbs(registry.descriptor(effect)->defaultMix * 100.0, 1.0e-3));
+        }
+
+    // The Reverb starts at 30 %, and the reader gives the same for a mix that is not a number.
+    REQUIRE_THAT(processor.state.getParameter("reverb.mix")
+                     ->convertFrom0to1(processor.state.getParameter("reverb.mix")->getDefaultValue()),
+                 WithinAbs(30.0, 1.0e-3));
+    const int reverbIndex = registry.indexOf("reverb");
+    REQUIRE(reverbIndex >= 0);
+    processor.state.getRawParameterValue("reverb3.mix")->store(std::numeric_limits<float>::quiet_NaN());
+    const auto read = reader.read();
+    REQUIRE_THAT(
+        read.effects[static_cast<size_t>(fcm::dsp::EffectRegistry::instanceIndex(reverbIndex, 3))].mix,
+        WithinAbs(0.3, 1.0e-6));
+}
