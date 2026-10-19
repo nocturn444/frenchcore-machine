@@ -11,6 +11,7 @@
 #include <cmath>
 #include <juce_dsp/juce_dsp.h>
 #include <set>
+#include <string>
 #include <vector>
 
 using Catch::Matchers::WithinAbs;
@@ -200,6 +201,30 @@ TEST_CASE("One Shot stops at the end and a loop never stops", "[dsp][noise][play
     for (int i = 0; i < 100000; ++i)
         REQUIRE(std::isfinite(player.process(0.0)));
     REQUIRE(player.isRunning());
+}
+
+TEST_CASE("Air Burst and Thump play once whatever One Shot says, the others follow the switch",
+          "[dsp][noise][player]")
+{
+    for (int index = 0; index < FactoryNoises::count(); ++index)
+    {
+        const auto sample = FactoryNoises::build(index);
+        const bool shortHit = std::string(FactoryNoises::name(index)) == "Air Burst" ||
+                              std::string(FactoryNoises::name(index)) == "Thump";
+        REQUIRE(sample->playOnce == shortHit);
+
+        NoisePlayer player;
+        player.prepare(kRate);
+        player.setSample(sample.get());
+        NoiseSettings settings;
+        settings.random = 0.0f;
+        settings.oneShot = false; // the switch is off
+        player.start(settings);
+        for (int i = 0; i < 200000; ++i) // more than 4 seconds, longer than any built-in sound
+            player.process(0.0);
+        INFO(FactoryNoises::name(index));
+        REQUIRE(player.isRunning() == !shortHit);
+    }
 }
 
 TEST_CASE("Phase sets the start, Random varies it and reset makes runs identical", "[dsp][noise][player]")

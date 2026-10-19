@@ -52,6 +52,10 @@ Stages 1 to 7 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer 
 
 - **Tock rework** (`docs/specs/tock.md` section 8): an **Amp Env** switch (off for new sounds, so the Tock plays at its own volume; on for projects and presets from 0.1, which sound as before), **Trim** with a waveform display and two draggable handles, a **Detect** button that finds the hit in a sample, a **Pogo** knob that bends the Tock's pitch, and user samples up to 10 seconds (a whole kick; above 48 kHz they are converted to 48 kHz). New parameters `tock.ampEnv`, `tock.trimStart`, `tock.trimEnd`, `tock.pogo`.
 
+#### Fixed
+
+- Noise: Air Burst and Thump always play once at the start of each kick; with One Shot off they used to repeat like a hi-hat.
+
 #### Changed
 
 - The project state is version 2: the effect order is saved as three racks (`FxRacks`; only Main is used until the mixer arrives). Projects from version 1 are migrated when they load. A project saved with 0.2 does not open correctly in 0.1.

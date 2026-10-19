@@ -28,7 +28,8 @@ void NoisePlayer::reset() noexcept
 
 void NoisePlayer::start(const NoiseSettings& settings) noexcept
 {
-    oneShot = settings.oneShot;
+    // The short built-in hits never loop; for every other sound the switch decides.
+    oneShot = settings.oneShot || (sample != nullptr && sample->playOnce);
     const double phase =
         std::isfinite(settings.phase) ? std::clamp(static_cast<double>(settings.phase), 0.0, 1.0) : 0.0;
     const double random =

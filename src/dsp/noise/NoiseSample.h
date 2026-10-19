@@ -12,6 +12,8 @@ struct NoiseSample
 {
     std::vector<float> samples;
     double sampleRate = 48000.0;
+    // A short hit (Air Burst, Thump) that never loops, whatever the One Shot switch says.
+    bool playOnce = false;
 };
 
 } // namespace fcm::dsp

@@ -178,6 +178,7 @@ struct Entry
 {
     const char* name;
     Maker make;
+    bool playOnce = false; // a short hit: it never loops
 };
 
 const std::array<Entry, 8>& entries()
@@ -189,8 +190,8 @@ const std::array<Entry, 8>& entries()
         {"Crackle", makeCrackle},
         {"Metal", makeMetal},
         {"Digital", makeDigital},
-        {"Air Burst", makeAirBurst},
-        {"Thump", makeThump},
+        {"Air Burst", makeAirBurst, true},
+        {"Thump", makeThump, true},
     }};
     return list;
 }
@@ -210,7 +211,9 @@ std::unique_ptr<const NoiseSample> FactoryNoises::build(int index)
 {
     auto sample = std::make_unique<NoiseSample>();
     sample->sampleRate = kSampleRate;
-    sample->samples = entries()[static_cast<size_t>(index >= 0 && index < count() ? index : 0)].make();
+    const auto& entry = entries()[static_cast<size_t>(index >= 0 && index < count() ? index : 0)];
+    sample->samples = entry.make();
+    sample->playOnce = entry.playOnce;
 
     // Remove any offset, then scale to the same peak for all.
     double mean = 0.0;

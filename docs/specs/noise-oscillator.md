@@ -13,7 +13,7 @@ A third sound source, like Serum's noise oscillator: it plays a noise or a short
 - **Level**: how loud, from silent to +12 dB. Default 0 dB.
 - **Pitch**: plays the noise faster (higher) or slower (lower), -48 to +48 semitones. Default 0.
 - **Key Track**: when on, the noise also moves with the note you play (one octave per octave, relative to C3); off by default, so the noise sounds the same on every note.
-- **One Shot**: when on, the sound plays once from its start and stops; when off (default) it loops for as long as the kick sounds. Air Burst and Thump are meant for One Shot.
+- **One Shot**: when on, the sound plays once from its start and stops; when off (default) it loops for as long as the kick sounds. Air Burst and Thump are short hits that always play once, whatever this switch says (owner's decision of 2026-10-19: with the switch off they looped like a hi-hat); the switch matters for the other noises and for your own sample when it is shorter than the kick.
 - **Phase**: where in the sound each kick starts, 0 to 100 %.
 - **Random**: how much the start point varies from kick to kick (0 % always the same, 100 % anywhere).
 
@@ -61,6 +61,7 @@ Random defaults to 100 % so loops of noise do not repeat audibly kick after kick
 
 ## 5b. Technical decisions made while implementing
 
+- `NoiseSample::playOnce` marks Air Burst and Thump; the player treats them as One Shot always. Phase and Random still choose the start point as before.
 - The loop crossfade is computed at playback, not baked, so the same stored sample serves Loop and One Shot.
 - A user WAV above 48 kHz is resampled to 48 kHz (windowed sinc), so a stored sample is at most 480000 samples; the base64 text limit is 2.6 million characters.
 - Phase and Random use a small deterministic generator reseeded by `reset()`, so renders are repeatable.
