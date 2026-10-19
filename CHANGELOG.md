@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-To be released as 0.1.1: security fixes and finishing touches after the 0.1.0 review and security audit. No change to the sound, the controls or the project format; projects and presets from 0.1.0 open as before.
+## [0.2.0] - 2026-10-19
+
+This release also carries the 0.1.1 security fixes (0.1.1 was never released on its own; its notes are the first three sections below: "Security", "Added", "Fixed") and the 0.2 features (the last section). Originally written for 0.1.1: security fixes and finishing touches after the 0.1.0 review and security audit. No change to the sound, the controls or the project format; projects and presets from 0.1.0 open as before.
 
 ### Security
 
@@ -27,7 +29,7 @@ To be released as 0.1.1: security fixes and finishing touches after the 0.1.0 re
 - The release notes now list the known limitations; the user guide says the Linux build needs glibc 2.38 or newer and that shared projects and presets include your own wavetables and Tock sample.
 
 
-### Version 0.2.0 (ready for review; not released)
+### Version 0.2 features
 
 Stages 1 to 7 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer and the buses, five new effects (Filter, Transient, Compressor, Reverb, EQ Extreme), the noise oscillator and the Tock rework. Projects and presets from 0.1 open and sound the same (checked by tests against renders made with 0.1.1).
 
@@ -82,5 +84,6 @@ First release. VST3, AU and Standalone for Windows, macOS and Linux (the plugins
 - Saved projects and presets are treated as untrusted input: unusable values are replaced by defaults, a state from a newer version loads as far as it is understood, and damaged files are refused with a message. See `docs/specs/state-safe-loading.md`.
 - Continuous integration on Linux, macOS and Windows (build, unit tests, pluginval at strictness 10, formatting), pinned and verified dependencies, and a release workflow that builds the three systems when a version tag is pushed.
 
-[Unreleased]: https://github.com/nocturn444/frenchcore-machine/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/nocturn444/frenchcore-machine/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nocturn444/frenchcore-machine/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nocturn444/frenchcore-machine/releases/tag/v0.1.0
