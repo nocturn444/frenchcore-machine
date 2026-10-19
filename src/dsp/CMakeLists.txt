@@ -16,6 +16,7 @@ target_sources(fcm_dsp INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/eq/EqEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/filter/FilterEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/stereo/StereoEffect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/fx/transient/TransientEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/EffectRegistry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/RegisterEffects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/oscillator/FactoryWavetables.cpp

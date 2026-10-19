@@ -4,6 +4,7 @@
 #include "dsp/fx/eq/EqEffect.h"
 #include "dsp/fx/filter/FilterEffect.h"
 #include "dsp/fx/stereo/StereoEffect.h"
+#include "dsp/fx/transient/TransientEffect.h"
 
 namespace fcm::dsp
 {
@@ -16,6 +17,7 @@ void registerEffects(EffectRegistry& registry)
     registry.add<EqEffect>();
     registry.add<StereoEffect>();
     registry.add<FilterEffect>();
+    registry.add<TransientEffect>();
 }
 
 } // namespace fcm::dsp

@@ -267,6 +267,19 @@ A classic synth filter to carve the kick: take the top off a distorted tail, thi
 
 With the defaults (Low Pass, fully open, no resonance, no drive) switching it on changes almost nothing until you move **Cutoff**.
 
+### Transient
+
+Turns the **attack** (the first instant of every hit) and the **sustain** (what rings after it) up or down, whatever sound goes in. Put it after a distortion to bring back the punch the distortion flattened, or to shorten a tail. It has the usual **On** and **Mix** and adds no delay. With Attack and Sustain at 0 it changes nothing.
+
+| Control | What it does |
+|---|---|
+| **Attack** | -100 % softens the hit, +100 % makes it snap harder. |
+| **Sustain** | -100 % shortens what rings after the hit, +100 % makes it longer and louder. |
+| **Speed** | How short a hit is: low values react to the very first milliseconds only, high values to a longer attack. Default 50 %. |
+| **Output** | Volume after the effect, -24 to +12 dB. |
+
+It works from the difference between a fast and a slow follower of the level, so a quiet kick is shaped like a loud one. At +100 % either control can change the level by up to 24 dB.
+
 ### Stereo
 
 A multiband stereo effect. It splits the sound into three bands (low, mid, high) and sets the stereo width of each. Switch it on with **Stereo On**.

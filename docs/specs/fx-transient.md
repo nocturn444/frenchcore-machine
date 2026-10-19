@@ -1,6 +1,6 @@
 # Spec: Transient shaper effect
 
-- Status: Approved (product owner's answer of 2026-10-16, question 1.1); not implemented. Version 0.2, stage 4. Ranges and defaults are first choices by the agent, for the owner's ears.
+- Status: Approved (product owner's answer of 2026-10-16, question 1.1); implemented (stage 4, second of the four effects). Ranges and defaults are first choices by the agent, for the owner's ears.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [mixer-and-buses](mixer-and-buses.md), [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md)
 
@@ -35,6 +35,7 @@ Effect ID `transient` (copies `transient2` to `transient4`).
 - `fcm::dsp::TransientEffect` in `src/dsp/fx/transient/`, one registration line.
 - Envelope-difference method of the SPL Transient Designer (level-independent): a fast and a slow peak follower on the linked stereo level; the attack signal is `max(0, dB(fast) - dB(slow))`, the sustain signal is `max(0, dB(slow) - dB(fast))` with a slow release. Gain in dB = `attack% * 0.24 * attackSignal + sustain% * 0.24 * sustainSignal`, clamped to -24..+24 dB, smoothed by 1 ms so it does not distort low frequencies. Speed sets the fast follower's attack/release (0.1 to 5 ms) and the slow follower's attack (5 to 50 ms).
 - Level-independent by design: the same kick at -20 dB is shaped like at 0 dB.
+- **Constants chosen in the implementation (technical, by the agent):** the gain is `2 dB per dB` of the fast/slow difference at 100 % (the first formula's 0.24 would have made 100 % nearly inaudible on a kick, whose two followers differ by a few dB), still clamped to -24..+24 dB. The fast follower's release is 30 ms and the slow one's 300 ms, not the 0.1 to 5 ms of the first text: a release as short as that makes the follower ripple with the cycles of a low note (a 50 Hz kick has a 20 ms cycle) and the gain would distort it. Speed sets the two attacks only. The followers always run, so they are in step when Attack or Sustain are turned up from zero.
 - No look-ahead, no latency. With Attack and Sustain both at 0 the gain is exactly 1 (bit-exact, the process is skipped).
 - Non-finite input becomes 0.
 
