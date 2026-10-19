@@ -21,6 +21,7 @@ Last updated: 2026-10-16 (0.2 stage 1).
 
 ## 2. Open pull requests
 
+- Follow-up to the owner's trial of 0.2 (branch `fix/rack-drag-reorder`, stacked on the Tock Key Track): dragging effects to reorder them no longer jumps. Fix, but it changes the interface: the owner reviews and merges.
 - Follow-up to the owner's trial of 0.2 (branch `feat/tock-key-track`, stacked on the noise fix): a Key Track switch for the Tock. Feature: the owner reviews and merges.
 - Follow-up to the owner's trial of 0.2 (branch `fix/noise-short-sounds-play-once`, stacked on stage 7): Air Burst and Thump always play once. Feature-level change in sound: the owner reviews and merges.
 - Stage 7 of version 0.2 (branch `chore/release-0.2-prep`, stacked on the Tock rework): version 0.2.0 in CMake, README (EN and ES), CPU measurement, release notes draft. Merge it last.
@@ -111,6 +112,7 @@ Stage 1 of 0.2 (effect copies), to try in the Standalone:
 - Switch Distortion's Type to Bitcrush: Bits and Rate appear; with any other Type they are hidden.
 - Stage 2 (mixer and buses): open the **Mixer** tab. Send Osc 1 to **Bus A**, open the **Bus A** tab, add a Distortion and set **Apply To** to **Tail**: only the tail should be distorted. Try **Punch**, and a Reverb later when it exists. Solo Osc 2 (switch it on first), mute a sound, move Osc 2 alone to Bus B and put an EQ there. Nothing should click when you switch; the bus **Level** at -48 is silence.
 - When the whole 0.2 chain of pull requests (#36 to the stage 7 one) is merged: start the release (`docs/RELEASING.md`, version `v0.2.0`), check the draft and its notes (`.github/release-notes.md`) and publish it. Version 0.1.1 was never released: 0.2.0 includes its fixes, so you can skip tagging 0.1.1.
+- Reordering effects: drag an effect by its handle past a tall one (EQ) and a short one (Distortion) and check that it goes where you drop it without shaking.
 - Tock Key Track and the Noise fix (after your trial of 2026-10-19): switch **Key Track** on in the Tock box, set Mode Synth, play a few notes and check the click follows the note (at C3 it does not change); Air Burst and Thump now play once per kick even with One Shot off.
 - Stage 6 (Tock): the Tock box has new controls. Switch the Tock on, Mode Sample, and look at the waveform: drag the two handles and listen to only that part. **Load sample...** a whole kick (up to 10 seconds), press **Detect** and see if the handles land on the hit. Move **Pogo** up and down for a rising or falling click. Switch **Amp Env** on and off: off, the Tock keeps its own volume whatever the amp envelope does. Question for you: even with Amp Env off, the Tock at the default -12 dB is far below the kick; should the default Level be louder (for example -3 dB), or is it fine because you set it per kick?
 - Stage 5 (Noise): in the bottom-left box switch **On**, listen to each **Type** (set Level to taste), and try **Pitch**, **Key Track** (play different notes), **One Shot** with Air Burst and Thump, and **Phase** / **Random**. Load your own WAV with **Load...**. Send the Noise to Bus A in the Mixer and put a Filter there. Tell me which noises you miss or dislike.

@@ -55,6 +55,7 @@ Stages 1 to 7 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer 
 
 #### Fixed
 
+- Effects rows: dragging an effect by its handle no longer makes the strips jump back and forth when a tall effect (like the EQ) and a short one trade places; the new position now depends only on the mouse and the other strips.
 - Noise: Air Burst and Thump always play once at the start of each kick; with One Shot off they used to repeat like a hi-hat.
 
 #### Changed
