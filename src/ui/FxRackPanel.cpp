@@ -32,6 +32,12 @@ int knobRowsFor(int knobs)
     return knobs > 3 ? 2 : 1;
 }
 
+// An effect without groups puts its controls in one row; more than seven make it two.
+int singleRowCount(int controls)
+{
+    return controls > 7 ? 2 : 1;
+}
+
 // The controls that are visible: a control that depends on another parameter may be hidden.
 std::vector<ParameterControl*> shown(const std::vector<std::unique_ptr<ParameterControl>>& controls)
 {
@@ -67,6 +73,7 @@ FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
     mixSlider = std::make_unique<ParameterControl>(
         state, juce::String(core::ParameterIds::effect(instanceId, core::ParameterIds::kEffectMix)), "Mix",
         true);
+    mixSlider->setWheelAdjusts(false);
     addAndMakeVisible(*onSwitch);
     addAndMakeVisible(*mixSlider);
 
@@ -126,6 +133,7 @@ FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
             state, juce::String(core::ParameterIds::effect(instanceId, spec.idSuffix)), label);
         if (!control->isValid())
             continue;
+        control->setWheelAdjusts(false); // the rack scrolls under the wheel; knobs turn by dragging
         addAndMakeVisible(*control);
 
         // Shown only for some values of another parameter of the same effect.
@@ -198,9 +206,13 @@ void FxRackPanel::Slot::updateHeight()
     }
 
     height = kHandleHeight + decorationHeight + 2 * kBodyInset;
+    int singleRows = 1;
+    if (!grouped && !groups.empty())
+        singleRows = singleRowCount(
+            static_cast<int>(shown(groups.front().switches).size() + shown(groups.front().knobs).size()));
     height += grouped ? kGroupTitleHeight + ParameterControl::kSwitchHeight +
                             (extraSwitchRow ? kExtraSwitchRowHeight : 0) + knobRows * kGroupKnobRowHeight
-                      : kKnobRowHeight;
+                      : kKnobRowHeight * singleRows;
 }
 
 void FxRackPanel::Slot::paint(juce::Graphics& g)
@@ -307,7 +319,7 @@ void FxRackPanel::Slot::resized()
         else
         {
             // One row: menus and switches first (Type before Drive), then the knobs. A menu gets more width
-            // than a knob, a switch a little less.
+            // than a knob, and a switch has to fit its name.
             std::vector<ParameterControl*> all = shown(group.switches);
             for (auto* control : shown(group.knobs))
                 all.push_back(control);
@@ -317,20 +329,30 @@ void FxRackPanel::Slot::resized()
             {
                 return control->kind() == ParameterControl::Kind::choice
                            ? 1.8f
-                           : (control->kind() == ParameterControl::Kind::toggle ? 0.8f : 1.0f);
+                           : (control->kind() == ParameterControl::Kind::toggle ? 1.3f : 1.0f);
             };
-            float totalWeight = 0.0f;
-            for (const auto* control : all)
-                totalWeight += weightOf(control);
-            const int rowWidth = column.getWidth();
-            float soFar = 0.0f;
-            int used = 0;
-            for (auto* control : all)
+            // More than seven controls make two rows, so each stays wide enough to read.
+            const int rows = singleRowCount(static_cast<int>(all.size()));
+            const int perRow = (static_cast<int>(all.size()) + rows - 1) / rows;
+            const int rowHeight = column.getHeight() / rows;
+            for (int row = 0; row < rows; ++row)
             {
-                soFar += weightOf(control);
-                const int right = juce::roundToInt(static_cast<float>(rowWidth) * soFar / totalWeight);
-                control->setBounds(column.getX() + used, column.getY(), right - used, column.getHeight());
-                used = right;
+                const size_t first = static_cast<size_t>(row * perRow);
+                const size_t last = std::min(all.size(), first + static_cast<size_t>(perRow));
+                float totalWeight = 0.0f;
+                for (size_t k = first; k < last; ++k)
+                    totalWeight += weightOf(all[k]);
+                const int rowWidth = column.getWidth();
+                float soFar = 0.0f;
+                int used = 0;
+                for (size_t k = first; k < last; ++k)
+                {
+                    soFar += weightOf(all[k]);
+                    const int right = juce::roundToInt(static_cast<float>(rowWidth) * soFar / totalWeight);
+                    all[k]->setBounds(column.getX() + used, column.getY() + row * rowHeight, right - used,
+                                      rowHeight);
+                    used = right;
+                }
             }
         }
     }

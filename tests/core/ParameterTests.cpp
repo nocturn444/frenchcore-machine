@@ -143,10 +143,16 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
     for (const char* control : {"enabled", "mix", "attack", "sustain", "speed", "output"})
         allowed.insert(std::string("transient.") + control);
 
+    // Added in 0.2, stage 4: the Compressor (docs/specs/fx-compressor.md section 3).
+    for (const char* control :
+         {"enabled", "mix", "multiband", "threshold", "ratio", "attack", "release", "knee", "makeup", "depth",
+          "time", "upward", "downward", "ingain", "outgain", "low", "mid", "high"})
+        allowed.insert(std::string("compressor.") + control);
+
     // The copies 2 to 4 of every effect have the same IDs as copy 1 with the number after the effect ID.
     const auto firstCopies = allowed;
     for (const auto& id : firstCopies)
-        for (const char* effect : {"distortion", "eq", "stereo", "filter", "transient"})
+        for (const char* effect : {"distortion", "eq", "stereo", "filter", "transient", "compressor"})
             if (id.rfind(std::string(effect) + ".", 0) == 0)
                 for (int copy = 2; copy <= 4; ++copy)
                     allowed.insert(effect + std::to_string(copy) + id.substr(std::string(effect).size()));
