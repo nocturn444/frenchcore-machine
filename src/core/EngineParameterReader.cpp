@@ -52,7 +52,10 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
       tockOn(lookup(state, ParameterIds::kTockOn)), tockMode(lookup(state, ParameterIds::kTockMode)),
       tockLevel(lookup(state, ParameterIds::kTockLevel)), tockTune(lookup(state, ParameterIds::kTockTune)),
       tockStart(lookup(state, ParameterIds::kTockStart)), tockDecay(lookup(state, ParameterIds::kTockDecay)),
-      tockTone(lookup(state, ParameterIds::kTockTone)),
+      tockTone(lookup(state, ParameterIds::kTockTone)), tockAmpEnv(lookup(state, ParameterIds::kTockAmpEnv)),
+      tockTrimStart(lookup(state, ParameterIds::kTockTrimStart)),
+      tockTrimEnd(lookup(state, ParameterIds::kTockTrimEnd)),
+      tockPogo(lookup(state, ParameterIds::kTockPogo)),
       ampTimeScale(lookup(state, ParameterIds::kAmpEnvTimeScale)),
       pitchTimeScale(lookup(state, ParameterIds::kPitchEnvTimeScale)),
       pitchAmount(lookup(state, ParameterIds::kPitchEnvAmount)),
@@ -139,6 +142,10 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.tock.startMs = finiteOr(tockStart, defaults.tock.startMs);
     result.tock.decayMs = finiteOr(tockDecay, defaults.tock.decayMs);
     result.tock.tone = finiteOr(tockTone, defaults.tock.tone);
+    result.tock.ampEnv = toBool(tockAmpEnv, defaults.tock.ampEnv);
+    result.tock.trimStart = finiteOr(tockTrimStart, 0.0f) * 0.01f;
+    result.tock.trimEnd = finiteOr(tockTrimEnd, 100.0f) * 0.01f;
+    result.tock.pogoSemitones = finiteOr(tockPogo, 0.0f);
 
     // The mixer: a destination or region that is not one of the entries goes to the first (Main, Whole).
     for (size_t i = 0; i < mixer.size(); ++i)

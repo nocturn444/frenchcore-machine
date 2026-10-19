@@ -8,6 +8,7 @@
 #include "ui/OscillatorPanel.h"
 #include "ui/PresetBar.h"
 #include "ui/SectionPanel.h"
+#include "ui/TockWaveform.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <memory>
@@ -17,17 +18,24 @@ namespace fcm
 
 class PluginProcessor;
 
-// The tock's box: its controls and a button to load a sample of your own.
+// The tock's box (docs/specs/tock.md): its controls, a button to load a sample of your own, the
+// waveform with the Trim handles and the Detect button.
 class TockPanel : public ui::ControlPanel
 {
   public:
-    TockPanel(juce::AudioProcessorValueTreeState& state, std::function<void(const juce::File&)> onLoad);
+    TockPanel(juce::AudioProcessorValueTreeState& state, const core::TockSelector& selector,
+              std::function<void(const juce::File&)> onLoad);
 
   private:
     void choose();
+    void detect();
 
+    juce::AudioProcessorValueTreeState& parameters;
+    const core::TockSelector& tockSelector;
     std::function<void(const juce::File&)> loadRequested;
     juce::TextButton loadButton{"Load sample..."};
+    juce::TextButton detectButton{"Detect"};
+    ui::TockWaveform waveform;
     std::unique_ptr<juce::FileChooser> chooser;
 };
 

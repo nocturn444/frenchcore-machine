@@ -426,3 +426,15 @@ TEST_CASE("Migration 1 to 2 turns the 0.1 effect order into the Main rack", "[co
     REQUIRE(racksOf("") == "distortion,eq,stereo");
     REQUIRE(racksOf("<none>") == "distortion,eq,stereo"); // no node: the 0.1 default order
 }
+
+TEST_CASE("Migration 1 to 2 turns the Tock's Amp Env on, as in 0.1", "[core][state][migration]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    juce::ValueTree tree("FrenchcoreMachineState");
+    tree.setProperty("stateVersion", 1, nullptr);
+    REQUIRE(fcm::core::applyMigrations(tree, 1, 2, fcm::core::stateMigrations()));
+    const auto param = tree.getChildWithProperty("id", "tock.ampEnv");
+    REQUIRE(param.isValid());
+    REQUIRE(static_cast<int>(param["value"]) == 1);
+    REQUIRE(tree.getChildWithProperty("id", "tock.ampEnv").getParent() == tree);
+}

@@ -68,6 +68,15 @@ void ControlPanel::addCustom(int row, juce::Component& component, float weight)
     rows[static_cast<size_t>(row)].cells.push_back({&component, weight});
 }
 
+void ControlPanel::addWideRow(juce::Component& component, int height)
+{
+    addAndMakeVisible(component);
+    Row row;
+    row.cells.push_back({&component, 1.0f});
+    row.fixedHeight = height;
+    rows.push_back(std::move(row));
+}
+
 void ControlPanel::resized()
 {
     auto area = contentArea();
@@ -82,14 +91,16 @@ void ControlPanel::resized()
         if (row.hasKnob)
             ++knobRows;
         else
-            fixed += ParameterControl::kSwitchHeight;
+            fixed += row.fixedHeight > 0 ? row.fixedHeight : ParameterControl::kSwitchHeight;
     }
     const int knobHeight =
         knobRows > 0 ? juce::jmin(kMaxKnobRowHeight, juce::jmax(0, area.getHeight() - fixed) / knobRows) : 0;
 
     for (auto& row : rows)
     {
-        auto rowArea = area.removeFromTop(row.hasKnob ? knobHeight : ParameterControl::kSwitchHeight);
+        auto rowArea = area.removeFromTop(row.hasKnob           ? knobHeight
+                                          : row.fixedHeight > 0 ? row.fixedHeight
+                                                                : ParameterControl::kSwitchHeight);
         float totalWeight = 0.0f;
         for (const auto& cell : row.cells)
             totalWeight += cell.weight;
@@ -106,7 +117,9 @@ void ControlPanel::resized()
             auto bounds = juce::Rectangle<int>(rowArea.getX() + used, rowArea.getY(), right - used,
                                                rowArea.getHeight());
             // A custom component (a button) keeps a normal height in the middle of the row.
-            if (dynamic_cast<ParameterControl*>(cell.component) == nullptr)
+            if (row.fixedHeight > 0)
+                bounds = bounds.reduced(3, 2);
+            else if (dynamic_cast<ParameterControl*>(cell.component) == nullptr)
                 bounds = bounds.withSizeKeepingCentre(bounds.getWidth() - 6, 26);
             cell.component->setBounds(bounds);
             used = right;

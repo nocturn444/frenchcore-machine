@@ -122,6 +122,9 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
     // the number after the effect ID (docs/decisions/0010). Each stage adds its new IDs here.
     std::set<std::string> allowed = expected;
 
+    // Added in 0.2, stage 6 (docs/specs/tock.md section 8.4): the Tock's Amp Env, Trim and Pogo.
+    for (const char* control : {"ampEnv", "trimStart", "trimEnd", "pogo"})
+        allowed.insert(std::string("tock.") + control);
     // Added in 0.2, stage 5 (docs/specs/noise-oscillator.md section 3): the noise oscillator and its
     // mixer channel.
     for (const char* control : {"on", "type", "level", "pitch", "keyTrack", "oneShot", "phase", "random"})
@@ -255,6 +258,10 @@ TEST_CASE("Parameter values are converted to DSP units", "[core][parameters]")
     setValue(processor.state, Ids::kTockStart, 4.5f);
     setValue(processor.state, Ids::kTockDecay, 60.0f);
     setValue(processor.state, Ids::kTockTone, 0.25f);
+    setValue(processor.state, Ids::kTockAmpEnv, 1.0f);
+    setValue(processor.state, Ids::kTockTrimStart, 25.0f);
+    setValue(processor.state, Ids::kTockTrimEnd, 80.0f);
+    setValue(processor.state, Ids::kTockPogo, -6.0f);
 
     setValue(processor.state, Ids::oscillator(1, Ids::Oscillator::kOn), 1.0f);
     setValue(processor.state, Ids::oscillator(1, Ids::Oscillator::kLevel), 0.25f);
@@ -285,6 +292,16 @@ TEST_CASE("Parameter values are converted to DSP units", "[core][parameters]")
     REQUIRE_THAT(read.tock.startMs, Catch::Matchers::WithinAbs(4.5, 1.0e-3));
     REQUIRE_THAT(read.tock.decayMs, Catch::Matchers::WithinAbs(60.0, 0.1));
     REQUIRE_THAT(read.tock.tone, Catch::Matchers::WithinAbs(0.25, 1.0e-3));
+    REQUIRE(read.tock.ampEnv);
+    REQUIRE_THAT(read.tock.trimStart, Catch::Matchers::WithinAbs(0.25, 1.0e-3));
+    REQUIRE_THAT(read.tock.trimEnd, Catch::Matchers::WithinAbs(0.8, 1.0e-3));
+    REQUIRE_THAT(read.tock.pogoSemitones, Catch::Matchers::WithinAbs(-6.0, 1.0e-3));
+    // New sounds start with the Tock on its own volume and the whole sample, unbent.
+    const fcm::dsp::EngineParameters defaults;
+    REQUIRE_FALSE(defaults.tock.ampEnv);
+    REQUIRE(defaults.tock.trimStart == 0.0f);
+    REQUIRE(defaults.tock.trimEnd == 1.0f);
+    REQUIRE(defaults.tock.pogoSemitones == 0.0f);
 
     // The first oscillator keeps its own settings: both are the same code with different IDs.
     REQUIRE(read.oscillators[0].on);

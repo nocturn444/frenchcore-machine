@@ -60,8 +60,12 @@ struct TockParameters
     float level = 0.25118864f; // linear gain, -12 dB
     float tuneSemitones = 0.0f;
     float startMs = 0.0f;
-    float decayMs = 25.0f; // time to fall by 60 dB
-    float tone = 0.7f;     // 0 dull .. 1 open
+    float decayMs = 25.0f;  // time to fall by 60 dB
+    float tone = 0.7f;      // 0 dull .. 1 open
+    bool ampEnv = false;    // whether the amp envelope shapes the Tock (docs/specs/tock.md §8)
+    float trimStart = 0.0f; // 0..1 of the sample
+    float trimEnd = 1.0f;
+    float pogoSemitones = 0.0f;
 };
 
 // The noise oscillator (docs/specs/noise-oscillator.md). Type and One Shot, Phase and Random are read at

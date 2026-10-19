@@ -50,6 +50,8 @@ Stages 1 and 2 of the 0.2 plan (`docs/PLAN.md`): effect copies, racks, the mixer
 
 - **Noise oscillator** in the free box of the window: eight generated noises (White, Pink, Brown, Crackle, Metal, Digital, Air Burst, Thump) or your own WAV up to 10 seconds, with Level, Pitch, Key Track, One Shot, Phase and Random. It follows the amp envelope and Punch / Tail, not the pitch envelope, and has its own Mixer strip. New parameters `noise.*` and `mixer.noise.*`; off by default, so 0.1 sounds are unchanged. See `docs/specs/noise-oscillator.md`.
 
+- **Tock rework** (`docs/specs/tock.md` section 8): an **Amp Env** switch (off for new sounds, so the Tock plays at its own volume; on for projects and presets from 0.1, which sound as before), **Trim** with a waveform display and two draggable handles, a **Detect** button that finds the hit in a sample, a **Pogo** knob that bends the Tock's pitch, and user samples up to 10 seconds (a whole kick; above 48 kHz they are converted to 48 kHz). New parameters `tock.ampEnv`, `tock.trimStart`, `tock.trimEnd`, `tock.pogo`.
+
 #### Changed
 
 - The project state is version 2: the effect order is saved as three racks (`FxRacks`; only Main is used until the mixer arrives). Projects from version 1 are migrated when they load. A project saved with 0.2 does not open correctly in 0.1.

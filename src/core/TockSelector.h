@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "core/TockAnalysis.h"
 #include "dsp/envelope/PublishedPointer.h"
 #include "dsp/tock/TockSample.h"
 
@@ -41,6 +42,13 @@ class TockSelector : private juce::AudioProcessorValueTreeState::Listener, priva
     // user sample and returns false.
     bool restoreFrom(const juce::ValueTree& node);
 
+    // For the Tock box (message thread): a decimated view of the sample being played, where its hit is
+    // (for the Detect button), and a number that changes whenever a new sample is published.
+    static constexpr int kDisplayBins = 256;
+    const std::vector<float>& displayPeaks() const noexcept { return peaks; }
+    const TransientRange& detectedRange() const noexcept { return detected; }
+    int generation() const noexcept { return generationCount; }
+
     // Message thread. Publishes the sample of the parameter's current value if it changed.
     void update();
 
@@ -56,6 +64,9 @@ class TockSelector : private juce::AudioProcessorValueTreeState::Listener, priva
     bool dirty = false;
     dsp::TockSample userSample;
     juce::String userDisplayName;
+    std::vector<float> peaks;
+    TransientRange detected;
+    int generationCount = 0;
 };
 
 } // namespace fcm::core

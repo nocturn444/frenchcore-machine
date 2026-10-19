@@ -83,6 +83,7 @@ class Voice
         EnvelopeRenderer amp;
         EnvelopeRenderer pitch;
         Tock tock;
+        bool tockAmpEnv = false; // fixed at note-on
         NoisePlayer noise;
         float velocityGain = 1.0f;
         double samplesSinceNoteOn = 0.0; // for the punch / tail split
@@ -135,6 +136,7 @@ class Voice
     NoiseSettings noiseSettings;
     TockSettings tockSettings;
     bool tockOn = false;
+    bool tockAmpEnv = false;
     float bpm = 120.0f;
     const EnvelopeShape* ampShapeInUse = nullptr; // for the tempo sync scale at note-on
     const EnvelopeShape* pitchShapeInUse = nullptr;

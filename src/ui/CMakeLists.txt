@@ -13,6 +13,7 @@ target_sources(fcm_ui INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/ParameterControl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PresetBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/SectionPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/TockWaveform.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/WavetableDisplay.cpp
 )
 target_link_libraries(fcm_ui INTERFACE fcm_core)

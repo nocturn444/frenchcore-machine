@@ -400,3 +400,230 @@ TEST_CASE("Tock settings are read when the note starts", "[dsp][tock][engine]")
 
     REQUIRE(run(true) == run(false));
 }
+
+// ---- Version 0.2: Trim, Pogo and Amp Env (docs/specs/tock.md section 8) ----
+
+namespace
+{
+TockSample constantSample(int length, float value = 1.0f)
+{
+    TockSample sample;
+    sample.sampleRate = kSampleRate;
+    sample.samples.assign(static_cast<size_t>(length), value);
+    return sample;
+}
+
+TockSample sineSample(int length, double hz)
+{
+    TockSample sample;
+    sample.sampleRate = kSampleRate;
+    for (int i = 0; i < length; ++i)
+        sample.samples.push_back(static_cast<float>(std::sin(2.0 * std::numbers::pi * hz * i / kSampleRate)));
+    return sample;
+}
+
+TockSettings sampleSettings()
+{
+    TockSettings settings;
+    settings.sampleMode = true;
+    settings.decayMs = 200.0f;
+    settings.tone = 1.0f;
+    return settings;
+}
+
+// Spacing, in samples, between the rising zero crossings of `x` between `from` and `to`.
+std::vector<double> periods(const std::vector<float>& x, size_t from, size_t to)
+{
+    std::vector<double> crossings;
+    for (size_t i = std::max<size_t>(from, 1); i < std::min(to, x.size()); ++i)
+        if (x[i - 1] <= 0.0f && x[i] > 0.0f)
+            crossings.push_back(static_cast<double>(i - 1) + (-x[i - 1]) / (x[i] - x[i - 1]));
+    std::vector<double> result;
+    for (size_t i = 1; i < crossings.size(); ++i)
+        result.push_back(crossings[i] - crossings[i - 1]);
+    return result;
+}
+
+double mean(const std::vector<double>& v)
+{
+    double sum = 0.0;
+    for (double d : v)
+        sum += d;
+    return v.empty() ? 0.0 : sum / static_cast<double>(v.size());
+}
+} // namespace
+
+TEST_CASE("Trim plays only the chosen part, then stops", "[dsp][tock][trim]")
+{
+    auto sample = constantSample(48000);
+    for (size_t i = 0; i < sample.samples.size(); ++i)
+        sample.samples[i] = static_cast<float>(i) / 48000.0f; // a ramp, so the start is readable
+
+    Tock tock;
+    tock.prepare(kSampleRate);
+    tock.setSample(&sample);
+    auto settings = sampleSettings();
+    settings.trimStart = 0.5f;
+    settings.trimEnd = 0.6f; // 4800 samples = 100 ms
+    tock.start(settings);
+
+    const auto out = render(tock, 6000);
+    // It starts from the middle of the sample, not from its beginning.
+    // (0.5 of the ramp, a little more after 200 samples, times the Decay envelope of 0.87)
+    REQUIRE(out[200] > 0.40f);
+    REQUIRE(out[200] < 0.50f);
+    REQUIRE(tock.isRunning() == false);
+    // Nothing after the end: silence from there to the end of the render.
+    for (size_t i = 4900; i < out.size(); ++i)
+        REQUIRE(out[i] == 0.0f);
+}
+
+TEST_CASE("A trimmed sample is faded in and out so the cuts do not click", "[dsp][tock][trim]")
+{
+    const auto sample = constantSample(48000);
+    Tock tock;
+    tock.prepare(kSampleRate);
+    tock.setSample(&sample);
+    auto settings = sampleSettings();
+    settings.trimStart = 0.5f;
+    settings.trimEnd = 0.51f; // 480 samples = 10 ms
+    tock.start(settings);
+
+    const auto out = render(tock, 600);
+    REQUIRE(std::abs(out[0]) < 0.15f);  // fades in from nothing
+    REQUIRE(out[60] > 0.7f);            // fully in after 0.5 ms
+    REQUIRE(out[300] > 0.7f);           // the middle is untouched
+    REQUIRE(std::abs(out[475]) < 0.2f); // and back to nothing at the end
+    for (float s : out)
+        REQUIRE(std::isfinite(s));
+}
+
+TEST_CASE("An end before the start plays one millisecond", "[dsp][tock][trim]")
+{
+    const auto sample = constantSample(48000);
+    Tock tock;
+    tock.prepare(kSampleRate);
+    tock.setSample(&sample);
+    auto settings = sampleSettings();
+    settings.trimStart = 0.8f;
+    settings.trimEnd = 0.2f;
+    tock.start(settings);
+
+    int running = 0;
+    while (tock.isRunning() && running < 1000)
+    {
+        tock.process();
+        ++running;
+    }
+    REQUIRE(running >= 40);
+    REQUIRE(running <= 60); // 48 samples at 48 kHz
+}
+
+TEST_CASE("The default trim and Pogo leave the Tock as it was", "[dsp][tock][trim]")
+{
+    const auto sample = sineSample(48000, 700.0);
+    const auto play = [&](bool explicitDefaults)
+    {
+        Tock tock;
+        tock.prepare(kSampleRate);
+        tock.setSample(&sample);
+        auto settings = sampleSettings();
+        settings.decayMs = 60.0f;
+        if (explicitDefaults)
+        {
+            settings.trimStart = 0.0f;
+            settings.trimEnd = 1.0f;
+            settings.pogoSemitones = 0.0f;
+        }
+        tock.start(settings);
+        return render(tock, 6000);
+    };
+    REQUIRE(play(true) == play(false));
+}
+
+TEST_CASE("Pogo bends the pitch over the played part", "[dsp][tock][pogo]")
+{
+    const auto sample = sineSample(96000, 1000.0);
+    const auto run = [&](float pogo)
+    {
+        Tock tock;
+        tock.prepare(kSampleRate);
+        tock.setSample(&sample);
+        auto settings = sampleSettings();
+        settings.trimEnd = 0.02f; // 40 ms of the 2 seconds
+        settings.pogoSemitones = pogo;
+        tock.start(settings);
+        return render(tock, 2000);
+    };
+
+    const auto flat = run(0.0f);
+    REQUIRE_THAT(mean(periods(flat, 0, 1700)), WithinAbs(48.0, 1.0)); // 1 kHz all the way
+
+    const auto up = run(12.0f);
+    const double first = mean(periods(up, 0, 100)); // the bend is fast at first, so keep this short
+    // Raising the pitch reads the part faster, so it ends sooner (about 22 ms instead of 40).
+    const double last = mean(periods(up, 700, 1000));
+    REQUIRE(first / last > 1.5); // it ends about an octave above where it began
+    REQUIRE(first / last < 2.2);
+
+    const auto down = run(-12.0f);
+    REQUIRE(mean(periods(down, 1300, 1700)) / mean(periods(down, 0, 100)) > 1.5);
+}
+
+TEST_CASE("Pogo also bends the Synth tone", "[dsp][tock][pogo]")
+{
+    const auto cycles = [&](float pogo)
+    {
+        Tock tock;
+        tock.prepare(kSampleRate);
+        TockSettings settings;
+        settings.decayMs = 200.0f;
+        settings.tone = 1.0f;
+        settings.pogoSemitones = pogo;
+        tock.start(settings);
+        const auto out = render(tock, 10000);
+        return static_cast<double>(periods(out, 4800, 9000).size());
+    };
+    const double ratio = cycles(12.0f) / cycles(0.0f);
+    REQUIRE(ratio > 1.7);
+    REQUIRE(ratio < 2.2);
+}
+
+TEST_CASE("Extreme trim and Pogo settings are safe", "[dsp][tock][trim]")
+{
+    const auto sample = sineSample(500, 900.0);
+    for (const float value : {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(),
+                              -1.0e9f, 1.0e9f, -1.0f, 2.0f})
+    {
+        Tock tock;
+        tock.prepare(kSampleRate);
+        tock.setSample(&sample);
+        auto settings = sampleSettings();
+        settings.trimStart = value;
+        settings.trimEnd = value;
+        settings.pogoSemitones = value;
+        tock.start(settings);
+        for (const float s : render(tock, 3000))
+            REQUIRE(std::isfinite(s));
+    }
+}
+
+TEST_CASE("With Amp Env off the Tock ignores the amp envelope", "[dsp][tock][engine]")
+{
+    // Only the Tock sounds. Two kicks whose amp envelopes differ greatly (time scale) have the same Tock
+    // when Amp Env is off, and a different one when it is on.
+    const auto tockOnly = [](bool ampEnv, float timeScale)
+    {
+        EngineParameters parameters;
+        parameters.oscillators[0].on = false;
+        parameters.tock.on = true;
+        parameters.tock.level = 1.0f;
+        parameters.tock.decayMs = 100.0f;
+        parameters.tock.ampEnv = ampEnv;
+        parameters.ampTimeScale = timeScale;
+        return playEngine(parameters, 12);
+    };
+
+    REQUIRE(tockOnly(false, 0.25f) == tockOnly(false, 1.0f));
+    REQUIRE(tockOnly(true, 0.25f) != tockOnly(true, 1.0f));
+}
