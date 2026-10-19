@@ -122,8 +122,15 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
     // the number after the effect ID (docs/decisions/0010). Each stage adds its new IDs here.
     std::set<std::string> allowed = expected;
 
+    // Added in 0.2, stage 5 (docs/specs/noise-oscillator.md section 3): the noise oscillator and its
+    // mixer channel.
+    for (const char* control : {"on", "type", "level", "pitch", "keyTrack", "oneShot", "phase", "random"})
+        allowed.insert(std::string("noise.") + control);
+    for (const char* control : {"dest", "mute", "solo"})
+        allowed.insert(std::string("mixer.noise.") + control);
+
     // Added in 0.2, stage 2 (docs/specs/mixer-and-buses.md section 3): the mixer and the two buses.
-    for (const char* source : {"osc1", "osc2", "tock"})
+    for (const char* source : {"osc1", "osc2", "tock"}) // the noise: stage 5, below
         for (const char* control : {"dest", "mute", "solo"})
             allowed.insert(std::string("mixer.") + source + "." + control);
     for (const char* bus : {"bus.a", "bus.b"})

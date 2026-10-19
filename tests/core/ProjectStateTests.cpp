@@ -27,8 +27,8 @@ const juce::Identifier kRoot{"FrenchcoreMachineState"};
 struct Rig
 {
     Rig()
-        : project(
-              ProjectState::Parts{processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock})
+        : project(ProjectState::Parts{
+              processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock, noise})
     {
     }
 
@@ -63,6 +63,7 @@ struct Rig
     fcm::core::WavetableSelector wavetable1{processor.state, 0};
     fcm::core::WavetableSelector wavetable2{processor.state, 1};
     fcm::core::TockSelector tock{processor.state};
+    fcm::core::NoiseSelector noise{processor.state};
     ProjectState project;
 };
 
@@ -409,4 +410,38 @@ TEST_CASE("A version 1 project opens with its effects in the Main rack and its s
     REQUIRE(static_cast<int>(saved["stateVersion"]) == 2);
     REQUIRE(saved.getChildWithName("FxRacks").isValid());
     REQUIRE_FALSE(saved.getChildWithName("FxChain").isValid());
+}
+
+TEST_CASE("The user noise sound and the noise settings survive a save and a load", "[core][project][noise]")
+{
+    Rig source;
+    source.setParameter(Ids::kNoiseOn, 1.0f);
+    source.setParameter(Ids::kNoiseLevel, -9.0f);
+    source.setParameter(Ids::kNoisePitch, 7.0f);
+    source.setParameter(Ids::kNoiseOneShot, 1.0f);
+
+    fcm::dsp::NoiseSample sound;
+    sound.sampleRate = 44100.0;
+    sound.samples.assign(1000, 0.25f);
+    REQUIRE(source.noise.loadUser(sound, "My Hiss"));
+    source.setParameter(Ids::kNoiseType, static_cast<float>(fcm::core::NoiseSelector::userEntry()));
+    source.noise.update();
+
+    const auto saved = source.project.capture();
+    REQUIRE(saved.getChildWithName("UserNoiseSample").isValid());
+
+    Rig target;
+    REQUIRE(target.project.restore(saved) == StateLoadResult::loaded);
+    REQUIRE(target.noise.hasUser());
+    REQUIRE(target.noise.userName() == "My Hiss");
+    REQUIRE(target.getParameter(Ids::kNoiseOn) == 1.0f);
+    REQUIRE_THAT(target.getParameter(Ids::kNoiseLevel), WithinAbs(-9.0, 1.0e-3));
+    REQUIRE_THAT(target.getParameter(Ids::kNoisePitch), WithinAbs(7.0, 1.0e-2));
+    REQUIRE(target.noise.source().acquire()->samples == sound.samples);
+
+    // A project without the node (from before the noise existed, or damaged) has no user sound.
+    auto old = saved;
+    old.removeChild(old.getChildWithName("UserNoiseSample"), nullptr);
+    REQUIRE(target.project.restore(old) == StateLoadResult::loaded);
+    REQUIRE_FALSE(target.noise.hasUser());
 }

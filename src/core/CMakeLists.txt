@@ -7,6 +7,8 @@ target_sources(fcm_core INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/EnvelopeState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FxRackState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FactoryPresets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/NoiseImport.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/NoiseSelector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ParameterLayout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PresetFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PresetLibrary.cpp

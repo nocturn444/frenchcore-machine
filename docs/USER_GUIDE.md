@@ -129,6 +129,19 @@ The **Load sample...** button in the Tock box opens a WAV file. If it is usable,
 - The sample is saved inside your project; only its name is kept, not the folder.
 - Choosing **User** with nothing loaded plays the first built-in sample (Click).
 
+## Noise
+
+A third sound source next to the two oscillators, in the box at the bottom left. Use it for grit in the tail, air on top of the punch or a texture layer that you send to its own bus. It is **off by default**, so existing sounds do not change.
+
+- **On**, **Type** and **Load...**: the noise to play. Eight built-in ones: **White**, **Pink**, **Brown** (from bright to dark hiss), **Crackle** (sparse clicks), **Metal** (a ringing, inharmonic noise), **Digital** (stepped, bit-crushed noise), **Air Burst** and **Thump** (short bursts, meant for One Shot). **User** plays your own WAV, loaded with **Load...** (up to 10 seconds, same rules as the Tock sample; a file above 48 kHz is converted to 48 kHz; it is saved inside the project; User with nothing loaded plays White).
+- **Level**: -48 dB (silence) to +12 dB, default 0 dB. The same control as the Noise strip of the Mixer.
+- **Pitch**: plays the noise faster or slower, -48 to +48 semitones.
+- **Key Track**: when on, the noise also follows the note you play, one octave per octave relative to C3. Off by default, so the noise sounds the same on every note.
+- **One Shot**: when on, the sound plays once from its start and stops; when off (default) it loops while the kick sounds.
+- **Phase** and **Random**: where in the sound each kick starts, and how much that varies from kick to kick (Random 0 % gives the same noise every kick; the default, 100 %, avoids audible repetition).
+
+The noise follows the amp envelope and the Punch / Tail levels like the oscillators, but not the pitch envelope. In the Mixer it has its own strip, so you can send it to a bus.
+
 ## Punch / Tail
 
 A frenchcore kick has a **punch** (the hit at the start) and a **tail** (the bass that rings after it). This panel sets the volume of each part on its own, without redrawing the envelope.
@@ -198,7 +211,7 @@ The shapes are saved with your project, so the kick comes back exactly as you le
 
 The **Effects** box has four tabs at its top: **Mixer**, **Bus A**, **Bus B** and **Main**. (A new window opens on Main.)
 
-- **Mixer**: one strip for each sound of the kick (Osc 1, Osc 2 and the Tock; the Noise joins later in 0.2). Each strip has the sound's **Level** (the same control as on its own panel: turning one turns the other), **Destination** (**Main**, **Bus A** or **Bus B**, default Main), and **Mute** and **Solo**. Solo on any strip silences every strip that is not soloed. A sound that is switched off is drawn dimmed. Switching is smooth, with no clicks.
+- **Mixer**: one strip for each sound of the kick (Osc 1, Osc 2, Noise and the Tock). Each strip has the sound's **Level** (the same control as on its own panel: turning one turns the other), **Destination** (**Main**, **Bus A** or **Bus B**, default Main), and **Mute** and **Solo**. Solo on any strip silences every strip that is not soloed. A sound that is switched off is drawn dimmed. Switching is smooth, with no clicks.
 - **Bus A and Bus B** (on the right of the Mixer): each has a **Level** (-48 to +12 dB, default 0; -48 is silence) and **Apply To**: **Whole** (default), **Punch** or **Tail**. All of the sound goes into the bus; with Punch, the bus's effects are heard only in the punch part of the kick (before the Split time of the Punch / Tail box) and after it you hear what went in, untouched; with Tail it is the other way round. The change at the Split takes 4 ms. A reverb on a Punch bus therefore stops at the Split.
 - **Bus A, Bus B and Main tabs**: each is a row of effects like the one described below: **+ Add effect**, **++**, **x**, drag to reorder. Bus A and Bus B end in Main; Main has its own row and then goes to the Output gain and the safety limiter.
 

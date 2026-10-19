@@ -38,6 +38,16 @@ inline constexpr const char* kPunchTailSplit = "punchTail.split";
 inline constexpr const char* kPunchLevel = "punchTail.punchLevel";
 inline constexpr const char* kTailLevel = "punchTail.tailLevel";
 
+// The noise oscillator (docs/specs/noise-oscillator.md).
+inline constexpr const char* kNoiseOn = "noise.on";
+inline constexpr const char* kNoiseType = "noise.type";
+inline constexpr const char* kNoiseLevel = "noise.level";
+inline constexpr const char* kNoisePitch = "noise.pitch";
+inline constexpr const char* kNoiseKeyTrack = "noise.keyTrack";
+inline constexpr const char* kNoiseOneShot = "noise.oneShot";
+inline constexpr const char* kNoisePhase = "noise.phase";
+inline constexpr const char* kNoiseRandom = "noise.random";
+
 // The Tock (docs/specs/tock.md).
 inline constexpr const char* kTockOn = "tock.on";
 inline constexpr const char* kTockMode = "tock.mode";
@@ -59,9 +69,10 @@ struct MixerSource
     const char* on;    // the ID of its On switch (the mixer dims the strip when off)
 };
 
-inline constexpr std::array<MixerSource, 3> kMixerSources{{
+inline constexpr std::array<MixerSource, 4> kMixerSources{{
     {0, "osc1", "Osc 1", "osc1.level", "osc1.on"},
     {1, "osc2", "Osc 2", "osc2.level", "osc2.on"},
+    {2, "noise", "Noise", "noise.level", "noise.on"},
     {3, "tock", "Tock", "tock.level", "tock.on"},
 }};
 

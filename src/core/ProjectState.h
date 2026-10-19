@@ -3,6 +3,7 @@
 
 #include "core/EnvelopeState.h"
 #include "core/FxRackState.h"
+#include "core/NoiseSelector.h"
 #include "core/StateLoader.h"
 #include "core/TockSelector.h"
 #include "core/WavetableSelector.h"
@@ -28,6 +29,7 @@ class ProjectState
         FxRackState& fxRacks;
         std::array<WavetableSelector*, 2> wavetables;
         TockSelector& tock;
+        NoiseSelector& noise;
     };
 
     explicit ProjectState(const Parts& parts) : parts(parts) {}

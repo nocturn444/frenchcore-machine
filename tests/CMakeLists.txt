@@ -23,6 +23,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/EnvelopeRobustnessTests.cpp
     dsp/FactoryWavetablesTests.cpp
     dsp/MusicalTimeTests.cpp
+    dsp/NoiseTests.cpp
     dsp/NoteHandlingTests.cpp
     dsp/PublishedPointerTests.cpp
     dsp/PunchTailTests.cpp
@@ -51,6 +52,7 @@ target_sources(fcm_core_tests PRIVATE
     core/FxCoreTests.cpp
     core/MixerParameterTests.cpp
     core/ParameterTests.cpp
+    core/NoiseCoreTests.cpp
     core/PresetTests.cpp
     core/ProjectStateTests.cpp
     core/ReferenceRenderTests.cpp

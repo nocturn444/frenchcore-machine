@@ -4,6 +4,7 @@
 #include "dsp/engine/EngineParameters.h"
 #include "dsp/envelope/EnvelopeRenderer.h"
 #include "dsp/envelope/EnvelopeShape.h"
+#include "dsp/noise/NoisePlayer.h"
 #include "dsp/oscillator/WavetableOscillator.h"
 #include "dsp/tock/Tock.h"
 
@@ -50,6 +51,10 @@ class Voice
     // it is also set on the fading copies of the previous kick.
     void setTockSample(const TockSample* sample) noexcept;
 
+    // Called once per block with the noise for this block (nullptr: none). Like the Tock sample, it is
+    // also set on the fading copies of the previous kick.
+    void setNoiseSample(const NoiseSample* sample) noexcept;
+
     // Starts a kick. `velocityGain` is the final level factor (already scaled by sensitivity).
     void trigger(float velocityGain) noexcept;
 
@@ -78,6 +83,7 @@ class Voice
         EnvelopeRenderer amp;
         EnvelopeRenderer pitch;
         Tock tock;
+        NoisePlayer noise;
         float velocityGain = 1.0f;
         double samplesSinceNoteOn = 0.0; // for the punch / tail split
         bool active = false;
@@ -100,6 +106,8 @@ class Voice
         float tailGain;
         float punchSplitMs;
         float tockLevel;
+        float noiseLevel;
+        float noisePitch;
     };
 
     void render(Core& voiceCore, float settleNote, const Frame& frame, float scale, Stems& stems) noexcept;
@@ -120,6 +128,11 @@ class Voice
     juce::SmoothedValue<float> punchLevel;
     juce::SmoothedValue<float> tailLevel;
     juce::SmoothedValue<float> tockLevel;
+    juce::SmoothedValue<float> noiseLevel;
+    juce::SmoothedValue<float> noisePitch;
+    bool noiseOn = false;
+    bool noiseKeyTrack = false;
+    NoiseSettings noiseSettings;
     TockSettings tockSettings;
     bool tockOn = false;
     float bpm = 120.0f;

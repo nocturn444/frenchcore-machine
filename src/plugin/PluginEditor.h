@@ -31,6 +31,21 @@ class TockPanel : public ui::ControlPanel
     std::unique_ptr<juce::FileChooser> chooser;
 };
 
+// The noise oscillator's box (docs/specs/noise-oscillator.md): its controls and a button to load a
+// sound of your own. It takes the place that was kept for the LFOs.
+class NoisePanel : public ui::ControlPanel
+{
+  public:
+    NoisePanel(juce::AudioProcessorValueTreeState& state, std::function<void(const juce::File&)> onLoad);
+
+  private:
+    void choose();
+
+    std::function<void(const juce::File&)> loadRequested;
+    juce::TextButton loadButton{"Load..."};
+    std::unique_ptr<juce::FileChooser> chooser;
+};
+
 // The editor draws everything on a fixed design grid (docs/UI_LAYOUT.md) and scales the whole of it to
 // the window, so the layout never rearranges or squeezes when the window is resized; only its size
 // changes. The window keeps the aspect ratio of the grid.
@@ -61,7 +76,7 @@ class PluginEditor : public juce::AudioProcessorEditor
     ui::EnvelopePanel ampPanel;
     ui::EnvelopePanel pitchPanel;
     ui::EffectsBox fxArea;
-    ui::PlaceholderPanel lfoPanel;
+    NoisePanel noisePanel;
     TockPanel tockPanel;
     ui::ControlPanel punchTailPanel;
     ui::ControlPanel globalPanel;

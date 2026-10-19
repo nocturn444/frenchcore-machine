@@ -45,6 +45,10 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
       rootNote(lookup(state, ParameterIds::kRootNote)), glideOn(lookup(state, ParameterIds::kGlideOn)),
       glideTime(lookup(state, ParameterIds::kGlideTime)),
       velocitySensitivity(lookup(state, ParameterIds::kVelocitySensitivity)),
+      noise{lookup(state, ParameterIds::kNoiseOn),      lookup(state, ParameterIds::kNoiseLevel),
+            lookup(state, ParameterIds::kNoisePitch),   lookup(state, ParameterIds::kNoiseKeyTrack),
+            lookup(state, ParameterIds::kNoiseOneShot), lookup(state, ParameterIds::kNoisePhase),
+            lookup(state, ParameterIds::kNoiseRandom)},
       tockOn(lookup(state, ParameterIds::kTockOn)), tockMode(lookup(state, ParameterIds::kTockMode)),
       tockLevel(lookup(state, ParameterIds::kTockLevel)), tockTune(lookup(state, ParameterIds::kTockTune)),
       tockStart(lookup(state, ParameterIds::kTockStart)), tockDecay(lookup(state, ParameterIds::kTockDecay)),
@@ -117,6 +121,15 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.punchSplitMs = finiteOr(punchSplit, defaults.punchSplitMs);
     result.punchLevel = juce::Decibels::decibelsToGain(finiteOr(punchLevel, 0.0f), -48.0f);
     result.tailLevel = juce::Decibels::decibelsToGain(finiteOr(tailLevel, 0.0f), -48.0f);
+
+    // The noise: its Level is in dB, the rest is plain; Phase and Random are percentages.
+    result.noise.on = toBool(noise.on, defaults.noise.on);
+    result.noise.level = juce::Decibels::decibelsToGain(finiteOr(noise.level, 0.0f), -48.0f);
+    result.noise.pitchSemitones = finiteOr(noise.pitch, defaults.noise.pitchSemitones);
+    result.noise.keyTrack = toBool(noise.keyTrack, defaults.noise.keyTrack);
+    result.noise.oneShot = toBool(noise.oneShot, defaults.noise.oneShot);
+    result.noise.phase = juce::jlimit(0.0f, 1.0f, finiteOr(noise.phase, 0.0f) * 0.01f);
+    result.noise.random = juce::jlimit(0.0f, 1.0f, finiteOr(noise.random, 100.0f) * 0.01f);
 
     // The Tock's level is in dB (-12 by default), like the other levels.
     result.tock.on = toBool(tockOn, defaults.tock.on);

@@ -67,6 +67,17 @@ class EngineParameterReader
     std::atomic<float>* glideOn;
     std::atomic<float>* glideTime;
     std::atomic<float>* velocitySensitivity;
+    struct NoisePointers
+    {
+        std::atomic<float>* on;
+        std::atomic<float>* level;
+        std::atomic<float>* pitch;
+        std::atomic<float>* keyTrack;
+        std::atomic<float>* oneShot;
+        std::atomic<float>* phase;
+        std::atomic<float>* random;
+    };
+    NoisePointers noise;
     std::atomic<float>* tockOn;
     std::atomic<float>* tockMode;
     std::atomic<float>* tockLevel;

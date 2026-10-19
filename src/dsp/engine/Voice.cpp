@@ -18,6 +18,7 @@ constexpr double kPositionSmoothSeconds = 0.010;
 constexpr double kPitchAmountSmoothSeconds = 0.020;
 constexpr double kPunchTailSmoothSeconds = 0.010;
 constexpr double kTockLevelSmoothSeconds = 0.010;
+constexpr double kNoiseLevelSmoothSeconds = 0.010;
 
 float totalSemitones(const OscillatorParameters& osc) noexcept
 {
@@ -37,6 +38,7 @@ void Voice::prepare(double newSampleRate, const WavetableData* wavetable)
     {
         voiceCore.amp.prepare(sampleRate);
         voiceCore.tock.prepare(sampleRate);
+        voiceCore.noise.prepare(sampleRate);
         voiceCore.pitch.prepare(sampleRate);
         for (auto& osc : voiceCore.oscillators)
         {
@@ -60,6 +62,8 @@ void Voice::prepare(double newSampleRate, const WavetableData* wavetable)
     punchLevel.reset(sampleRate, kPunchTailSmoothSeconds);
     tailLevel.reset(sampleRate, kPunchTailSmoothSeconds);
     tockLevel.reset(sampleRate, kTockLevelSmoothSeconds);
+    noiseLevel.reset(sampleRate, kNoiseLevelSmoothSeconds);
+    noisePitch.reset(sampleRate, kPitchSmoothSeconds);
 
     setShapes(nullptr, nullptr);
     reset();
@@ -72,6 +76,7 @@ void Voice::reset() noexcept
         voiceCore.amp.reset();
         voiceCore.pitch.reset();
         voiceCore.tock.reset();
+        voiceCore.noise.reset();
         for (auto& osc : voiceCore.oscillators)
             osc.reset();
         voiceCore.active = false;
@@ -134,6 +139,13 @@ void Voice::setTockSample(const TockSample* sample) noexcept
         ghost.core.tock.setSample(sample);
 }
 
+void Voice::setNoiseSample(const NoiseSample* sample) noexcept
+{
+    core.noise.setSample(sample);
+    for (auto& ghost : ghosts)
+        ghost.core.noise.setSample(sample);
+}
+
 void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcept
 {
     for (size_t i = 0; i < kNumOscillators; ++i)
@@ -173,8 +185,22 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
     const float tockGain =
         std::isfinite(parameters.tock.level) ? std::max(parameters.tock.level, 0.0f) : 0.0f;
 
+    // The noise: its Type is the sample the engine hands over; the rest is read at note-on, except its
+    // Level and Pitch, which move smoothly.
+    noiseOn = parameters.noise.on;
+    noiseKeyTrack = parameters.noise.keyTrack;
+    noiseSettings.oneShot = parameters.noise.oneShot;
+    noiseSettings.phase = parameters.noise.phase;
+    noiseSettings.random = parameters.noise.random;
+    const float noiseGain =
+        noiseOn && std::isfinite(parameters.noise.level) ? std::max(parameters.noise.level, 0.0f) : 0.0f;
+    const float noisePitchTarget =
+        std::isfinite(parameters.noise.pitchSemitones) ? parameters.noise.pitchSemitones : 0.0f;
+
     if (snap)
     {
+        noiseLevel.setCurrentAndTargetValue(noiseGain);
+        noisePitch.setCurrentAndTargetValue(noisePitchTarget);
         tockLevel.setCurrentAndTargetValue(tockGain);
         pitchAmount.setCurrentAndTargetValue(parameters.pitchAmount);
         punchSplitMs.setCurrentAndTargetValue(parameters.punchSplitMs);
@@ -183,6 +209,8 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
     }
     else
     {
+        noiseLevel.setTargetValue(noiseGain);
+        noisePitch.setTargetValue(noisePitchTarget);
         tockLevel.setTargetValue(tockGain);
         pitchAmount.setTargetValue(parameters.pitchAmount);
         punchSplitMs.setTargetValue(parameters.punchSplitMs);
@@ -219,6 +247,10 @@ void Voice::trigger(float velocityGain) noexcept
         core.tock.start(tockSettings);
     else
         core.tock.reset();
+    if (noiseOn)
+        core.noise.start(noiseSettings);
+    else
+        core.noise.reset();
     core.samplesSinceNoteOn = 0.0;
     samplesSinceTrigger = 0.0;
     core.velocityGain = velocityGain;
@@ -264,6 +296,12 @@ void Voice::render(Core& voiceCore, float settleNote, const Frame& frame, float 
     }
     // The Tock is shaped by the amp envelope like the oscillators (docs/specs/tock.md).
     stems[stemTock] += voiceCore.tock.process() * frame.tockLevel * common;
+
+    // The noise follows the note (when Key Track is on, one octave per octave from C3) but not the
+    // pitch envelope, and the amp envelope and the Punch / Tail levels (docs/specs/noise-oscillator.md).
+    const double noiseSemitones = static_cast<double>(frame.noisePitch) +
+                                  (noiseKeyTrack ? static_cast<double>(settleNote) - 60.0 : 0.0);
+    stems[stemNoise] += voiceCore.noise.process(noiseSemitones) * frame.noiseLevel * common;
 }
 
 void Voice::processStems(float settleNote, Stems& stems, float& punchWeight) noexcept
@@ -273,6 +311,8 @@ void Voice::processStems(float settleNote, Stems& stems, float& punchWeight) noe
     frame.pitchAmount = pitchAmount.getNextValue();
     frame.punchSplitMs = punchSplitMs.getNextValue();
     frame.tockLevel = tockLevel.getNextValue();
+    frame.noiseLevel = noiseLevel.getNextValue();
+    frame.noisePitch = noisePitch.getNextValue();
     frame.punchGain = punchLevel.getNextValue();
     frame.tailGain = tailLevel.getNextValue();
     for (size_t i = 0; i < kNumOscillators; ++i)
