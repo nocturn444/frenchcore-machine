@@ -6,16 +6,27 @@ A wavetable synthesizer plugin built for one job: making frenchcore kicks quickl
 
 Frenchcore Machine sits between dragging in a sample and building a kick from scratch in a full synth. It gives you two wavetable oscillators, an envelope that already has the classic kick + bass shape, a click layer (the "tock") and a reorderable chain of the effects frenchcore kicks actually need. Think of it as a heavily simplified Serum or Vital, focused on kicks.
 
-> **Status:** version 0.1.0, the first release, is out. It has been tried in FL Studio only. See the [plan](docs/PLAN.md) and the [changelog](CHANGELOG.md).
+> **Status:** version 0.1.0 is the latest release (tried in FL Studio only). Version 0.2.0 is built and waiting for review and release: see the [plan](docs/PLAN.md) and the [changelog](CHANGELOG.md).
 
-## Features of v0.1.0
+## Features
+
+New in v0.2.0:
+
+- A mixer (Osc 1, Osc 2, Noise, Tock) with Level, Mute, Solo and a destination for each sound: Main, Bus A or Bus B. Each bus has its own row of effects and can act on the whole kick, only the punch or only the tail.
+- Up to four copies of every effect, eight effects per row; add, duplicate and remove from the window.
+- New effects: Filter, Transient shaper, Compressor (with an OTT-style multiband mode) and Reverb. The EQ gets Extreme bands (up to +-36 dB and Q 50) and Key Track.
+- A noise oscillator: eight generated noises or your own WAV.
+- A reworked Tock: its own volume (Amp Env switch), a waveform with Trim handles and Detect, Pogo pitch bend and samples up to 10 seconds.
+- Projects and presets from 0.1 open and sound the same (checked by tests); a project saved with 0.2 does not open correctly in 0.1.
+
+From v0.1.0:
 
 - Two wavetable oscillators with factory kick wavetables, plus loading your own (Serum/Vital-compatible WAV).
 - Editable amplitude envelope (default kick + bass shape) and pitch envelope, with points and knobs.
 - Tock: an optional click layer, synthesized or played from factory tocks or your own samples.
 - Separate punch and tail levels with an adjustable split point.
 - Monophonic with optional glide; the MIDI note tunes the kick's tail.
-- Effects you can drag into any order: distortion (soft clip, hard clip, overdrive, foldback, bitcrush), 4-band parametric EQ, multiband stereo.
+- Effects you can drag into any order: distortion (soft clip, hard clip, overdrive, foldback, bitcrush), 4-band parametric EQ, multiband stereo (in 0.1; 0.2 adds more).
 - Presets: five factory ones, and save your own.
 - VST3, AU and Standalone for Windows, macOS and Linux.
 

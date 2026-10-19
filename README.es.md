@@ -6,16 +6,27 @@ Un sintetizador wavetable en formato plugin con un solo objetivo: hacer kicks de
 
 Frenchcore Machine está a mitad de camino entre arrastrar un sample y construir un kick desde cero en un synth completo. Trae dos osciladores wavetable, una envolvente que ya tiene la forma clásica de kick + bass, una capa de click (el "tock") y una cadena de efectos reordenable con lo que un kick de frenchcore realmente necesita. Pensalo como un Serum o un Vital muy simplificado, enfocado en kicks.
 
-> **Estado:** la versión 0.1.0, la primera, ya está publicada. Se probó solo en FL Studio. El avance está en el [plan](docs/PLAN.md) y en el [changelog](CHANGELOG.md) (en inglés).
+> **Estado:** la versión 0.1.0 es la última publicada (se probó solo en FL Studio). La versión 0.2.0 está construida y espera revisión y publicación: ver el [plan](docs/PLAN.md) y el [changelog](CHANGELOG.md) (en inglés).
 
-## Funciones de la v0.1.0
+## Funciones
+
+Novedades de la v0.2.0:
+
+- Un mixer (Osc 1, Osc 2, Noise, Tock) con Level, Mute, Solo y un destino para cada sonido: Main, Bus A o Bus B. Cada bus tiene su propia fila de efectos y puede actuar sobre todo el kick, solo el punch o solo la cola.
+- Hasta cuatro copias de cada efecto y ocho efectos por fila; agregar, duplicar y quitar desde la ventana.
+- Efectos nuevos: Filter, Transient shaper, Compressor (con un modo multibanda estilo OTT) y Reverb. El EQ suma bandas Extreme (hasta +-36 dB y Q 50) y Key Track.
+- Un oscilador de ruido: ocho ruidos generados o tu propio WAV.
+- Un Tock renovado: volumen propio (interruptor Amp Env), forma de onda con manijas de recorte y Detect, Pogo (curva de pitch) y samples de hasta 10 segundos.
+- Los proyectos y presets de la 0.1 se abren y suenan igual (lo comprueban los tests); un proyecto guardado con la 0.2 no se abre bien en la 0.1.
+
+De la v0.1.0:
 
 - Dos osciladores wavetable con wavetables de fábrica para kicks, y carga de wavetables propias (WAV compatible con Serum/Vital).
 - Envolvente de amplitud editable (forma kick + bass por defecto) y envolvente de pitch, con puntos y perillas.
 - Tock: una capa opcional de click, sintetizada o con tocks de fábrica o tus propios samples.
 - Niveles separados para el punch y la cola, con punto de división ajustable.
 - Monofónico con glide opcional; la nota MIDI afina la cola del kick.
-- Efectos que podés ordenar arrastrándolos: distorsión (soft clip, hard clip, overdrive, foldback, bitcrush), EQ paramétrico de 4 bandas y stereo multibanda.
+- Efectos que podés ordenar arrastrándolos: distorsión (soft clip, hard clip, overdrive, foldback, bitcrush), EQ paramétrico de 4 bandas y stereo multibanda (en la 0.1; la 0.2 suma más).
 - Presets: cinco de fábrica, y guardás los tuyos.
 - VST3, AU y Standalone para Windows, macOS y Linux.
 
