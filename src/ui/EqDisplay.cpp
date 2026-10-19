@@ -3,6 +3,7 @@
 
 #include "ui/Style.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace fcm::ui
@@ -29,18 +30,19 @@ static double xToHz(double x, double width) noexcept
     return width > 0.0 ? core::eqUnitToFrequency(x / width) : core::kEqMinHz;
 }
 
-static double dbToY(double db, double height) noexcept
+static double dbToY(double db, double height, double rangeDb) noexcept
 {
-    return height * (1.0 - core::eqGainToUnit(db));
+    return height * (1.0 - core::eqGainToUnit(db, rangeDb));
 }
 
-static double yToDb(double y, double height) noexcept
+static double yToDb(double y, double height, double rangeDb) noexcept
 {
-    return height > 0.0 ? core::eqUnitToGain(1.0 - y / height) : 0.0;
+    return height > 0.0 ? core::eqUnitToGain(1.0 - y / height, rangeDb) : 0.0;
 }
 
-EqDisplay::EqDisplay(juce::AudioProcessorValueTreeState& parameters, juce::String instanceId)
-    : state(parameters), instance(std::move(instanceId))
+EqDisplay::EqDisplay(juce::AudioProcessorValueTreeState& parameters, juce::String instanceId,
+                     std::function<float()> note)
+    : state(parameters), instance(std::move(instanceId)), noteSource(std::move(note))
 {
     const auto repaintOnChange = [this](float)
     {
@@ -69,8 +71,70 @@ EqDisplay::EqDisplay(juce::AudioProcessorValueTreeState& parameters, juce::Strin
         band.gainAttachment = attach(band.gain);
         band.qAttachment = attach(band.q);
         band.typeAttachment = attach(type);
+
+        // The extreme controls and Key Track change what the display draws.
+        band.extremeGain = state.getParameter(prefix + "xgain");
+        band.extremeQ = state.getParameter(prefix + "xq");
+        band.extremeGainAttachment = attach(band.extremeGain);
+        band.extremeQAttachment = attach(band.extremeQ);
+        band.extremeAttachment = attach(state.getParameter(prefix + "extreme"));
+        band.keyTrackAttachment = attach(state.getParameter(prefix + "keytrack"));
     }
     values = core::readEqBands(state, instance);
+    if (noteSource)
+        startTimerHz(10);
+}
+
+EqDisplay::~EqDisplay()
+{
+    stopTimer();
+}
+
+double EqDisplay::note() const
+{
+    return noteSource ? static_cast<double>(shownNote) : 0.0;
+}
+
+void EqDisplay::timerCallback()
+{
+    // The bands that follow the note move with it: redraw when the note changed.
+    const float now = noteSource ? noteSource() : 0.0f;
+    if (std::abs(now - shownNote) < 1.0e-3f)
+        return;
+
+    shownNote = now;
+    const bool follows =
+        std::any_of(values.begin(), values.end(), [](const auto& b) { return b.keyTrack > 0.0; });
+    if (follows)
+        repaint();
+}
+
+juce::RangedAudioParameter* EqDisplay::gainParameterOf(int band)
+{
+    const auto& b = bands[static_cast<size_t>(band)];
+    return values[static_cast<size_t>(band)].extreme && b.extremeGain != nullptr ? b.extremeGain : b.gain;
+}
+
+juce::ParameterAttachment* EqDisplay::gainAttachmentOf(int band)
+{
+    auto& b = bands[static_cast<size_t>(band)];
+    return values[static_cast<size_t>(band)].extreme && b.extremeGainAttachment != nullptr
+               ? b.extremeGainAttachment.get()
+               : b.gainAttachment.get();
+}
+
+juce::RangedAudioParameter* EqDisplay::qParameterOf(int band)
+{
+    const auto& b = bands[static_cast<size_t>(band)];
+    return values[static_cast<size_t>(band)].extreme && b.extremeQ != nullptr ? b.extremeQ : b.q;
+}
+
+juce::ParameterAttachment* EqDisplay::qAttachmentOf(int band)
+{
+    auto& b = bands[static_cast<size_t>(band)];
+    return values[static_cast<size_t>(band)].extreme && b.extremeQAttachment != nullptr
+               ? b.extremeQAttachment.get()
+               : b.qAttachment.get();
 }
 
 juce::Rectangle<float> EqDisplay::plot() const
@@ -84,8 +148,9 @@ juce::Point<float> EqDisplay::dotPosition(int band) const
     const auto& v = values[static_cast<size_t>(band)];
     // A cut has no gain: its dot rides the 0 dB line.
     const double db = v.isCut() ? 0.0 : v.gain;
-    return {area.getX() + static_cast<float>(hzToX(v.freq, area.getWidth())),
-            area.getY() + static_cast<float>(dbToY(db, area.getHeight()))};
+    const double range = core::eqDisplayRangeDb(values);
+    return {area.getX() + static_cast<float>(hzToX(v.frequencyAt(note()), area.getWidth())),
+            area.getY() + static_cast<float>(dbToY(db, area.getHeight(), range))};
 }
 
 int EqDisplay::bandAt(juce::Point<float> position) const
@@ -123,9 +188,12 @@ void EqDisplay::paint(juce::Graphics& g)
                    juce::Rectangle<float>(x + 2.0f, area.getBottom() - 12.0f, 28.0f, 11.0f),
                    juce::Justification::centredLeft);
     }
-    for (const double db : {-12.0, -6.0, 0.0, 6.0, 12.0})
+    const double range = core::eqDisplayRangeDb(values);
+    const bool wide = range > core::kEqRangeDb;
+    for (const double db : wide ? std::initializer_list<double>{-24.0, -12.0, 0.0, 12.0, 24.0}
+                                : std::initializer_list<double>{-12.0, -6.0, 0.0, 6.0, 12.0})
     {
-        const float y = area.getY() + static_cast<float>(dbToY(db, area.getHeight()));
+        const float y = area.getY() + static_cast<float>(dbToY(db, area.getHeight(), range));
         g.setColour(juce::Colours::white.withAlpha(db == 0.0 ? 0.18f : 0.07f));
         g.drawHorizontalLine(juce::roundToInt(y), area.getX(), area.getRight());
     }
@@ -136,16 +204,16 @@ void EqDisplay::paint(juce::Graphics& g)
     for (int i = 0; i <= steps; ++i)
     {
         const double x = area.getWidth() * i / steps;
-        const double db = core::eqResponseDb(values, xToHz(x, area.getWidth()));
+        const double db = core::eqResponseDb(values, xToHz(x, area.getWidth()), note());
         const float px = area.getX() + static_cast<float>(x);
-        const float py = area.getY() + static_cast<float>(dbToY(db, area.getHeight()));
+        const float py = area.getY() + static_cast<float>(dbToY(db, area.getHeight(), range));
         if (i == 0)
             curve.startNewSubPath(px, py);
         else
             curve.lineTo(px, py);
     }
     juce::Path fill = curve;
-    const float zeroY = area.getY() + static_cast<float>(dbToY(0.0, area.getHeight()));
+    const float zeroY = area.getY() + static_cast<float>(dbToY(0.0, area.getHeight(), range));
     fill.lineTo(area.getRight(), zeroY);
     fill.lineTo(area.getX(), zeroY);
     fill.closeSubPath();
@@ -189,8 +257,8 @@ void EqDisplay::mouseDown(const juce::MouseEvent& e)
     auto& band = bands[static_cast<size_t>(dragged)];
     if (band.freqAttachment != nullptr)
         band.freqAttachment->beginGesture();
-    if (band.gainAttachment != nullptr)
-        band.gainAttachment->beginGesture();
+    if (auto* gain = gainAttachmentOf(dragged))
+        gain->beginGesture();
     repaint();
 }
 
@@ -202,10 +270,18 @@ void EqDisplay::mouseDrag(const juce::MouseEvent& e)
     auto& band = bands[static_cast<size_t>(dragged)];
     const auto area = plot();
     if (band.freqAttachment != nullptr)
-        setValue(band.freq, *band.freqAttachment, xToHz(e.position.x - area.getX(), area.getWidth()));
+    {
+        // The dot sits where the band really is for the note; the setting is its frequency at C3.
+        const auto& v = values[static_cast<size_t>(dragged)];
+        const double shift = v.freq > 0.0 ? v.frequencyAt(note()) / v.freq : 1.0;
+        setValue(band.freq, *band.freqAttachment,
+                 xToHz(e.position.x - area.getX(), area.getWidth()) / (shift > 0.0 ? shift : 1.0));
+    }
     // A cut has no gain to drag.
-    if (band.gainAttachment != nullptr && !values[static_cast<size_t>(dragged)].isCut())
-        setValue(band.gain, *band.gainAttachment, yToDb(e.position.y - area.getY(), area.getHeight()));
+    if (auto* gain = gainAttachmentOf(dragged);
+        gain != nullptr && !values[static_cast<size_t>(dragged)].isCut())
+        setValue(gainParameterOf(dragged), *gain,
+                 yToDb(e.position.y - area.getY(), area.getHeight(), core::eqDisplayRangeDb(values)));
 }
 
 void EqDisplay::mouseUp(const juce::MouseEvent&)
@@ -215,8 +291,8 @@ void EqDisplay::mouseUp(const juce::MouseEvent&)
         auto& band = bands[static_cast<size_t>(dragged)];
         if (band.freqAttachment != nullptr)
             band.freqAttachment->endGesture();
-        if (band.gainAttachment != nullptr)
-            band.gainAttachment->endGesture();
+        if (auto* gain = gainAttachmentOf(dragged))
+            gain->endGesture();
     }
     dragged = -1;
     repaint();
@@ -257,15 +333,15 @@ void EqDisplay::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheel
         return;
     }
 
-    auto& band = bands[static_cast<size_t>(index)];
-    if (band.qAttachment == nullptr)
+    auto* q = qAttachmentOf(index);
+    if (q == nullptr)
         return;
 
-    // A turn of the wheel changes the Q by about 12 %, so the steps feel even from 0.1 to 10.
+    // A turn of the wheel changes the Q by about 12 %, so the steps feel even from 0.1 to 10 (50 in Extreme).
     const double factor = std::pow(1.12, static_cast<double>(wheel.deltaY) * 8.0);
-    band.qAttachment->beginGesture();
-    setValue(band.q, *band.qAttachment, values[static_cast<size_t>(index)].q * factor);
-    band.qAttachment->endGesture();
+    q->beginGesture();
+    setValue(qParameterOf(index), *q, values[static_cast<size_t>(index)].q * factor);
+    q->endGesture();
 }
 
 } // namespace fcm::ui

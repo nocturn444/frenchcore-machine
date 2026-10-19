@@ -1,6 +1,6 @@
 # Spec: Parametric EQ effect
 
-- Status: Implemented (Phase 5, third part), reworked on 2026-10-13 from a fixed low shelf / peak / high shelf into a parametric EQ on the product owner's request. Ranges and defaults are first choices by the agent. Version 0.2 adds Extreme and Key Track per band, [section 8](#8-version-02-extreme-peaks-and-key-track) (approved by the product owner on 2026-10-16, questions 5.1 to 5.3; not implemented yet).
+- Status: Implemented (Phase 5, third part), reworked on 2026-10-13 from a fixed low shelf / peak / high shelf into a parametric EQ on the product owner's request. Ranges and defaults are first choices by the agent. Version 0.2 adds Extreme and Key Track per band, [section 8](#8-version-02-extreme-peaks-and-key-track) (approved by the product owner on 2026-10-16, questions 5.1 to 5.3) and is implemented in 0.2 stage 3.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [fx-chain](fx-chain.md), [fx-distortion](fx-distortion.md), [fx-rack](fx-rack.md), [ARCHITECTURE §4.6](../ARCHITECTURE.md), [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md)
 
@@ -137,6 +137,14 @@ The copy of Gain and Q into the extreme controls when Extreme is switched on is 
 - Extreme off ignores xgain and xq; Extreme on ignores gain and q.
 - `magnitudeDb` matches the measured response with the new ranges.
 - Layout: the new IDs for `eq` and its copies in the released-ID guard.
+
+### 8.5b Decisions made in stage 3 (technical, by the agent)
+
+- A strip with more than two switches or menus in a group puts the extra ones (Extreme) on a row of their own, and a group with more than three knobs gets two rows of knobs (2 + 2 for the EQ: Freq, Gain, Q, Key Track), so the controls stay readable in the strip's width. The EQ strip is therefore taller (it scrolls with the others).
+- The editor copies Gain and Q into the extreme controls when the user clicks Extreme on (a table of rules in `ui/EffectDecorations.cpp`, so the rack code knows nothing about the EQ); the copy is clamped by the extreme ranges, which contain the normal ones.
+- The controls that replace each other (Gain and Extreme Gain, Q and Extreme Q) show under the same labels, "Gain" and "Q".
+- The gain clamp inside the filter design rises from 30 to 36 dB and the Q clamp from 20 to 50 (nothing reachable in 0.1 changes).
+- The Key Track frequency is recomputed when the note changes (the context arrives after the parameters each block); the display reads the note from `Engine::currentNoteSemitones()` (an atomic) and repaints at 10 Hz only when a band follows the note.
 
 ### 8.6 Out of scope for 0.2
 

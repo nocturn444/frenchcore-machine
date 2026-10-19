@@ -86,3 +86,63 @@ TEST_CASE("The bands are read from the parameters", "[core][eq][display]")
     REQUIRE_FALSE(bands[2].isActive());
     REQUIRE_THAT(eqBandResponseDb(bands[2], 25.0), WithinAbs(0.0, 1.0e-12));
 }
+
+TEST_CASE("Extreme bands are read with their own gain and Q and widen the display",
+          "[core][eq][display][extreme]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    fcm::test::TestProcessor processor;
+    const auto set = [&](const char* id, float value)
+    {
+        auto* parameter = processor.state.getParameter(id);
+        parameter->setValueNotifyingHost(parameter->convertTo0to1(value));
+    };
+
+    auto bands = readEqBands(processor.state);
+    REQUIRE(eqDisplayRangeDb(bands) == kEqRangeDb);
+
+    set("eq.b2.gain", 6.0f);
+    set("eq.b2.q", 2.0f);
+    set("eq.b2.xgain", 30.0f);
+    set("eq.b2.xq", 40.0f);
+    bands = readEqBands(processor.state);
+    REQUIRE_FALSE(bands[1].extreme);
+    REQUIRE_THAT(bands[1].gain, WithinAbs(6.0, 1.0e-3));
+    REQUIRE_THAT(bands[1].q, WithinAbs(2.0, 1.0e-3));
+
+    set("eq.b2.extreme", 1.0f);
+    bands = readEqBands(processor.state);
+    REQUIRE(bands[1].extreme);
+    REQUIRE_THAT(bands[1].gain, WithinAbs(30.0, 1.0e-3));
+    REQUIRE_THAT(bands[1].q, WithinAbs(40.0, 0.05));
+    REQUIRE(eqDisplayRangeDb(bands) == kEqExtremeRangeDb);
+
+    // The gain axis follows the range: 30 dB is near the top of the 36 dB display.
+    REQUIRE_THAT(eqGainToUnit(36.0, kEqExtremeRangeDb), WithinAbs(1.0, 1.0e-12));
+    REQUIRE_THAT(eqUnitToGain(eqGainToUnit(30.0, kEqExtremeRangeDb), kEqExtremeRangeDb),
+                 WithinAbs(30.0, 1.0e-9));
+}
+
+TEST_CASE("Key Track moves the displayed band with the note", "[core][eq][display][keytrack]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    fcm::test::TestProcessor processor;
+    const auto set = [&](const char* id, float value)
+    {
+        auto* parameter = processor.state.getParameter(id);
+        parameter->setValueNotifyingHost(parameter->convertTo0to1(value));
+    };
+    set("eq.b2.gain", 12.0f);
+    set("eq.b2.freq", 500.0f);
+    set("eq.b2.q", 4.0f);
+    set("eq.b2.keytrack", 100.0f);
+
+    const auto bands = readEqBands(processor.state);
+    REQUIRE_THAT(bands[1].frequencyAt(0.0), WithinAbs(500.0, 1.0e-9));
+    REQUIRE_THAT(bands[1].frequencyAt(12.0), WithinAbs(1000.0, 1.0e-6));
+
+    // The curve has its peak where the band is for that note.
+    REQUIRE_THAT(eqResponseDb(bands, 1000.0, 12.0), WithinAbs(12.0, 0.4));
+    REQUIRE(eqResponseDb(bands, 500.0, 12.0) < 4.0);
+    REQUIRE_THAT(eqResponseDb(bands, 500.0, 0.0), WithinAbs(12.0, 0.4));
+}

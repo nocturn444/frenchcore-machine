@@ -14,11 +14,11 @@ constexpr int kBelowTabs = 6;
 } // namespace
 
 EffectsBox::EffectsBox(juce::AudioProcessorValueTreeState& state, core::FxRackState& racks,
-                       const dsp::EffectRegistry& registry)
+                       const dsp::EffectRegistry& registry, std::function<float()> note)
     : SectionPanel("Effects"), mixer(state),
-      rackPanels{FxRackPanel(state, racks, dsp::RackId::busA, registry),
-                 FxRackPanel(state, racks, dsp::RackId::busB, registry),
-                 FxRackPanel(state, racks, dsp::RackId::main, registry)}
+      rackPanels{FxRackPanel(state, racks, dsp::RackId::busA, registry, note),
+                 FxRackPanel(state, racks, dsp::RackId::busB, registry, note),
+                 FxRackPanel(state, racks, dsp::RackId::main, registry, note)}
 {
     addChildComponent(mixer);
     for (auto& panel : rackPanels)
