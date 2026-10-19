@@ -21,6 +21,8 @@ struct TockSettings
     float trimStart = 0.0f;
     float trimEnd = 1.0f;
     float pogoSemitones = 0.0f;
+    // The played note relative to C3 when Key Track is on, else 0: added to Tune (docs/specs/tock.md §9).
+    float keyTrackSemitones = 0.0f;
 };
 
 // The click layer of the kick (docs/specs/tock.md §4). One sample at a time, real-time safe, plain

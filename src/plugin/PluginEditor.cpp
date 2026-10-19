@@ -33,18 +33,34 @@ constexpr double kMinScale = 0.6;
 constexpr double kMaxScale = 1.6;
 } // namespace
 
+TockWaveRow::TockWaveRow(juce::AudioProcessorValueTreeState& state, const core::TockSelector& selector)
+    : waveform(state, selector), ampEnv(state, Ids::kTockAmpEnv, "Amp Env"),
+      keyTrack(state, Ids::kTockKeyTrack, "Key Track")
+{
+    addAndMakeVisible(waveform);
+    addAndMakeVisible(ampEnv);
+    addAndMakeVisible(keyTrack);
+}
+
+void TockWaveRow::resized()
+{
+    auto area = getLocalBounds();
+    auto switches = area.removeFromRight(110);
+    ampEnv.setBounds(switches.removeFromTop(switches.getHeight() / 2));
+    keyTrack.setBounds(switches);
+    waveform.setBounds(area.withTrimmedRight(4));
+}
+
 TockPanel::TockPanel(juce::AudioProcessorValueTreeState& state, const core::TockSelector& selector,
                      std::function<void(const juce::File&)> onLoad)
     : ControlPanel(state, "Tock"), parameters(state), tockSelector(selector),
-      loadRequested(std::move(onLoad)), waveform(state, selector)
+      loadRequested(std::move(onLoad)), waveRow(state, selector)
 {
-    const int switches = addRow({{Ids::kTockOn, "On"},
-                                 {Ids::kTockMode, "Mode"},
-                                 {Ids::kTockSample, "Sample"},
-                                 {Ids::kTockAmpEnv, "Amp Env"}});
+    const int switches =
+        addRow({{Ids::kTockOn, "On"}, {Ids::kTockMode, "Mode"}, {Ids::kTockSample, "Sample"}});
     addCustom(switches, loadButton, 1.4f);
     addCustom(switches, detectButton);
-    addWideRow(waveform, 46);
+    addWideRow(waveRow, 44);
     addRow({{Ids::kTockLevel, "Level"},
             {Ids::kTockTune, "Tune"},
             {Ids::kTockStart, "Start"},

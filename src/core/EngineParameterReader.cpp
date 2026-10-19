@@ -56,6 +56,7 @@ EngineParameterReader::EngineParameterReader(juce::AudioProcessorValueTreeState&
       tockTrimStart(lookup(state, ParameterIds::kTockTrimStart)),
       tockTrimEnd(lookup(state, ParameterIds::kTockTrimEnd)),
       tockPogo(lookup(state, ParameterIds::kTockPogo)),
+      tockKeyTrack(lookup(state, ParameterIds::kTockKeyTrack)),
       ampTimeScale(lookup(state, ParameterIds::kAmpEnvTimeScale)),
       pitchTimeScale(lookup(state, ParameterIds::kPitchEnvTimeScale)),
       pitchAmount(lookup(state, ParameterIds::kPitchEnvAmount)),
@@ -146,6 +147,7 @@ dsp::EngineParameters EngineParameterReader::read() const noexcept
     result.tock.trimStart = finiteOr(tockTrimStart, 0.0f) * 0.01f;
     result.tock.trimEnd = finiteOr(tockTrimEnd, 100.0f) * 0.01f;
     result.tock.pogoSemitones = finiteOr(tockPogo, 0.0f);
+    result.tock.keyTrack = toBool(tockKeyTrack, defaults.tock.keyTrack);
 
     // The mixer: a destination or region that is not one of the entries goes to the first (Main, Whole).
     for (size_t i = 0; i < mixer.size(); ++i)

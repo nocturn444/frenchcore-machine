@@ -183,6 +183,9 @@ void addTockParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layo
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         id(ParameterIds::kTockPogo), "Tock Pogo", juce::NormalisableRange<float>{-24.0f, 24.0f, 0.01f}, 0.0f,
         juce::AudioParameterFloatAttributes{}.withLabel("st")));
+    // Version 0.2.1 request (docs/specs/tock.md section 9): the Tock follows the note like the noise does.
+    layout.add(
+        std::make_unique<juce::AudioParameterBool>(id(ParameterIds::kTockKeyTrack), "Tock Key Track", false));
 }
 void addNoiseParameters(juce::AudioProcessorValueTreeState::ParameterLayout& layout)
 {

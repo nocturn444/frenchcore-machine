@@ -186,6 +186,7 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
     tockSettings.trimEnd = parameters.tock.trimEnd;
     tockSettings.pogoSemitones = parameters.tock.pogoSemitones;
     tockAmpEnv = parameters.tock.ampEnv;
+    tockKeyTrack = parameters.tock.keyTrack;
     const float tockGain =
         std::isfinite(parameters.tock.level) ? std::max(parameters.tock.level, 0.0f) : 0.0f;
 
@@ -223,7 +224,7 @@ void Voice::setParameters(const EngineParameters& parameters, bool snap) noexcep
     }
 }
 
-void Voice::trigger(float velocityGain) noexcept
+void Voice::trigger(float velocityGain, float noteSemitones) noexcept
 {
     // A kick that is still sounding keeps rendering for a moment with a fade-out, so replacing it
     // with the new kick does not make a step in the waveform. A kick that has not output a sample
@@ -249,7 +250,10 @@ void Voice::trigger(float velocityGain) noexcept
     core.pitch.start(pitchTimeScale * syncScale(pitchShapeInUse));
     core.tockAmpEnv = tockAmpEnv;
     if (tockOn)
+    {
+        tockSettings.keyTrackSemitones = tockKeyTrack && std::isfinite(noteSemitones) ? noteSemitones : 0.0f;
         core.tock.start(tockSettings);
+    }
     else
         core.tock.reset();
     if (noiseOn)
