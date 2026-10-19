@@ -516,16 +516,20 @@ void FxRackPanel::dragSlot(const std::string& instanceId, const juce::MouseEvent
     if (ordered.size() < 2)
         return;
 
-    std::vector<double> sizes;
+    // The target depends only on the OTHER strips and on the mouse, never on where the dragged strip
+    // is now: otherwise a tall strip and a short one swapping places would make the strip under the
+    // mouse change again and again.
+    std::vector<double> others;
     int current = 0;
     for (size_t i = 0; i < ordered.size(); ++i)
     {
-        sizes.push_back(ordered[i]->preferredHeight() + kSlotGap);
         if (ordered[i]->id() == instanceId)
             current = static_cast<int>(i);
+        else
+            others.push_back(ordered[i]->preferredHeight() + kSlotGap);
     }
 
-    const int target = core::FxRackState::positionIn(sizes, e.getEventRelativeTo(&content).position.y);
+    const int target = core::FxRackState::insertionIndex(others, e.getEventRelativeTo(&content).position.y);
     if (target != current)
         racks.move(rackId, current, target);
 }

@@ -51,7 +51,7 @@ None new. The panels show existing parameters.
 
 ## 5. Tests
 
-UI components are not unit tested in this project. What can be tested without a display is tested: the pure functions the UI uses (`FxRackState::positionIn`, the EQ axes in `core::EqResponse`). The layout is checked by running the Standalone under a virtual display and looking at screenshots (not committed): every control of the previous generic list is reachable, nothing overlaps or is cut at the design size, and the Standalone strip fits.
+UI components are not unit tested in this project. What can be tested without a display is tested: the pure functions the UI uses (`FxRackState::insertionIndex`, the EQ axes in `core::EqResponse`). The layout is checked by running the Standalone under a virtual display and looking at screenshots (not committed): every control of the previous generic list is reachable, nothing overlaps or is cut at the design size, and the Standalone strip fits.
 
 ## 6. Out of scope
 

@@ -69,10 +69,14 @@ class FxRackState : public juce::ChangeBroadcaster
     // position `x` falls in. Clamped to the row; anything unusable gives 0.
     static int positionAt(double x, double slotWidth, int count) noexcept;
 
-    // The same for slots of different sizes laid out one after the other (the vertical rack): the
-    // position whose span holds `offset`, clamped to the first and last. Sizes that are not finite
-    // positive numbers count as 0; anything unusable gives 0.
-    static int positionIn(const std::vector<double>& sizes, double offset) noexcept;
+    // Where a slot being dragged goes in a vertical stack of slots of different sizes: `otherSizes`
+    // are the sizes of the OTHER slots, laid out one after the other without the dragged one, and
+    // `offset` is where the dragged handle is. The result (0 to otherSizes.size()) is how many of the
+    // others have their middle above `offset`. It depends only on the others, never on where the
+    // dragged slot is now, so moving the slot cannot change the answer for the same offset (the
+    // slots no longer jump back and forth when their sizes differ). Sizes that are not finite
+    // positive numbers count as 0; an offset that is not a number gives 0.
+    static int insertionIndex(const std::vector<double>& otherSizes, double offset) noexcept;
 
   private:
     void publish();
