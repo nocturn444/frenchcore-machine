@@ -26,7 +26,7 @@ inline constexpr int kEqBands = 4;
 using EqBands = std::array<EqBand, kEqBands>;
 
 // Reads "eq.b1.*" ... "eq.b4.*". A missing parameter keeps the EqBand default.
-EqBands readEqBands(juce::AudioProcessorValueTreeState& state);
+EqBands readEqBands(juce::AudioProcessorValueTreeState& state, const juce::String& instanceId = "eq");
 
 // The display's axes: 20 Hz to 20 kHz on a logarithmic scale, +-18 dB, both as a position from 0 to 1
 // (frequency from the left, gain from the bottom). Unusable input gives the lowest end.

@@ -53,12 +53,12 @@ bool EqBand::isActive() const noexcept
     return dsp::EqEffect::isActive(on, static_cast<dsp::EqEffect::Shape>(type), gain);
 }
 
-EqBands readEqBands(juce::AudioProcessorValueTreeState& state)
+EqBands readEqBands(juce::AudioProcessorValueTreeState& state, const juce::String& instanceId)
 {
     EqBands bands;
     for (int i = 0; i < kEqBands; ++i)
     {
-        const juce::String prefix = "eq.b" + juce::String(i + 1) + ".";
+        const juce::String prefix = instanceId + ".b" + juce::String(i + 1) + ".";
         auto& band = bands[static_cast<size_t>(i)];
         band.on = read(state, prefix + "on", 1.0) >= 0.5;
         band.type = juce::jlimit(0, 4, juce::roundToInt(read(state, prefix + "type", 0.0)));

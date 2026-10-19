@@ -7,7 +7,8 @@
 #include "dsp/engine/Voice.h"
 #include "dsp/envelope/EnvelopeShape.h"
 #include "dsp/envelope/PublishedPointer.h"
-#include "dsp/fx/EffectChain.h"
+#include "dsp/fx/EffectPool.h"
+#include "dsp/fx/EffectRack.h"
 #include "dsp/oscillator/WavetableData.h"
 #include "dsp/tock/TockSample.h"
 
@@ -28,7 +29,7 @@ class Engine
 {
   public:
     // The effects of the plugin; tests may pass a registry of their own.
-    explicit Engine(const EffectRegistry& registry = defaultEffectRegistry()) : fx(registry) {}
+    explicit Engine(const EffectRegistry& registry = defaultEffectRegistry()) : pool(registry) {}
 
     // May allocate. Called before playback starts and whenever the sample rate or block size changes.
     // Parameters set before this call take effect at once; later changes are smoothed.
@@ -67,12 +68,16 @@ class Engine
 
     double getSampleRate() const noexcept { return sampleRate; }
 
-    // The FX chain's order (any thread may store a packed order) and the latency it adds at the
-    // current Quality, for the host (docs/specs/fx-chain.md).
-    std::atomic<std::uint64_t>& fxOrder() noexcept { return fx.order(); }
+    // The contents of a rack (any thread may store a packed value, EffectRack::pack) and the
+    // latency the effects add at the current Quality, for the host (docs/specs/fx-chain.md,
+    // docs/decisions/0010).
+    std::atomic<std::uint64_t>& rackValue(RackId rack) noexcept
+    {
+        return racks[static_cast<size_t>(rack)].value();
+    }
     int latencySamples(int oversamplingFactor) const noexcept
     {
-        return fx.latencySamples(oversamplingFactor);
+        return pool.latencySamples(oversamplingFactor);
     }
 
   private:
@@ -91,7 +96,8 @@ class Engine
 
     std::unique_ptr<const WavetableData> sineTable;
     NoteHandler notes;
-    EffectChain fx;
+    EffectPool pool;
+    std::array<EffectRack, kNumRacks> racks;
     PitchGlide glide;
     Voice voice;
     PublishedPointer<EnvelopeShape>* ampSource = nullptr;

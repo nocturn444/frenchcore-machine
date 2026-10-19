@@ -39,17 +39,18 @@ static double yToDb(double y, double height) noexcept
     return height > 0.0 ? core::eqUnitToGain(1.0 - y / height) : 0.0;
 }
 
-EqDisplay::EqDisplay(juce::AudioProcessorValueTreeState& parameters) : state(parameters)
+EqDisplay::EqDisplay(juce::AudioProcessorValueTreeState& parameters, juce::String instanceId)
+    : state(parameters), instance(std::move(instanceId))
 {
     const auto repaintOnChange = [this](float)
     {
-        values = core::readEqBands(state);
+        values = core::readEqBands(state, instance);
         repaint();
     };
 
     for (int i = 0; i < core::kEqBands; ++i)
     {
-        const juce::String prefix = "eq.b" + juce::String(i + 1) + ".";
+        const juce::String prefix = instance + ".b" + juce::String(i + 1) + ".";
         auto& band = bands[static_cast<size_t>(i)];
         band.on = state.getParameter(prefix + "on");
         band.freq = state.getParameter(prefix + "freq");
@@ -69,7 +70,7 @@ EqDisplay::EqDisplay(juce::AudioProcessorValueTreeState& parameters) : state(par
         band.qAttachment = attach(band.q);
         band.typeAttachment = attach(type);
     }
-    values = core::readEqBands(state);
+    values = core::readEqBands(state, instance);
 }
 
 juce::Rectangle<float> EqDisplay::plot() const

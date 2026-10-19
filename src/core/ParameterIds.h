@@ -10,7 +10,7 @@ namespace fcm::core
 
 // Version of the saved plugin state. Bump it and add a migration in StateMigrations when the
 // state format changes (docs/ARCHITECTURE.md §5).
-inline constexpr int kStateVersion = 1;
+inline constexpr int kStateVersion = 2;
 
 // Parameter IDs are permanent once released: never rename, remove or reuse one.
 namespace ParameterIds
@@ -48,7 +48,9 @@ inline constexpr const char* kTockStart = "tock.start";
 inline constexpr const char* kTockDecay = "tock.decay";
 inline constexpr const char* kTockTone = "tock.tone";
 
-// "distortion.enabled" for ("distortion", kEffectEnabled).
+// "distortion.enabled" for ("distortion", kEffectEnabled). `effectId` is an instance ID: the effect's
+// ID for the first copy ("distortion"), the ID plus the copy number for the others ("distortion2"),
+// see EffectRegistry::instanceId and docs/decisions/0010.
 inline std::string effect(std::string_view effectId, std::string_view suffix)
 {
     return std::string(effectId) + "." + std::string(suffix);

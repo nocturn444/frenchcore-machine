@@ -1,6 +1,6 @@
 # Spec: Mixer, effect buses and multiple effect copies
 
-- Status: Approved (product owner's answers of 2026-10-16, questions 2.1 to 2.6); not implemented. Version 0.2, stages 1 and 2 of [PLAN](../PLAN.md).
+- Status: Approved (product owner's answers of 2026-10-16, questions 2.1 to 2.6). Version 0.2, stages 1 and 2 of [PLAN](../PLAN.md). Stage 1 (copies, racks in the state, the Main rack and its UI, state version 2) is implemented; stage 2 (voice stems, mixer, Bus A and Bus B, tabs) is not.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ADR 0010](../decisions/0010-effect-instances-buses-and-mixer.md), [ADR 0011](../decisions/0011-effect-interface-additions.md), [ADR 0009](../decisions/0009-effect-parameters-and-chain-latency.md), [fx-chain](fx-chain.md) (0.1 machinery, still the base of one rack), [fx-rack](fx-rack.md) (0.1 UI, replaced by section 2 here), [voice-punch-tail](voice-punch-tail.md), [noise-oscillator](noise-oscillator.md), [tock](tock.md)
 
@@ -80,10 +80,22 @@ Non-parameter state: node `FxRacks` with three children `Rack` (`id` = `busA`, `
 - **Migration 1 → 2** in `StateMigrations.cpp` ([ADR 0010](../decisions/0010-effect-instances-buses-and-mixer.md) item 8), also used for 0.1 preset files.
 - **Real-time:** no allocation, locks or waits; the packed rack values and parameters are read once per block.
 
+### Decisions made in stage 1 (technical, by the agent)
+
+- **Default rack content is data, not code.** `EffectDescriptor::inDefaultMain` marks the effects a new project starts with in Main (Distortion, EQ and Stereo, in registration order). New effects leave it false, so adding one never changes the default sound or racks.
+- **IDs read back unambiguously.** The registry refuses an effect ID that equals another effect's ID plus a copy number 2 to 4 (so `eq2` can never be both "copy 2 of eq" and an effect of its own).
+- **Padding.** A rack's padding is `P(q)` minus the latency of the effects it holds, in a delay line that is always fed, so any change of contents keeps the total delay at `P(q)`. Adding or removing an effect that has latency can make one small discontinuity at that moment (the effect's own dry delay line starts empty); it is a user edit, not a steady state.
+- **An instance joining a rack** starts with an empty dry delay line and a reset effect. **Removing** one switches it off and drops it from the rack at once (no tail fade); the wet tail of a Reverb will therefore be cut when removed.
+- **Duplicate copies every setting, including On.** Add resets to defaults and switches on.
+- **Restoring `FxRacks`** ignores a rack whose text is over 2048 characters, at most 16 child nodes are read, and an instance listed twice keeps its first place (rack order busA, busB, main).
+- **Processing set-up.** Only instances that are in a rack get `setParameters`/`setContext` each block, so unused copies cost nothing; their mix smoothing and `setOversampling` are still kept current.
+- In stage 1 the engine reports the latency of the whole pool (`P(q)`, four copies of every effect), not yet `2 * P(q)`.
+
 ## 5. Tests
 
 - Engine: with all sources on Main and the default racks, a fixed note gives the same audio as 0.1.1 (aligned by the reported latency, every sample within 1e-6 of the reference, which is -120 dBFS: the stems are summed in a different order, so exact bit equality is not required) (record the reference with 0.1.1 before changing the voice); Destination moves a source between racks with no step larger than the signal step; Mute and Solo (one soloed, two soloed, mute on a soloed channel) give the expected stems; region Whole/Punch/Tail apply the effect only where expected (a gain test effect: measured gain before and after the Split, smooth across it); the reported latency is `2 * P(q)` for each Quality and a click put in any source arrives at the output at that delay whatever the routing.
 - Racks: add takes the lowest free copy and resets it; a fifth copy is refused; a ninth effect in a rack is refused; remove frees the copy; duplicate copies the values; moving inside a rack changes the order; an invalid packed value processes nothing and never crashes; `process` allocates nothing (counting `operator new`).
+- Cross-platform note (found in CI, stage 1): the references are rendered on Linux, where the 1e-6 above is enforced; on Windows and macOS the same renders differ by up to 2.6e-5 (Windows) and 6e-6 (macOS) because of different maths libraries, so there the test allows 1e-4 (-80 dBFS). The comparison on Linux, with the same compiler and libraries as the reference, is the strict one.
 - State: round trip of `FxRacks` and the mixer parameters; hostile `FxRacks` nodes (unknown IDs, duplicates, an instance in two racks, 1000 entries, huge text) load safely; migration of every 0.1 factory preset and of a saved 0.1.1 project gives the same audio as 0.1.1 within the same tolerance (reference renders committed as test data, a few kilobytes each).
 - Layout: the IDs of copies 2 to 4 follow the rule; copy 1 IDs are unchanged; the released-ID guard gains the new IDs.
 - Manual (Standalone): the mixer tab, adding/removing/duplicating effects, dragging, a tail-only distortion on Bus A, a soloed Osc 2.

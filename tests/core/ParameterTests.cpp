@@ -118,7 +118,19 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
         REQUIRE(actual.insert(withId->paramID.toStdString()).second); // unique
     }
 
-    REQUIRE(actual == expected);
+    // Version 0.2 gives every effect four copies; copy 1 keeps the 0.1 IDs and copies 2 to 4 add
+    // the number after the effect ID (docs/decisions/0010). Each stage adds its new IDs here.
+    std::set<std::string> allowed = expected;
+    for (const auto& id : expected)
+        for (const char* effect : {"distortion", "eq", "stereo"})
+            if (id.rfind(std::string(effect) + ".", 0) == 0)
+                for (int copy = 2; copy <= 4; ++copy)
+                    allowed.insert(effect + std::to_string(copy) + id.substr(std::string(effect).size()));
+
+    // Nothing released is missing, and nothing unexpected has appeared.
+    for (const auto& id : expected)
+        REQUIRE(actual.count(id) == 1);
+    REQUIRE(actual == allowed);
 }
 
 TEST_CASE("Default parameters map to the default EngineParameters", "[core][parameters]")

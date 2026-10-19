@@ -14,28 +14,28 @@ This guide was validated by adding Distortion, the EQ and Stereo with it ([fx-di
    The product owner approves what the user hears and sees before implementation.
 2. **Create the folder** `src/dsp/fx/<id>/` with `<Name>Effect.h/.cpp`: a class deriving from `fcm::dsp::Effect` ([`src/dsp/fx/Effect.h`](../src/dsp/fx/Effect.h)):
    - `descriptor()` returns the ID, the display name and a `version` (static data);
-   - (from 0.2) optionally `defaultMix` in the descriptor (0 to 1, default 1) when the effect should not start fully wet, like the Reverb ([ADR 0011](decisions/0011-effect-interface-additions.md));
-   - `parameters()` returns a **static** array of `ParameterSpec` (plain data: ID suffix, name, kind `toggle`/`choice`/`integer`/`number`, range, step, default, skew centre, unit, choices). The full ID is `"<id>.<suffix>"`, and a suffix may contain a dot (`low.gain`). Do not declare `enabled` or `mix`: the chain adds them to every effect, off and 100 % by default;
+   - (from 0.2) optionally `defaultMix` in the descriptor (0 to 1, default 1) when the effect should not start fully wet, like the Reverb ([ADR 0011](decisions/0011-effect-interface-additions.md)). `inDefaultMain` stays false for new effects: only Distortion, EQ and Stereo are in the Main rack of a new project;
+   - `parameters()` returns a **static** array of `ParameterSpec` (plain data: ID suffix, name, kind `toggle`/`choice`/`integer`/`number`, range, step, default, skew centre, unit, choices). The full ID is `"<id>.<suffix>"`, and a suffix may contain a dot (`low.gain`). Do not declare `enabled` or `mix`: the plugin adds them to every copy of every effect, off by default and with Mix at `defaultMix`;
    - `prepare(spec)` allocates everything (buffers, oversamplers); `reset()`, `setParameters(values)`, `setOversampling(factor)` and `process(buffer)` never allocate, lock or wait;
    - (from 0.2) a control that only matters for some values of a switch or menu of the same effect sets `shownWhen`, so the rack hides it otherwise; an effect that follows the played note overrides `setContext` and reads `noteSemitones` (relative to MIDI note 60);
    - `setParameters` gets the values once per block in the order of `parameters()`, in the units of the spec. It never needs the APVTS;
    - `latencySamples(factor)` is constant for a given factor and does not depend on the parameters or on whether the effect is on. The chain compensates the dry signal by it;
    - replace non-finite samples by 0 and never let one leave the effect.
-3. **Register it** with one line in `src/dsp/fx/RegisterEffects.cpp` (the include and `registry.add<YourEffect>();`). Append to the end of the list: its order is the default chain order and the effect's index, and must not be reshuffled. Add the `.cpp` file to `src/dsp/CMakeLists.txt` (the sources are listed there).
+3. **Register it** with one line in `src/dsp/fx/RegisterEffects.cpp` (the include and `registry.add<YourEffect>();`). Append to the end of the list: its position is the effect's index (and the order of the Add menu), and must not be reshuffled. The ID must not be another effect's ID followed by 2, 3 or 4 (the registry refuses it). Add the `.cpp` file to `src/dsp/CMakeLists.txt` (the sources are listed there).
 4. **Write tests** in `tests/dsp/fx/<Name>Tests.cpp` and add the file to `tests/CMakeLists.txt`. The generic tests in `tests/dsp/fx/RegisteredEffectsTests.cpp` pick the new effect up automatically and check, for every sample rate and oversampling factor and with default, minimum and maximum parameter values:
    - valid IDs and parameter specs;
    - finite output for silence, full-scale noise and a full-scale sine sweep, with one channel, and with damaged (non-finite) input;
    - no allocation in `process()`, `reset()` and `setParameters()`;
    - `reset()` makes the output deterministic;
    - constant, non-negative latency, zero at 1x.
-   Your own tests cover what the effect does (responses, shapes, aliasing, latency matching `latencySamples`). Also add the effect's parameter IDs (`<id>.enabled`, `<id>.mix` and its own) to the released-ID list in `tests/core/ParameterTests.cpp`.
+   Your own tests cover what the effect does (responses, shapes, aliasing, latency matching `latencySamples`). Also add the effect's parameter IDs (`<id>.enabled`, `<id>.mix` and its own) to the released-ID list in `tests/core/ParameterTests.cpp`, and its ID to the list of effects whose copies 2 to 4 that test derives.
 5. **Update docs:** the effect's section in `docs/USER_GUIDE.md`, `CHANGELOG.md` under `Unreleased`, the status in `docs/PLAN.md`, and the spec's status.
 6. **Optional: grouping and a picture.** The rack ([fx-rack](specs/fx-rack.md)) lays out your controls by itself. To get one column per group (like the EQ's bands) give the suffixes a dot ("b1.freq") and name the parameters "<Group> <Control>" ("Band 1 Freq"). To show a picture above the controls, add one entry for your effect ID in `src/ui/EffectDecorations.cpp`; the rack code does not change.
 7. **Open a PR** using the template. The effect appears in the Effects box, saves and restores with the project, and takes part in the chain order without any further work.
 
 ## Copies (from 0.2)
 
-You write the effect once. The plugin creates four copies of it with the IDs `<id>`, `<id>2`, `<id>3`, `<id>4` and their parameters, and the user can put them in any rack ([ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)). Nothing in your effect may assume there is only one: no static mutable state. Add the copies' IDs to the released-ID list too (the layout test generates them from yours).
+You write the effect once. The plugin creates four copies of it with the IDs `<id>`, `<id>2`, `<id>3`, `<id>4` and their parameters, and the user can put them in any rack ([ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)). Nothing in your effect may assume there is only one: no static mutable state. The released-ID test derives the copies' IDs from yours (add your effect's ID to its list of effects).
 
 ## Rules
 

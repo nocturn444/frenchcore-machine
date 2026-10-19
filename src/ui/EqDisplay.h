@@ -16,7 +16,8 @@ namespace fcm::ui
 class EqDisplay : public juce::Component
 {
   public:
-    explicit EqDisplay(juce::AudioProcessorValueTreeState& state);
+    // `instanceId` is the copy of the EQ it shows: "eq", "eq2", ...
+    explicit EqDisplay(juce::AudioProcessorValueTreeState& state, juce::String instanceId = "eq");
 
     void paint(juce::Graphics& g) override;
     void mouseDown(const juce::MouseEvent& e) override;
@@ -46,6 +47,7 @@ class EqDisplay : public juce::Component
     void setValue(juce::RangedAudioParameter* parameter, juce::ParameterAttachment& attachment, double value);
 
     juce::AudioProcessorValueTreeState& state;
+    juce::String instance;
     std::array<BandParameters, core::kEqBands> bands;
     core::EqBands values;
     int dragged = -1;

@@ -40,6 +40,7 @@ class EngineParameterReader
         std::atomic<float>* mix;
         std::vector<std::atomic<float>*> values;
         std::vector<float> defaults;
+        float defaultMixPercent = 100.0f;
     };
 
     std::vector<EffectPointers> effects;

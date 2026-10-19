@@ -59,9 +59,9 @@ struct EngineParameters
 
     TockParameters tock;
 
-    // The FX chain (docs/specs/fx-chain.md): the state of every registered effect by index, and the
-    // oversampling factor (1, 2, 4 or 8) of the global Quality setting.
-    std::array<EffectSlotParameters, kMaxEffects> effects;
+    // The effects (docs/specs/fx-chain.md): the state of every effect instance by pool index
+    // (docs/decisions/0010), and the oversampling factor (1, 2, 4 or 8) of the global Quality setting.
+    std::array<EffectSlotParameters, kMaxInstances> effects;
     int oversamplingFactor = 2;
 
     // The tempo that tempo-synced envelopes follow (host tempo, or the Standalone's BPM).

@@ -15,7 +15,9 @@ namespace fcm::ui
 struct EffectDecoration
 {
     int height = 0;
-    std::function<std::unique_ptr<juce::Component>(juce::AudioProcessorValueTreeState&)> make;
+    // `instanceId` is the copy of the effect the picture belongs to ("eq", "eq2", ...).
+    std::function<std::unique_ptr<juce::Component>(juce::AudioProcessorValueTreeState&, const juce::String&)>
+        make;
 };
 
 // The decoration of an effect ID, or null.
