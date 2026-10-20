@@ -4,6 +4,7 @@
 #include "dsp/fx/distortion/DistortionEffect.h"
 #include "dsp/fx/eq/EqEffect.h"
 #include "dsp/fx/filter/FilterEffect.h"
+#include "dsp/fx/formant/FormantEffect.h"
 #include "dsp/fx/peak/PeakEffect.h"
 #include "dsp/fx/reverb/ReverbEffect.h"
 #include "dsp/fx/stereo/StereoEffect.h"
@@ -24,6 +25,7 @@ void registerEffects(EffectRegistry& registry)
     registry.add<CompressorEffect>();
     registry.add<ReverbEffect>();
     registry.add<PeakEffect>();
+    registry.add<FormantEffect>();
 }
 
 } // namespace fcm::dsp

@@ -18,7 +18,7 @@ Last updated: 2026-10-20 (version 0.3, stage 1 built).
 | 7 Hardening and release | Done. Version 0.1.0 was published on 2026-10-14 with zips for Windows, macOS and Linux. It was tried in FL Studio only (works well, reasonable RAM, saving and presets fine); not tried: automation, other sample rates, the Quality setting, other DAWs. CPU measured offline (3 % of one core at 8x with all effects on) |
 | 0.1.1 security and finishing fixes (JUCE 9.0.4, safe loading of embedded audio and of the DAW state, release zips with licence and checksums, auval in CI, licence notice in the window) | Merged on 2026-10-16 (#34, merged by the agent on the owner's instruction). Not released yet: the owner tags and publishes 0.1.1 when they want |
 | Version 0.2.0 (mixer and buses, effect copies, Filter, Compressor with Multiband, Transient shaper, Reverb, noise oscillator, Tock rework, extreme EQ) | Done. All stages and the follow-ups after the owner's trial (#36 to #50) are merged; released as v0.2.0 on 2026-10-19 |
-| Version 0.3.0 (Peak, Formant, Phaser, Flanger, Volume LFO) | Planned and documented on 2026-10-20 from the owner's answers ([PLAN](PLAN.md), section "Version 0.3.0"; [ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md)). Stage 0 (documentation) merged; stage 1 (groundwork: note triggers, curves, state version 3, decoration context) built and in review; stage 2 (Peak with XY pad) built; stages 3 to 7 not started |
+| Version 0.3.0 (Peak, Formant, Phaser, Flanger, Volume LFO) | Planned and documented on 2026-10-20 from the owner's answers ([PLAN](PLAN.md), section "Version 0.3.0"; [ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md)). Stage 0 (documentation) merged; stage 1 (groundwork: note triggers, curves, state version 3, decoration context) built and in review; stages 2 (Peak with XY pad) and 3 (Formant) built; stages 4 to 7 not started |
 
 ## 2. Open pull requests
 
@@ -118,6 +118,8 @@ Stage 1 of 0.2 (effect copies), to try in the Standalone:
 - Stage 3 (EQ): in the EQ strip of Main switch **Extreme** on for a band, give it +30 dB with a high **Q** (30 to 50) around the frequency of your kick's harmonic and listen: it should whistle without clicking or exploding (the safety limiter catches the level). Then raise **Key Track** to 100 % and play different notes: the peak should follow the note one octave per octave. Tell me if the Key Track range or the Extreme limits are what you want.
 
 - Stage 2 (Peak, version 0.3): add a **Peak** in Main after your Distortion (or alone). Drag the dot in the XY pad: across moves the zone that gets boosted, up and down goes from soft to hard clip; raise **Amount** to push harder. Try it at the frequency of your kick's body (100 to 200 Hz) and again higher for the screech. The voicing (the +18 dB boost, the +24 dB drive at 100 %, the 6 dB per octave zone) is my first guess: tell me if it is too gentle, too violent, or if the zone should be narrower.
+
+- Stage 3 (Formant, version 0.3): put a **Formant** after a Distortion on the tail (a bus with Apply To Tail, or lower its Mix). Pick each **Vowel**, then move **Morph** while a note loops and listen to the tail change from one vowel to the next; try **Shift** and **Resonance**. The vowel table and the level of each resonance (the values in the spec) are my first guess: tell me which vowels sound too weak or too harsh, and whether you want a wider Shift range.
 
 Things to listen to (sound):
 
