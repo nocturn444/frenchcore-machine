@@ -2,7 +2,7 @@
 
 Living summary for the product owner (nocturn4). Updated by the agent in every PR that changes something listed here. It is in English like the rest of the repository; the agent explains the important parts in Spanish in the chat.
 
-Last updated: 2026-10-16 (0.2 stage 1).
+Last updated: 2026-10-20 (version 0.3 planned).
 
 ## 1. Where the project is
 
@@ -17,25 +17,14 @@ Last updated: 2026-10-16 (0.2 stage 1).
 | Feedback round 2026-10-13 (Punch/Tail balance removed, EQ made parametric, window rebuilt on the agreed grid and scaled to the window) | Done and merged |
 | 7 Hardening and release | Done. Version 0.1.0 was published on 2026-10-14 with zips for Windows, macOS and Linux. It was tried in FL Studio only (works well, reasonable RAM, saving and presets fine); not tried: automation, other sample rates, the Quality setting, other DAWs. CPU measured offline (3 % of one core at 8x with all effects on) |
 | 0.1.1 security and finishing fixes (JUCE 9.0.4, safe loading of embedded audio and of the DAW state, release zips with licence and checksums, auval in CI, licence notice in the window) | Merged on 2026-10-16 (#34, merged by the agent on the owner's instruction). Not released yet: the owner tags and publishes 0.1.1 when they want |
-| Version 0.2.0 (mixer and buses, effect copies, Filter, Compressor with Multiband, Transient shaper, Reverb, noise oscillator, Tock rework, extreme EQ) | Planned and documented on 2026-10-16 from the owner's answers ([PLAN](PLAN.md), section "Version 0.2.0"). Stage 0 (documentation) merged. Stage 1 (effect copies and the Main rack, state version 2) is merged or in review (#36); stages 2 to 6 (mixer and buses, EQ Extreme, the four effects, the noise oscillator, the Tock rework) are built and in review, each stacked on the previous one; stage 7 (wrap-up: version 0.2.0 in CMake, README, CPU, release notes draft) is built on top of them. The owner reviews and merges the chain in order and then releases 0.2.0; nothing is tagged or published. Stage 7 follow one pull request each (stage 4: one per effect) |
+| Version 0.2.0 (mixer and buses, effect copies, Filter, Compressor with Multiband, Transient shaper, Reverb, noise oscillator, Tock rework, extreme EQ) | Done. All stages and the follow-ups after the owner's trial (#36 to #50) are merged; released as v0.2.0 on 2026-10-19 |
+| Version 0.3.0 (Peak, Formant, Phaser, Flanger, Volume LFO) | Planned and documented on 2026-10-20 from the owner's answers ([PLAN](PLAN.md), section "Version 0.3.0"; [ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md)). Stage 0 (documentation) in review; stages 1 to 7 not started |
 
 ## 2. Open pull requests
 
-- Follow-up to the owner's trial of 0.2 (branch `fix/rack-drag-reorder`, stacked on the Tock Key Track): dragging effects to reorder them no longer jumps. Fix, but it changes the interface: the owner reviews and merges.
-- Follow-up to the owner's trial of 0.2 (branch `feat/tock-key-track`, stacked on the noise fix): a Key Track switch for the Tock. Feature: the owner reviews and merges.
-- Follow-up to the owner's trial of 0.2 (branch `fix/noise-short-sounds-play-once`, stacked on stage 7): Air Burst and Thump always play once. Feature-level change in sound: the owner reviews and merges.
-- Stage 7 of version 0.2 (branch `chore/release-0.2-prep`, stacked on the Tock rework): version 0.2.0 in CMake, README (EN and ES), CPU measurement, release notes draft. Merge it last.
-- Stage 6 of version 0.2 (branch `feat/tock-rework`, stacked on the noise oscillator): Amp Env, Trim with the waveform display, Detect, Pogo, 10-second samples. Feature: the owner reviews and merges.
-- Stage 5 of version 0.2 (branch `feat/noise-oscillator`, stacked on the Reverb): the noise oscillator and its Mixer strip. Feature: the owner reviews and merges.
-- Stage 4d of version 0.2 (branch `feat/fx-reverb`, stacked on the Compressor): the Reverb. Feature: the owner reviews and merges.
-- Stage 4c of version 0.2 (branch `feat/fx-compressor`, stacked on the Transient shaper): the Compressor with Multiband. Feature: the owner reviews and merges.
-- Stage 4b of version 0.2 (branch `feat/fx-transient`, stacked on the Filter): the Transient shaper. Feature: the owner reviews and merges.
-- Stage 4a of version 0.2 (branch `feat/fx-filter`, stacked on stage 3): the Filter effect. Feature: the owner reviews and merges, after stage 3.
-- Stage 3 of version 0.2 (branch `feat/eq-extreme-keytrack`, stacked on stage 2): EQ Extreme and Key Track per band, with the display following them. Feature: the owner reviews and merges, after stage 2.
-- Stage 2 of version 0.2 (branch `feat/mixer-and-buses`, stacked on stage 1): voice stems, the mixer (Level, Destination, Mute, Solo), Bus A and Bus B with Level and Apply To, the latency model of ADR 0010, and the Effects box tabs. Feature: the owner reviews and merges, after stage 1.
-- Stage 1 of version 0.2 (branch `feat/effect-copies-racks`, #36): the 0.1.1 reference renders as test data, effect copies, racks and state version 2, the Main rack with Add, duplicate, remove and scrolling. Feature: the owner reviews and merges.
+- Version 0.3 stage 0 (documentation only): the plan, ADR 0012 and the specs of the five effects. Docs: the agent may merge it once CI is green, but asks the owner first.
 
-Everything else is merged into `main`, including 0.1.1 (#34) and the 0.2 documentation.
+Everything else is merged into `main`, up to v0.2.0 and its follow-ups.
 
 Merge rule (decided by the owner on 2026-10-13, written in `CLAUDE.md`): features and important changes are reviewed and merged by the owner; documentation-only pull requests and minor fixes may be merged by the agent once CI is green.
 
@@ -86,6 +75,7 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-16 | Stage 7: CPU in the worst case of the 0.2 window (all 24 effects on, multiband compressors, 8x) is 19 % of one core (13.8 % at the default 2x), against 1.6 % for the 0.1 effects; the version in CMake is 0.2.0 (it also carries 0.1.1's changes, which were never released). | `docs/TESTING.md` |
 | 2026-10-19 | After the owner's trial: Air Burst and Thump always play once (owner chose this option); Tock Key Track follows the settling note relative to C3 like the noise, off by default, added to Tune (Synth and Sample); in the Tock box its switch sits with Amp Env at the right of the waveform. | `docs/specs/noise-oscillator.md`, `docs/specs/tock.md` section 9 |
 | 2026-10-16 | The mixer goes in a tab of the Effects box and the noise in the free LFO box, so the window keeps its size (owner: "it has to fit my screen"). | `docs/specs/ui-grid-layout.md` §8 |
+| 2026-10-20 | Version 0.3 technical choices: effects get `noteOn` delivered at the sample where the note's sound reaches them (so LFOs restart in time behind any latency), a shared tempo LFO, one drawable curve per copy saved in `EffectCurves` (state version 3, empty migration), interactive decorations and a larger editor over the rack; Peak oversampled like Distortion (the reported latency grows); first voicings of the five effects (formant table from Peterson and Barney 1952, Pump as the Volume LFO default shape). | ADR 0012, `docs/specs/fx-peak.md`, `fx-formant.md`, `fx-phaser.md`, `fx-flanger.md`, `fx-volumelfo.md` |
 
 ## 4. What the owner needs to do or listen to
 

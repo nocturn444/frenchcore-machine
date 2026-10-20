@@ -48,7 +48,7 @@ In the original sketch, black areas were mandatory and red areas were to be disc
 | **Global** | Output gain, safety limiter on/off, Quality (oversampling 1x/2x/4x/8x), Glide on + time, Velocity sensitivity, Key track | Yes | Voice (§4.1), Output (§4.7) |
 | **FX rack** | Reorderable list of effect slots (drag handle, enable, mix) with the selected effect's panel below. From 0.2: tabs Mixer / Bus A / Bus B / Main; each rack adds, duplicates and removes effects ([mixer-and-buses](specs/mixer-and-buses.md)) | Yes | FX chain (§4.6) |
 | **Noise** (0.2) | On, Type menu, Load..., Key Track, One Shot, knobs Level, Pitch, Phase, Random ([noise-oscillator](specs/noise-oscillator.md)) | 0.2 | Noise (§4.3b) |
-| **LFO 1 / LFO 2** | Display, 3 knobs, 2 toggles, LFO1/LFO2 tabs (from the sketch) | After 0.2. Their box now holds the Noise panel; they need a new place when planned | Requires a modulation system |
+| **LFO 1 / LFO 2** | Display, 3 knobs, 2 toggles, LFO1/LFO2 tabs (from the sketch) | After 0.3. Their box now holds the Noise panel; they need a new place when planned | Requires a modulation system |
 | **Other** | Reserved space; shows the licence notice (version, AGPL-3.0, source address) until it gets its own contents ([legal-notice](specs/legal-notice.md)) | To be defined | |
 
 ## Standalone audition strip
