@@ -155,7 +155,47 @@ Done when (for the whole version):
 - The window keeps its 0.1 size and shape.
 - `docs/USER_GUIDE.md`, `CHANGELOG.md`, `docs/STATUS.md` and this plan are updated in each stage's pull request.
 
-## After 0.2 (not scheduled)
+## Version 0.3.0: Peak, Formant, Phaser, Flanger and Volume LFO
+
+Requested by the product owner on 2026-10-20: five new effects, a volume LFO like LFOTool, a phaser, a flanger, a formant filter and a "peak" like Nimble Kick's. Version 0.2.0 is released and is the base. One version, built in stages; each stage is one pull request that the owner reviews and merges. The questions and answers are summarised below; the specs hold the details.
+
+### Decisions of the product owner (2026-10-20)
+
+| Topic | Decision | Spec |
+|---|---|---|
+| Release | A new version, 0.3.0, one pull request per effect (the agent's recommendation; the owner left the version and the order to the agent) | this plan |
+| Compatibility | Every 0.1 and 0.2 project and preset opens and sounds the same (project rule) | [ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md) |
+| LFOs of the Phaser, Flanger and Volume LFO | Restart at every note, so every kick sounds the same (G.1 A); a Rate knob in Hz with a Sync switch for note values (G.2 A) | [ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md) |
+| Volume LFO | Mainly pumping like a sidechain, also creative gating: "after a lot of distortion and reverb the kick becomes a uniform mass and loses its syncopation" (1.1); a shape drawn with points plus ready-made shapes (1.2 A); Depth, Smooth, Mix (1.3 A); the shape opens larger inside the Effects box (1.4 A) | [fx-volumelfo](specs/fx-volumelfo.md) |
+| Phaser | Stages, Frequency, Rate, Depth, Feedback, Mix (2.1 A) and Key Track (2.2 A) | [fx-phaser](specs/fx-phaser.md) |
+| Flanger | Delay, Rate, Depth, Feedback (positive or negative), Mix (3.1 A) and Key Track (3.2 A) | [fx-flanger](specs/fx-flanger.md) |
+| Formant filter | Its own effect (4.1 A): Vowel, Morph, Shift, Resonance, Drive, Mix (4.2 A); Shift does not follow the note (4.3 A) | [fx-formant](specs/fx-formant.md) |
+| Peak | Like Nimble Kick's Kick FX: a boosted zone into a soft-to-hard clipper (5.1 A), with an XY pad plus knobs (5.2 A) | [fx-peak](specs/fx-peak.md) |
+| Default Mix | 100 % for all five (6.1 B) | each spec |
+| Factory presets | No new ones for now; the owner makes presets after trying the effects (6.2 A) | |
+
+### Stages
+
+- [x] **0. Documentation**: the five specs, [ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md), architecture, the effect guide and this plan.
+- [ ] **1. Groundwork ([ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md)), no change in sound.** First commit: reference renders of 0.2.0 as test data (every factory preset, plus a test project that uses Bus A with Apply To Tail, Bus B and every 0.2 effect), checked like the 0.1.1 ones ([mixer-and-buses](specs/mixer-and-buses.md) §5). Then note triggers through the racks (with timing tests at every Quality and rack position), `dsp::TempoLfo`, effect curves (`EffectCurve`, `core::EffectCurveState`, the `EffectCurves` node, state version 3 with an empty migration from 2, add/duplicate rules, hostile-input tests) and the decoration context with the larger editor over the rack. Tested with test-only effects; no user-visible change.
+- [ ] **2. Peak** ([fx-peak](specs/fx-peak.md)), with the XY pad.
+- [ ] **3. Formant filter** ([fx-formant](specs/fx-formant.md)).
+- [ ] **4. Phaser** ([fx-phaser](specs/fx-phaser.md)).
+- [ ] **5. Flanger** ([fx-flanger](specs/fx-flanger.md)).
+- [ ] **6. Volume LFO** ([fx-volumelfo](specs/fx-volumelfo.md)), with the shape picture and the shape editor.
+- [ ] **7. Wrap-up.** The 0.1.1 and 0.2.0 references still pass; CPU measured again with every rack full ([TESTING](TESTING.md)); user guide, README (EN and ES) features, CHANGELOG; version 0.3.0 in `CMakeLists.txt`; release notes draft in `.github/release-notes.md`. The owner tags and publishes.
+
+Stages 2 to 6 each follow [ADDING_AN_EFFECT](ADDING_AN_EFFECT.md) and need no change outside the effect's folder, its registration line, its decoration entry (Peak and Volume LFO), its tests and docs; if one does, that is a defect of stage 1 to fix there first.
+
+Done when (for the whole version):
+
+- Every spec above is implemented and its tests pass; CI is green on Windows, macOS and Linux; pluginval at strictness 10 and auval pass.
+- Every 0.1.1 and 0.2.0 reference render still matches (same tolerance as in 0.2), so old projects and presets sound the same.
+- No allocation on the audio thread in any new DSP or in the note-trigger and curve paths (counting `operator new` tests).
+- The window keeps its size and shape.
+- `docs/USER_GUIDE.md`, `CHANGELOG.md`, `docs/STATUS.md` and this plan are updated in each stage's pull request.
+
+## After 0.3 (not scheduled)
 
 - Visual design pass (custom LookAndFeel, possibly WebView UI).
 - CLAP format.

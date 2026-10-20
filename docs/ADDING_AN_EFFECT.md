@@ -37,6 +37,14 @@ This guide was validated by adding Distortion, the EQ and Stereo with it ([fx-di
 
 You write the effect once. The plugin creates four copies of it with the IDs `<id>`, `<id>2`, `<id>3`, `<id>4` and their parameters, and the user can put them in any rack ([ADR 0010](decisions/0010-effect-instances-buses-and-mixer.md)). Nothing in your effect may assume there is only one: no static mutable state. The released-ID test derives the copies' IDs from yours (add your effect's ID to its list of effects).
 
+## Note triggers, curves and interactive decorations (from 0.3)
+
+[ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md) gives effects three optional features; the rack, the layout code and the state code handle them, the effect only declares them:
+
+- **Restart at every note**: override `noteOn(sampleOffset)`. It is called before `process()` for each note-on whose sound reaches the effect in that buffer, already corrected for the latency in front of it; split the buffer at those offsets. Effects with an LFO use `dsp::TempoLfo` (Rate in Hz or a synced note value, restarted by `noteOn`) and copy its frozen figure list into their `division` choice parameter.
+- **A drawable curve**: return a static `EffectCurve` from `defaultCurve()` and the ready-made shapes from `curvePresets()`, and read the current one in `setCurve()` once per block (`nullptr` means the default). Saving, duplicating, resetting on add and safe loading are done for you.
+- **An interactive decoration** (an XY pad, a curve picture that opens the larger editor): one entry in `src/ui/EffectDecorations.cpp`, built from the `DecorationContext`. Change parameters through the APVTS with begin/end gestures so the DAW records them.
+
 ## Rules
 
 - Never rename or remove a released parameter ID. Deprecate it and add a state migration instead.

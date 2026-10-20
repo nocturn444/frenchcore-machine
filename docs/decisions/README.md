@@ -15,5 +15,6 @@ Each file records one significant decision: the context, the decision and its co
 | [0009](0009-effect-parameters-and-chain-latency.md) | Effects describe their parameters as plain data, and the chain keeps a constant latency | Accepted |
 | [0010](0010-effect-instances-buses-and-mixer.md) | Effect instances from a fixed pool, three racks (Bus A, Bus B, Main) and a source mixer | Accepted |
 | [0011](0011-effect-interface-additions.md) | Effect interface additions for 0.2: note context, conditional controls, default mix, more parameters | Accepted |
+| [0012](0012-effect-note-triggers-curves-and-decorations.md) | Effects get note triggers, a drawable curve and interactive decorations | Accepted |
 
 New ADRs copy [`_TEMPLATE.md`](_TEMPLATE.md) and take the next number.
