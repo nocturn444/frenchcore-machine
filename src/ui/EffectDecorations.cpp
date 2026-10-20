@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "ui/EffectDecorations.h"
 
+#include "ui/CurveThumbnail.h"
 #include "ui/EqDisplay.h"
 #include "ui/PeakPad.h"
 
@@ -18,8 +19,15 @@ const EffectDecoration* decorationFor(std::string_view effectId)
         92, [](const DecorationContext& context) -> std::unique_ptr<juce::Component>
         { return std::make_unique<PeakPad>(context.state, context.instanceId); }};
 
+    // The Volume LFO's shape picture, which opens the shape editor (docs/specs/fx-volumelfo.md section 2).
+    static const EffectDecoration volumeLfo{
+        60, [](const DecorationContext& context) -> std::unique_ptr<juce::Component>
+        { return std::make_unique<CurveThumbnail>(context); }};
+
     if (effectId == "peak")
         return &peak;
+    if (effectId == "volumelfo")
+        return &volumeLfo;
     return effectId == "eq" ? &eq : nullptr;
 }
 

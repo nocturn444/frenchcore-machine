@@ -409,6 +409,32 @@ Mixes the sound with a copy of itself delayed by a few milliseconds and moves th
 
 **The sweep starts from Delay at every note**, so every kick sounds the same. Both channels get the same flanger. It does not delay the kick's timing.
 
+### Volume LFO
+
+A volume shaper in the style of LFOTool: it turns the volume up and down following a **shape you draw**, repeated at a speed that usually follows the tempo. After a lot of distortion and reverb the kick becomes one uniform mass and loses its rhythm; put the Volume LFO **after** them (in Main, or on a bus) and it cuts the mass back into rhythm: pumping like a sidechain, creative gating and chopping. Switch it on with **Volume LFO On**; Mix starts at 100 %.
+
+| Control | What it does |
+|---|---|
+| **Sync** | On by default: **Rate** becomes a note value, 1/64 up to 1 bar (with triplets and dotted values), that follows the tempo. Off: Rate is in Hz. |
+| **Rate** | How long one cycle lasts. With Sync on it is the note value (default 1/4); with Sync off, 0.05 to 30 Hz (default 2 Hz). |
+| **Depth** | How much of the shape is applied, 0 to 100 % (default 100 %). 0 % does nothing; 50 % only goes down to half volume. |
+| **Smooth** | Rounds off sudden jumps in the shape so they do not click, 0 to 100 % (default 10 %). At 0 % the edges are as sharp as possible (there is always a ramp of at least 0.2 ms); at 100 % they take about 20 ms. |
+
+**The cycle starts again at every note**, so every kick gets the same shape, and it keeps repeating until the next note. The shape is drawn in the strip's picture: the level goes from silence (bottom) to the full sound (top). With a bus set to Apply To Tail it acts only on the tail. It adds no delay.
+
+**The shape editor.** Click the picture in the strip: a larger editor opens over the effects list (the window does not grow). Close it with **Done** or Escape.
+
+| Gesture | What it does |
+|---|---|
+| Drag a point | Moves it. It cannot pass its neighbours; the first and last points stay at the start and the end of the cycle and only move up and down. Two points at the same place make a sharp edge. |
+| Double-click empty space | Adds a point (up to 32). |
+| Double-click a point | Deletes it (not the first or the last). |
+| Drag a segment up or down | Bends it. |
+| **Shape** menu | Replaces the drawing with a ready-made shape: **Pump** (the default: full volume at the hit, empty at the end of the cycle, which gives the space back before the next kick), **Sidechain**, **Gate 1/2**, **Gate 1/4**, **Gate 1/8**, **Saw Down**, **Saw Up**, **Triangle**, **Sine**, **Square**. It is not a control you can automate. |
+| **Grid** menu | Off, 1/4, 1/8, 1/16 or 1/32 of the cycle (default 1/16): where dragged points snap to in time. |
+
+The shape is saved with the project and with presets; duplicating the effect copies it, and adding a new one starts from Pump.
+
 - **Quality** (in the Global controls): how much the effects that make harmonics are oversampled (1x, 2x, 4x or 8x, default 2x). Higher is cleaner and uses more CPU. Changing it changes the small delay the plugin reports to your DAW.
 
 ## Presets

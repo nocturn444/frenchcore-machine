@@ -1,6 +1,6 @@
 # Spec: Volume LFO effect
 
-- Status: Approved (product owner's answers of 2026-10-20, questions G.1 A, G.2 A, 1.1 to 1.4); not implemented yet (version 0.3, stage 6). Default shape, ranges and defaults are first choices by the agent, for the owner's ears.
+- Status: Approved (product owner's answers of 2026-10-20, questions G.1 A, G.2 A, 1.1 to 1.4); implemented in version 0.3, stage 6. Default shape, ranges and defaults are first choices by the agent, for the owner's ears.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md), [ADR 0012](../decisions/0012-effect-note-triggers-curves-and-decorations.md), [envelope-breakpoint](envelope-breakpoint.md), [mixer-and-buses](mixer-and-buses.md)
 
@@ -84,4 +84,9 @@ The shape is not a parameter: it is an effect curve ([ADR 0012](../decisions/001
 
 ## 7. Open questions
 
-None.
+None. Decided while implementing (technical; the controls and what the user hears are as above):
+- **Sine** uses nine straight segments sampled from a cosine instead of two bent ones: a single bend cannot follow a cosine half-wave (slow, fast, slow), nine points do it within a few per cent.
+- **Pump** bends the falling segment "fast first" (-0.6) and **Sidechain** the rising one "slow first" (+0.6); Gate 1/4 and 1/8 repeat the Gate 1/2 pattern two and four times (8 and 16 points).
+- The shape editor's operations are plain functions in `core::curve_edit` (move, add, delete, bend, snap) so they are tested without a window; a new point is placed where the user double-clicked. Every operation leaves a valid curve, whatever it is given.
+- Smooth maps 0 to 100 % to a slew time constant of 0.2 ms to 20 ms (0.2 to 5 ms over the first half); "an edge takes 0.2 ms" means that time constant. The effect keeps a copy of the curve it is given, and a curve that is not valid plays Pump.
+- With nothing drawn yet the shape is Pump from the first sample, and the gain starts at 1 so a new effect never starts silent.

@@ -11,6 +11,7 @@
 #include "dsp/fx/reverb/ReverbEffect.h"
 #include "dsp/fx/stereo/StereoEffect.h"
 #include "dsp/fx/transient/TransientEffect.h"
+#include "dsp/fx/volumelfo/VolumeLfoEffect.h"
 
 namespace fcm::dsp
 {
@@ -30,6 +31,7 @@ void registerEffects(EffectRegistry& registry)
     registry.add<FormantEffect>();
     registry.add<PhaserEffect>();
     registry.add<FlangerEffect>();
+    registry.add<VolumeLfoEffect>();
 }
 
 } // namespace fcm::dsp
