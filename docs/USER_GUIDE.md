@@ -394,6 +394,21 @@ Digs a few notches into the sound and sweeps them up and down: a moving, metalli
 
 **The sweep starts from its lowest point at every note**, so every kick sounds exactly the same. Both channels get the same phaser. It adds no delay, and changing Stages while playing is smooth.
 
+### Flanger
+
+Mixes the sound with a copy of itself delayed by a few milliseconds and moves that delay: the "jet" sweep. In hardcore kicks it is also used **still** (Rate 0): a tuned comb that gives the tail a metallic tone. Switch it on with **Flanger On**; Mix starts at 100 %.
+
+| Control | What it does |
+|---|---|
+| **Delay** | 0.1 to 10 ms (default 2 ms). Shorter delays sound higher and thinner, longer ones lower and more like a comb. |
+| **Rate** | How fast it sweeps, 0 to 20 Hz (default 0.3 Hz). |
+| **Sync** | On: the Rate knob becomes a note value that follows the tempo, as in the Phaser. |
+| **Depth** | 0 to 100 %: how far the sweep goes, up to two octaves up from the Delay's tone. |
+| **Feedback** | -95 to +95 % (default 50 %). Positive rings more, metallic and whistling; negative gives a hollower, more nasal ring. Very high values are kept at a safe level. |
+| **Key Track** | 0 to 100 %. At 100 % the Delay follows the note you play (one octave per octave, relative to C3), so the metallic tone stays in tune with the kick. |
+
+**The sweep starts from Delay at every note**, so every kick sounds the same. Both channels get the same flanger. It does not delay the kick's timing.
+
 - **Quality** (in the Global controls): how much the effects that make harmonics are oversampled (1x, 2x, 4x or 8x, default 2x). Higher is cleaner and uses more CPU. Changing it changes the small delay the plugin reports to your DAW.
 
 ## Presets

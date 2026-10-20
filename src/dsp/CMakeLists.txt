@@ -19,6 +19,7 @@ target_sources(fcm_dsp INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/peak/PeakEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/formant/FormantEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/phaser/PhaserEffect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/fx/flanger/FlangerEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/reverb/ReverbEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/stereo/StereoEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/fx/transient/TransientEffect.cpp

@@ -4,6 +4,7 @@
 #include "dsp/fx/distortion/DistortionEffect.h"
 #include "dsp/fx/eq/EqEffect.h"
 #include "dsp/fx/filter/FilterEffect.h"
+#include "dsp/fx/flanger/FlangerEffect.h"
 #include "dsp/fx/formant/FormantEffect.h"
 #include "dsp/fx/peak/PeakEffect.h"
 #include "dsp/fx/phaser/PhaserEffect.h"
@@ -28,6 +29,7 @@ void registerEffects(EffectRegistry& registry)
     registry.add<PeakEffect>();
     registry.add<FormantEffect>();
     registry.add<PhaserEffect>();
+    registry.add<FlangerEffect>();
 }
 
 } // namespace fcm::dsp
