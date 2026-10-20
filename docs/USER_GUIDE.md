@@ -226,7 +226,7 @@ The delay your DAW is told about (32 samples at the default Quality) never chang
 
 ## Effects
 
-After the oscillators and the Tock, the kick goes through a row of effects, which starts with Distortion, EQ and Stereo. They live in the **Effects** box on the right, and every one works the same way:
+After the oscillators and the Tock, the kick goes through a row of effects, which starts with Distortion, EQ and Stereo (the others, such as Peak, Formant, Phaser, Flanger and Volume LFO, are added with **+ Add effect**). They live in the **Effects** box on the right, and every one works the same way:
 
 - **On**: each effect has its own switch, **off by default**, so the sound does not change until you switch one on.
 - **Mix**: how much of the effect you hear against the untouched sound (0 to 100 %, default 100 %).

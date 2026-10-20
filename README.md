@@ -6,11 +6,18 @@ A wavetable synthesizer plugin built for one job: making frenchcore kicks quickl
 
 Frenchcore Machine sits between dragging in a sample and building a kick from scratch in a full synth. It gives you two wavetable oscillators, an envelope that already has the classic kick + bass shape, a click layer (the "tock") and a reorderable chain of the effects frenchcore kicks actually need. Think of it as a heavily simplified Serum or Vital, focused on kicks.
 
-> **Status:** version 0.1.0 is the latest release (tried in FL Studio only). Version 0.2.0 is built and waiting for review and release: see the [plan](docs/PLAN.md) and the [changelog](CHANGELOG.md).
+> **Status:** version 0.1.0 is the latest release (tried in FL Studio only). Version 0.2.0 is released too, and version 0.3.0 is built and waiting for review and release: see the [plan](docs/PLAN.md) and the [changelog](CHANGELOG.md).
 
 ## Features
 
-New in v0.2.0:
+New in v0.3.0:
+
+- Five new effects: **Peak** (a boosted zone into a soft-to-hard clipper, with an XY pad), **Formant** (a vowel filter that makes the tail talk), **Phaser**, **Flanger** and **Volume LFO**.
+- The Phaser and the Flanger sweep with the tempo (or in Hz) and start again at every note, so every kick sounds the same; with Key Track the Flanger's metallic tone follows the note.
+- The Volume LFO is a volume shaper in the style of LFOTool: draw the shape in an editor that opens inside the Effects box, pick one of ten ready-made shapes (Pump, Sidechain, Gates, Saws, Triangle, Sine, Square) and use it for pumping or gating after the distortion and the reverb.
+- Projects and presets from 0.1 and 0.2 open and sound the same (checked by tests); a project saved with 0.3 opens in 0.2 without the new effects.
+
+From v0.2.0:
 
 - A mixer (Osc 1, Osc 2, Noise, Tock) with Level, Mute, Solo and a destination for each sound: Main, Bus A or Bus B. Each bus has its own row of effects and can act on the whole kick, only the punch or only the tail.
 - Up to four copies of every effect, eight effects per row; add, duplicate and remove from the window.

@@ -53,3 +53,16 @@ The same method, in the worst case the 0.2 window allows: all four sources on (O
 | 8x | 1.8 % | 19.0 % |
 
 This is the extreme case (every effect of every rack on, with the heaviest compressor mode); a normal kick uses a few effects and needs a fraction of that. Version 0.1's three effects at 2x needed 1.6 %.
+
+### CPU measurement for version 0.3 (engine only, no DAW)
+
+The same method, in the worst case the 0.3 window allows: the same four sources, all three racks full with eight effects each (24 slots: two copies of each of the twelve effect types, Peak, Formant, Phaser, Flanger and Volume LFO included), every effect on at its default Mix, every Compressor in Multiband mode, and the notes restarting the Phaser, Flanger and Volume LFO. Measured by the agent on 2026-10-20, 10 s of audio at 48 kHz in blocks of 512, a kick every 0.3 s, on a machine of the same kind as before (about as fast or a little faster than the one of the 0.2 measurement, so compare the order of magnitude, not the decimals).
+
+| Quality | All 24 effects off | All 24 effects on |
+|---|---|---|
+| 1x | 1.0 % | 8.1 % |
+| 2x (default) | 1.1 % | 10.2 % |
+| 4x | 1.0 % | 10.5 % |
+| 8x | 0.9 % | 13.4 % |
+
+The new effects are light: the Phaser, Flanger, Formant and Volume LFO are not oversampled, and only Peak is (like the Distortion). A side effect of Peak: the plugin now reports more latency to the DAW (it is the oversampler's delay of four more copies, compensated by the DAW).

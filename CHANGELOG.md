@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+Version 0.3.0 (ready for review; not released): five new effects (Peak, Formant, Phaser, Flanger and the Volume LFO with its drawn shape), built on the groundwork listed under "Internal". Projects and presets from 0.1 and 0.2 open and sound the same (checked by tests against renders made with 0.1.1 and 0.2.0); the plugin reports a few more samples of latency to the DAW because of Peak. A project saved with 0.3 opens in 0.2 without the drawn shapes and without the new effects.
+
 ### Added
 
 - **Peak** effect (stage 2 of version 0.3, [spec](docs/specs/fx-peak.md)): a quick kick distortion that boosts one zone of frequencies and then clips it, from a soft round clip to a hard square one. Controls **Freq**, **Amount** and **Hardness** (`peak.freq`, `peak.amount`, `peak.hardness`), plus an XY pad in the strip: drag for Freq (across) and Hardness (up and down), double-click to reset. Oversampled by Quality like the Distortion.
@@ -20,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Internal
 
+- The reference renders of 0.1.1 and 0.2.0 are now compared exactly with the effects of the version that made them, and loosely (within 15 % of the level) with the whole plugin: an effect that reports latency moves the start-up ramps of the others, so the whole plugin cannot match to 1e-6. The exact comparison still proves that the engine and every older effect are unchanged.
 - Groundwork for version 0.3 (stage 1, [ADR 0012](docs/decisions/0012-effect-note-triggers-curves-and-decorations.md)); no change in the sound or the window. Effects can be told when a note starts, at the exact sample where its sound reaches them, in Bus A, Bus B and Main, behind effects with latency, at every Quality (`Effect::noteOn`); a shared tempo LFO (`dsp::TempoLfo`); drawable per-effect curves that are saved with the project and published to the audio thread (`EffectCurve`, `core::EffectCurveState`, the new `EffectCurves` node); decorations get a context and can open a larger editor over the rack. The project state is version 3; projects from 0.1 and 0.2 open and sound the same (the reference renders of 0.1.1 and now of 0.2.0 are checked by the tests). A project saved with 0.3 opens in 0.2 without the curves.
 
 ## [0.2.0] - 2026-10-19
