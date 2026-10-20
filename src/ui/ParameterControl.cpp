@@ -64,14 +64,18 @@ ParameterControl::ParameterControl(juce::AudioProcessorValueTreeState& state, co
         slider->setDoubleClickReturnValue(
             true, static_cast<double>(parameter->convertFrom0to1(parameter->getDefaultValue())));
 
-        // Short, readable numbers: kilohertz from 1000 Hz up, and two decimals for a continuous value
-        // instead of the seven the parameter would print.
+        // Short, readable numbers: kilohertz from 1000 Hz up, two decimals below 20 Hz (the rates of the
+        // modulation effects, 0.5 Hz must not read "1"), and two decimals for a continuous value instead
+        // of the seven the parameter would print.
         const auto* ranged = parameter;
         if (parameter->getLabel() == "Hz")
         {
             slider->setTextValueSuffix({});
-            slider->textFromValueFunction = [](double hz) {
-                return hz >= 1000.0 ? juce::String(hz / 1000.0, 2) + "k" : juce::String(juce::roundToInt(hz));
+            slider->textFromValueFunction = [](double hz)
+            {
+                if (hz >= 1000.0)
+                    return juce::String(hz / 1000.0, 2) + "k";
+                return hz < 19.995 ? juce::String(hz, 2) : juce::String(juce::roundToInt(hz));
             };
             slider->valueFromTextFunction = [](const juce::String& text)
             {

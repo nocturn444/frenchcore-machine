@@ -6,6 +6,7 @@
 #include "dsp/fx/filter/FilterEffect.h"
 #include "dsp/fx/formant/FormantEffect.h"
 #include "dsp/fx/peak/PeakEffect.h"
+#include "dsp/fx/phaser/PhaserEffect.h"
 #include "dsp/fx/reverb/ReverbEffect.h"
 #include "dsp/fx/stereo/StereoEffect.h"
 #include "dsp/fx/transient/TransientEffect.h"
@@ -26,6 +27,7 @@ void registerEffects(EffectRegistry& registry)
     registry.add<ReverbEffect>();
     registry.add<PeakEffect>();
     registry.add<FormantEffect>();
+    registry.add<PhaserEffect>();
 }
 
 } // namespace fcm::dsp

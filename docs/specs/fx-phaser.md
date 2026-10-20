@@ -1,6 +1,6 @@
 # Spec: Phaser effect
 
-- Status: Approved (product owner's answers of 2026-10-20, questions G.1 A, G.2 A, 2.1 A and 2.2 A); not implemented yet (version 0.3, stage 4). Ranges, defaults and voicing are first choices by the agent, for the owner's ears.
+- Status: Approved (product owner's answers of 2026-10-20, questions G.1 A, G.2 A, 2.1 A and 2.2 A); implemented in version 0.3, stage 4. Ranges, defaults and voicing are first choices by the agent, for the owner's ears.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md), [ADR 0012](../decisions/0012-effect-note-triggers-curves-and-decorations.md), [fx-flanger](fx-flanger.md)
 
@@ -63,4 +63,7 @@ The `division` list is frozen in the effect (append-only), even if the envelopes
 
 ## 7. Open questions
 
-None.
+None. Decided while implementing (technical; the user-facing description above holds):
+- **Frequency is where the first notch sits at the start of the sweep.** The all-pass stages are tuned to `Frequency / tan(pi / (2 * stages))` (so the chain's phase is -180 degrees at Frequency); tuning them to Frequency itself would put the first notch at 0.41, 0.20 or 0.13 of it. The sweep, Depth and Key Track then move that point as written in section 4.
+- **The level scaling is `min(1, 2 / peak)`** with `peak = (1 + 1 / (1 - feedback)) / 2`, the gain of the highest peak between the notches. The first draft (`1 - 0.5 * feedback`) left the peaks near +15 dB at 95 %, which the +6 dB test above forbids. Up to Feedback 67 % nothing is scaled.
+- **Feedback sharpens the peaks between the notches; it makes the notches shallower, not deeper** (with feedback the output at the notch is no longer exactly zero: about -17 dB at 40 %). The user guide says so.

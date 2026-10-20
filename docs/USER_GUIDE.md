@@ -378,6 +378,22 @@ A filter that makes the sound "talk", as if it said a vowel. On a distorted kick
 
 A vowel keeps the middle frequencies and removes most of the sub, so on a whole kick use it on a bus with Apply To Tail, or lower its Mix. Changing Vowel glides over 20 ms, so it never clicks. The five vowels come out at about the same loudness. It adds no delay.
 
+### Phaser
+
+Digs a few notches into the sound and sweeps them up and down: a moving, metallic, "swirling" colour for a distorted tail. With **Rate** at 0 (or **Depth** at 0) it stops moving and becomes a fixed colour. Switch it on with **Phaser On**; Mix starts at 100 %.
+
+| Control | What it does |
+|---|---|
+| **Stages** | 4, 8 or 12. More stages, more notches, a stronger effect (one notch every two stages). |
+| **Frequency** | 20 Hz to 10 kHz (default 300 Hz): where the first notch sits at the start of the sweep, its lowest point. |
+| **Rate** | How fast it sweeps, 0 to 20 Hz (default 0.5 Hz). |
+| **Sync** | On: the Rate knob becomes a note value (1/64 up to 1 bar, with triplets and dotted values) that follows the tempo, like the envelopes' Sync. |
+| **Depth** | How far up the sweep goes, 0 to 100 %: up to four octaves above Frequency. |
+| **Feedback** | 0 to 95 % (default 40 %). Makes the peaks between the notches sharper, towards a whistle; very high values are kept at a safe level. |
+| **Key Track** | 0 to 100 %. At 100 % Frequency follows the note you play (one octave per octave, relative to C3), so the colour sounds the same on every note. |
+
+**The sweep starts from its lowest point at every note**, so every kick sounds exactly the same. Both channels get the same phaser. It adds no delay, and changing Stages while playing is smooth.
+
 - **Quality** (in the Global controls): how much the effects that make harmonics are oversampled (1x, 2x, 4x or 8x, default 2x). Higher is cleaner and uses more CPU. Changing it changes the small delay the plugin reports to your DAW.
 
 ## Presets
