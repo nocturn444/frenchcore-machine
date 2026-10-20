@@ -352,6 +352,18 @@ A multiband stereo effect. It splits the sound into three bands (low, mid, high)
 
 The kick is generated in mono, so there is nothing to spread in the ordinary sense. Above 100 % the effect adds a *decorrelated* copy of the band to the sides (same loudness and tone, shifted in time in a way that differs from one frequency to the next), which sounds like a different signal in each ear. At 100 % or less nothing is added, so a mono kick stays exactly mono. It adds no delay, and with a mono output it does nothing.
 
+### Peak
+
+A quick kick distortion: it boosts one zone of frequencies and then clips the result, so that zone is what gets distorted. Switch it on with **Peak On**; Mix starts at 100 %.
+
+| Control | What it does |
+|---|---|
+| **Freq** | The zone that is boosted, 20 Hz to 5 kHz (default 150 Hz). |
+| **Amount** | How much the zone is boosted and how hard the sound is pushed into the clipper, 0 to 100 % (default 50 %). At 0 % the sound passes almost untouched. |
+| **Hardness** | The kind of clip: 0 % is soft and round, 100 % is hard and square (default 30 %). |
+
+Above the knobs there is an **XY pad**: drag the dot across for Freq and up or down for Hardness; double-click it to put both back to their defaults. The knobs and the pad always show the same values. Peak is oversampled by the Quality setting like the Distortion, so it adds a few samples of delay that your DAW compensates. A very hard setting can be loud: the safety limiter at the output keeps it under 0 dBFS.
+
 - **Quality** (in the Global controls): how much the effects that make harmonics are oversampled (1x, 2x, 4x or 8x, default 2x). Higher is cleaner and uses more CPU. Changing it changes the small delay the plugin reports to your DAW.
 
 ## Presets

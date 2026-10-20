@@ -2,6 +2,7 @@
 #include "ui/EffectDecorations.h"
 
 #include "ui/EqDisplay.h"
+#include "ui/PeakPad.h"
 
 namespace fcm::ui
 {
@@ -12,6 +13,13 @@ const EffectDecoration* decorationFor(std::string_view effectId)
         96, [](const DecorationContext& context) -> std::unique_ptr<juce::Component>
         { return std::make_unique<EqDisplay>(context.state, context.instanceId, context.environment.note); }};
 
+    // The Peak's XY pad (docs/specs/fx-peak.md section 2).
+    static const EffectDecoration peak{
+        92, [](const DecorationContext& context) -> std::unique_ptr<juce::Component>
+        { return std::make_unique<PeakPad>(context.state, context.instanceId); }};
+
+    if (effectId == "peak")
+        return &peak;
     return effectId == "eq" ? &eq : nullptr;
 }
 

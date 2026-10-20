@@ -7,7 +7,9 @@
 //    every factory preset and two test projects that use Bus A with Apply To Tail, Bus B and every
 //    0.2 effect, one note each.
 // Every later change must reproduce them within 1e-6 per sample, after aligning by the reported
-// latency.
+// latency, with the effects of the version that made them (a newer effect that reports latency moves
+// the start-up ramps of the others, see registry011); and stay within 15 % of the level on the whole
+// plugin.
 //
 // To make a suite again (only ever from the code of that version), run this executable with the
 // environment variable FCM_WRITE_REFERENCES set to the suite's version, "0.1.1" or "0.2.0". Never
@@ -19,6 +21,13 @@
 #include "core/ProjectState.h"
 #include "dsp/engine/Engine.h"
 #include "dsp/envelope/EnvelopePresets.h"
+#include "dsp/fx/compressor/CompressorEffect.h"
+#include "dsp/fx/distortion/DistortionEffect.h"
+#include "dsp/fx/eq/EqEffect.h"
+#include "dsp/fx/filter/FilterEffect.h"
+#include "dsp/fx/reverb/ReverbEffect.h"
+#include "dsp/fx/stereo/StereoEffect.h"
+#include "dsp/fx/transient/TransientEffect.h"
 #include "dsp/tock/FactoryTocks.h"
 
 #include <catch2/catch_test_macros.hpp>
@@ -73,7 +82,48 @@ struct Suite
     const char* version;
     const char* directory;
     std::vector<Case> cases;
+    const fcm::dsp::EffectRegistry& (*registry)(); // the effects the version that made it had
 };
+
+// The effects of 0.1.1 and of 0.2.0, in their release order (the order is the index and the default
+// chain order). A newer effect that reports latency makes the plugin report more of it, which moves
+// the moment the sound reaches every effect and so, in the first milliseconds, how far the effects'
+// own parameter ramps have got; that is not a change of any effect, so the exact comparison runs on
+// the registry of the version that made the references, and a second, looser one on the full plugin.
+const fcm::dsp::EffectRegistry& registry011()
+{
+    static const fcm::dsp::EffectRegistry registry = []
+    {
+        fcm::dsp::EffectRegistry made;
+        made.add<fcm::dsp::DistortionEffect>();
+        made.add<fcm::dsp::EqEffect>();
+        made.add<fcm::dsp::StereoEffect>();
+        return made;
+    }();
+    return registry;
+}
+
+const fcm::dsp::EffectRegistry& registry020()
+{
+    static const fcm::dsp::EffectRegistry registry = []
+    {
+        fcm::dsp::EffectRegistry made;
+        made.add<fcm::dsp::DistortionEffect>();
+        made.add<fcm::dsp::EqEffect>();
+        made.add<fcm::dsp::StereoEffect>();
+        made.add<fcm::dsp::FilterEffect>();
+        made.add<fcm::dsp::TransientEffect>();
+        made.add<fcm::dsp::CompressorEffect>();
+        made.add<fcm::dsp::ReverbEffect>();
+        return made;
+    }();
+    return registry;
+}
+
+const fcm::dsp::EffectRegistry& currentRegistry()
+{
+    return fcm::dsp::defaultEffectRegistry();
+}
 
 std::vector<Case> cases011()
 {
@@ -209,7 +259,8 @@ std::vector<Case> cases020()
 
 std::vector<Suite> allSuites()
 {
-    return {{"0.1.1", FCM_REFERENCE_DIR, cases011()}, {"0.2.0", FCM_REFERENCE_DIR_020, cases020()}};
+    return {{"0.1.1", FCM_REFERENCE_DIR, cases011(), &registry011},
+            {"0.2.0", FCM_REFERENCE_DIR_020, cases020(), &registry020}};
 }
 
 int presetIndex(const std::string& name)
@@ -223,7 +274,12 @@ int presetIndex(const std::string& name)
 // The pieces of the plugin that a render needs, wired the way PluginProcessor wires them.
 struct Rig
 {
-    Rig() : project(parts())
+    explicit Rig(const fcm::dsp::EffectRegistry& effects = fcm::dsp::defaultEffectRegistry())
+        : registry(effects), processor(effects), engine(effects), reader(processor.state, effects),
+          fx(processor.state, effects,
+             {&engine.rackValue(fcm::dsp::RackId::busA), &engine.rackValue(fcm::dsp::RackId::busB),
+              &engine.rackValue(fcm::dsp::RackId::main)}),
+          curves(effects), project(parts())
     {
         engine.setEnvelopeSources(&amp.source(), &pitch.source());
         engine.setWavetableSources(&wavetable1.source(), &wavetable2.source());
@@ -310,21 +366,18 @@ struct Rig
     }
 
     juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    const fcm::dsp::EffectRegistry& registry;
     fcm::test::TestProcessor processor;
     fcm::dsp::Engine engine;
-    fcm::core::EngineParameterReader reader{processor.state};
+    fcm::core::EngineParameterReader reader;
     fcm::core::EnvelopeState amp{fcm::dsp::EnvelopeKind::amp};
     fcm::core::EnvelopeState pitch{fcm::dsp::EnvelopeKind::pitch};
-    fcm::core::FxRackState fx{processor.state,
-                              fcm::dsp::defaultEffectRegistry(),
-                              {&engine.rackValue(fcm::dsp::RackId::busA),
-                               &engine.rackValue(fcm::dsp::RackId::busB),
-                               &engine.rackValue(fcm::dsp::RackId::main)}};
+    fcm::core::FxRackState fx;
     fcm::core::WavetableSelector wavetable1{processor.state, 0};
     fcm::core::WavetableSelector wavetable2{processor.state, 1};
     fcm::core::TockSelector tock{processor.state};
     fcm::core::NoiseSelector noise{processor.state};
-    fcm::core::EffectCurveState curves{fcm::dsp::defaultEffectRegistry()};
+    fcm::core::EffectCurveState curves;
     fcm::core::ProjectState project;
 };
 
@@ -362,6 +415,32 @@ bool readReference(const char* directory, const std::string& name, int& latency,
         sample = in.readFloat();
     return true;
 }
+
+// The largest difference between one render of the case and the reference, after lining them up by
+// the reported latency. A later version may report more latency (a constant, the same whatever is
+// on); the sound arrives that much later, so the render is longer by the difference.
+float largestDifference(const fcm::dsp::EffectRegistry& registry, const Case& testCase,
+                        const std::vector<float>& reference, int referenceLatency)
+{
+    Rig rig(registry);
+    rig.load(testCase);
+    int latency = 0;
+    const int extra = 4096; // room for any growth of the reported latency
+    const auto rendered = rig.render(static_cast<int>(reference.size()) + extra, latency);
+    const int shift = latency - referenceLatency;
+    REQUIRE(shift >= 0);
+    REQUIRE(shift <= extra);
+
+    float worst = 0.0f;
+    for (size_t i = 0; i < reference.size(); ++i)
+    {
+        const float difference = std::abs(rendered[i + static_cast<size_t>(shift)] - reference[i]);
+        if (!std::isfinite(difference))
+            return std::numeric_limits<float>::infinity();
+        worst = std::max(worst, difference);
+    }
+    return worst;
+}
 } // namespace
 
 TEST_CASE("References made with 0.1.1 and 0.2.0 still render the same", "[reference][compat]")
@@ -373,14 +452,13 @@ TEST_CASE("References made with 0.1.1 and 0.2.0 still render the same", "[refere
         {
             DYNAMIC_SECTION(suite.version << " " << testCase.file)
             {
-                Rig rig;
-                rig.load(testCase);
-
                 if (writing != nullptr)
                 {
                     // Only the suite that was named is written; the others are left as they are.
                     if (std::string(writing) == suite.version)
                     {
+                        Rig rig(suite.registry());
+                        rig.load(testCase);
                         int latency = 0;
                         const auto samples = rig.render(kReferenceLength, latency);
                         writeReference(suite.directory, testCase.file, latency, samples);
@@ -391,31 +469,24 @@ TEST_CASE("References made with 0.1.1 and 0.2.0 still render the same", "[refere
                 int referenceLatency = 0;
                 std::vector<float> reference;
                 REQUIRE(readReference(suite.directory, testCase.file, referenceLatency, reference));
+                float referencePeak = 0.0f;
+                for (float sample : reference)
+                    referencePeak = std::max(referencePeak, std::abs(sample));
 
-                // A later version may report more latency (a constant, the same whatever is on); the
-                // sound arrives that much later, so the render is longer by the difference.
-                int latency = 0;
-                const int extra = 4096; // room for any growth of the reported latency
-                const auto rendered = rig.render(static_cast<int>(reference.size()) + extra, latency);
-                const int shift = latency - referenceLatency;
-                REQUIRE(shift >= 0);
-                REQUIRE(shift <= extra);
+                // The exact comparison, with the effects of the version that made the references: it
+                // proves the engine and every effect of that version are unchanged.
+                const float exact =
+                    largestDifference(suite.registry(), testCase, reference, referenceLatency);
+                INFO("largest difference with the effects of " << suite.version << ": " << exact);
+                REQUIRE(exact <= kTolerance);
 
-                float worst = 0.0f;
-                int worstAt = 0;
-                for (size_t i = 0; i < reference.size(); ++i)
-                {
-                    const float difference =
-                        std::abs(rendered[i + static_cast<size_t>(shift)] - reference[i]);
-                    if (!std::isfinite(difference) || difference > worst)
-                    {
-                        worst =
-                            std::isfinite(difference) ? difference : std::numeric_limits<float>::infinity();
-                        worstAt = static_cast<int>(i);
-                    }
-                }
-                INFO("largest difference " << worst << " at sample " << worstAt);
-                REQUIRE(worst <= kTolerance);
+                // The same on the whole plugin: newer effects add latency, which only moves where the
+                // effects' own start-up ramps fall, so this one is a bound of 15 % of the level and
+                // catches a missing effect, a changed level or a broken route.
+                const float whole =
+                    largestDifference(currentRegistry(), testCase, reference, referenceLatency);
+                INFO("largest difference with the whole plugin: " << whole << ", level " << referencePeak);
+                REQUIRE(whole <= 0.15f * referencePeak);
             }
         }
 }
