@@ -79,6 +79,7 @@ fcm_apply_juce_options(fcm_core_tests)
 # The loader tests wait for the message thread with runDispatchLoopUntil, which JUCE only offers
 # when modal loops are permitted.
 target_compile_definitions(fcm_core_tests PRIVATE JUCE_STANDALONE_APPLICATION=1 JUCE_MODAL_LOOPS_PERMITTED=1
-    FCM_REFERENCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/reference-0.1.1")
+    FCM_REFERENCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/reference-0.1.1"
+    FCM_REFERENCE_DIR_020="${CMAKE_CURRENT_SOURCE_DIR}/data/reference-0.2.0")
 
 catch_discover_tests(fcm_core_tests)
