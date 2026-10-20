@@ -364,6 +364,20 @@ A quick kick distortion: it boosts one zone of frequencies and then clips the re
 
 Above the knobs there is an **XY pad**: drag the dot across for Freq and up or down for Hardness; double-click it to put both back to their defaults. The knobs and the pad always show the same values. Peak is oversampled by the Quality setting like the Distortion, so it adds a few samples of delay that your DAW compensates. A very hard setting can be loud: the safety limiter at the output keeps it under 0 dBFS.
 
+### Formant
+
+A filter that makes the sound "talk", as if it said a vowel. On a distorted kick tail it gives a voice-like colour; automating **Morph** makes it move between vowels. Switch it on with **Formant On**; Mix starts at 100 %.
+
+| Control | What it does |
+|---|---|
+| **Vowel** | A, E, I, O or U. |
+| **Morph** | 0 to 100 %: glides from the chosen vowel to the next one in the list (A to E, E to I, I to O, O to U, U back to A). Automate it to make the sound "speak". |
+| **Shift** | Moves all the vowel's resonances up or down by up to an octave (like a deeper or higher voice). It does not follow the note you play. |
+| **Resonance** | How sharp and vocal the vowel is; low values are softer and wider. Default 50 %. |
+| **Drive** | A soft saturation before the filter, like the Filter's; 0 % is clean. |
+
+A vowel keeps the middle frequencies and removes most of the sub, so on a whole kick use it on a bus with Apply To Tail, or lower its Mix. Changing Vowel glides over 20 ms, so it never clicks. The five vowels come out at about the same loudness. It adds no delay.
+
 - **Quality** (in the Global controls): how much the effects that make harmonics are oversampled (1x, 2x, 4x or 8x, default 2x). Higher is cleaner and uses more CPU. Changing it changes the small delay the plugin reports to your DAW.
 
 ## Presets

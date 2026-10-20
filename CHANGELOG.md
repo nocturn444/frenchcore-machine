@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Peak** effect (stage 2 of version 0.3, [spec](docs/specs/fx-peak.md)): a quick kick distortion that boosts one zone of frequencies and then clips it, from a soft round clip to a hard square one. Controls **Freq**, **Amount** and **Hardness** (`peak.freq`, `peak.amount`, `peak.hardness`), plus an XY pad in the strip: drag for Freq (across) and Hardness (up and down), double-click to reset. Oversampled by Quality like the Distortion.
 
+- **Formant** filter (stage 3 of version 0.3, [spec](docs/specs/fx-formant.md)): makes the sound talk like a vowel. **Vowel** (A, E, I, O, U), **Morph** (glides to the next vowel), **Shift** (up or down an octave), **Resonance** and **Drive** (`formant.vowel`, `morph`, `shift`, `resonance`, `drive`). Three vocal resonances from the average formants of an adult male voice; no delay.
+
 ### Internal
 
 - Groundwork for version 0.3 (stage 1, [ADR 0012](docs/decisions/0012-effect-note-triggers-curves-and-decorations.md)); no change in the sound or the window. Effects can be told when a note starts, at the exact sample where its sound reaches them, in Bus A, Bus B and Main, behind effects with latency, at every Quality (`Effect::noteOn`); a shared tempo LFO (`dsp::TempoLfo`); drawable per-effect curves that are saved with the project and published to the audio thread (`EffectCurve`, `core::EffectCurveState`, the new `EffectCurves` node); decorations get a context and can open a larger editor over the rack. The project state is version 3; projects from 0.1 and 0.2 open and sound the same (the reference renders of 0.1.1 and now of 0.2.0 are checked by the tests). A project saved with 0.3 opens in 0.2 without the curves.

@@ -1,6 +1,6 @@
 # Spec: Formant filter
 
-- Status: Approved (product owner's answers of 2026-10-20, questions 4.1 A, 4.2 A and 4.3 A); not implemented yet (version 0.3, stage 3). Formant table, ranges and defaults are first choices by the agent, for the owner's ears.
+- Status: Approved (product owner's answers of 2026-10-20, questions 4.1 A, 4.2 A and 4.3 A); implemented in version 0.3, stage 3. Formant table, ranges and defaults are first choices by the agent, for the owner's ears.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md), [fx-filter](fx-filter.md)
 
@@ -70,4 +70,8 @@ Effect ID `formant` (copies `formant2` to `formant4`). `defaultMix` = 1.
 
 ## 7. Open questions
 
-None.
+None. Decided while implementing (technical, no change of what the user hears or controls):
+- The make-up gain brings the pink noise of every vowel to 6 dB below its input at Resonance 50 % (it comes out between +6 and +9 dB at the formant peaks), computed from the table with the analog prototype of the three band-passes.
+- Morph and Shift are smoothed over 20 ms together with Vowel (not 10 ms), so every move of the formants glides the same way; Resonance and Drive are smoothed over 10 ms.
+- The widest band is limited to a damping of 2 (Q of 0.5) so a very wide band stays a band.
+- Drive is the Filter's saturation, repeated in the effect's own folder so effects do not depend on each other.
