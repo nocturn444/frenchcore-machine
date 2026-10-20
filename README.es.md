@@ -6,11 +6,18 @@ Un sintetizador wavetable en formato plugin con un solo objetivo: hacer kicks de
 
 Frenchcore Machine está a mitad de camino entre arrastrar un sample y construir un kick desde cero en un synth completo. Trae dos osciladores wavetable, una envolvente que ya tiene la forma clásica de kick + bass, una capa de click (el "tock") y una cadena de efectos reordenable con lo que un kick de frenchcore realmente necesita. Pensalo como un Serum o un Vital muy simplificado, enfocado en kicks.
 
-> **Estado:** la versión 0.1.0 es la última publicada (se probó solo en FL Studio). La versión 0.2.0 está construida y espera revisión y publicación: ver el [plan](docs/PLAN.md) y el [changelog](CHANGELOG.md) (en inglés).
+> **Estado:** la versión 0.1.0 es la última publicada (se probó solo en FL Studio). La versión 0.2.0 también está publicada, y la versión 0.3.0 está construida y espera revisión y publicación: ver el [plan](docs/PLAN.md) y el [changelog](CHANGELOG.md) (en inglés).
 
 ## Funciones
 
-Novedades de la v0.2.0:
+Novedades de la v0.3.0:
+
+- Cinco efectos nuevos: **Peak** (una zona de frecuencias reforzada que pasa por un recortador de suave a duro, con un pad XY), **Formant** (un filtro de vocales que hace "hablar" a la cola), **Phaser**, **Flanger** y **Volume LFO**.
+- El Phaser y el Flanger barren con el tempo (o en Hz) y arrancan de nuevo en cada nota, así que todos los kicks suenan igual; con Key Track el tono metálico del Flanger sigue a la nota.
+- El Volume LFO es un modulador de volumen al estilo de LFOTool: dibujás la forma en un editor que se abre dentro de la caja de Efectos, elegís una de diez formas listas (Pump, Sidechain, Gates, Sierras, Triángulo, Seno, Cuadrada) y lo usás para bombeo o gate después de la distorsión y la reverb.
+- Los proyectos y presets de la 0.1 y la 0.2 se abren y suenan igual (lo comprueban los tests); un proyecto guardado con la 0.3 se abre en la 0.2 sin los efectos nuevos.
+
+De la v0.2.0:
 
 - Un mixer (Osc 1, Osc 2, Noise, Tock) con Level, Mute, Solo y un destino para cada sonido: Main, Bus A o Bus B. Cada bus tiene su propia fila de efectos y puede actuar sobre todo el kick, solo el punch o solo la cola.
 - Hasta cuatro copias de cada efecto y ocho efectos por fila; agregar, duplicar y quitar desde la ventana.
