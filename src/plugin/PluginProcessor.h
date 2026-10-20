@@ -2,6 +2,7 @@
 #pragma once
 
 #include "core/AuditionState.h"
+#include "core/EffectCurveState.h"
 #include "core/EngineParameterReader.h"
 #include "core/EnvelopeState.h"
 #include "core/FxRackState.h"
@@ -65,6 +66,8 @@ class PluginProcessor : public juce::AudioProcessor,
     float currentTempo() const noexcept { return isStandalone() ? auditionState.getBpm() : tempoState.get(); }
     core::EnvelopeState& getPitchEnvelope() noexcept { return pitchEnvelope; }
     core::FxRackState& getFxRacks() noexcept { return fxRacks; }
+    // The drawn curves of the effects that have one (docs/decisions/0012).
+    core::EffectCurveState& getEffectCurves() noexcept { return effectCurves; }
     core::PresetManager& getPresets() noexcept { return presetManager; }
     // The pitch the tail is on, in semitones from C3, for displays that follow the note.
     float currentNoteSemitones() const noexcept { return engine.currentNoteSemitones(); }
@@ -111,6 +114,7 @@ class PluginProcessor : public juce::AudioProcessor,
                               dsp::defaultEffectRegistry(),
                               {&engine.rackValue(dsp::RackId::busA), &engine.rackValue(dsp::RackId::busB),
                                &engine.rackValue(dsp::RackId::main)}};
+    core::EffectCurveState effectCurves{dsp::defaultEffectRegistry()};
 
     // Standalone only. The host's MIDI is copied here together with the audition events; the
     // capacity is reserved in prepareToPlay so processBlock does not allocate.

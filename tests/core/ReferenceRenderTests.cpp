@@ -233,7 +233,7 @@ struct Rig
 
     fcm::core::ProjectState::Parts parts()
     {
-        return {processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock, noise};
+        return {processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock, noise, curves};
     }
 
     void load(const Case& testCase)
@@ -263,9 +263,10 @@ struct Rig
         if (!testCase.busA.empty() || !testCase.busB.empty() || !testCase.main.empty())
         {
             juce::ValueTree racks("FxRacks");
-            for (const auto& [name, effects] : {std::pair<const char*, const std::string&>{"busA", testCase.busA},
-                                                {"busB", testCase.busB},
-                                                {"main", testCase.main}})
+            for (const auto& [name, effects] :
+                 {std::pair<const char*, const std::string&>{"busA", testCase.busA},
+                  {"busB", testCase.busB},
+                  {"main", testCase.main}})
             {
                 juce::ValueTree rack("Rack");
                 rack.setProperty("id", name, nullptr);
@@ -323,6 +324,7 @@ struct Rig
     fcm::core::WavetableSelector wavetable2{processor.state, 1};
     fcm::core::TockSelector tock{processor.state};
     fcm::core::NoiseSelector noise{processor.state};
+    fcm::core::EffectCurveState curves{fcm::dsp::defaultEffectRegistry()};
     fcm::core::ProjectState project;
 };
 
@@ -403,10 +405,12 @@ TEST_CASE("References made with 0.1.1 and 0.2.0 still render the same", "[refere
                 int worstAt = 0;
                 for (size_t i = 0; i < reference.size(); ++i)
                 {
-                    const float difference = std::abs(rendered[i + static_cast<size_t>(shift)] - reference[i]);
+                    const float difference =
+                        std::abs(rendered[i + static_cast<size_t>(shift)] - reference[i]);
                     if (!std::isfinite(difference) || difference > worst)
                     {
-                        worst = std::isfinite(difference) ? difference : std::numeric_limits<float>::infinity();
+                        worst =
+                            std::isfinite(difference) ? difference : std::numeric_limits<float>::infinity();
                         worstAt = static_cast<int>(i);
                     }
                 }

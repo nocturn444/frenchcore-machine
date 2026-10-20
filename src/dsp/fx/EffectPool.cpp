@@ -129,6 +129,8 @@ void EffectPool::setParameters(const std::array<EffectSlotParameters, kMaxInstan
         slot.effect->setParameters(
             std::span<const float>(slot.values.data(), static_cast<size_t>(slot.parameterCount)));
         slot.effect->setContext(context);
+        if (curveSources[i] != nullptr)
+            slot.effect->setCurve(curveSources[i]->acquire());
     }
     firstBlock = false;
 }

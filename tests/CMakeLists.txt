@@ -9,6 +9,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/BreakpointEnvelopeTests.cpp
     dsp/EffectRackTests.cpp
     dsp/MixerBusTests.cpp
+    dsp/NoteTriggerTests.cpp
     dsp/fx/CompressorTests.cpp
     dsp/fx/DistortionTests.cpp
     dsp/fx/EqTests.cpp

@@ -31,7 +31,8 @@ PluginProcessor::PluginProcessor()
                                         fxRacks,
                                         {&wavetable1, &wavetable2},
                                         tockSelector,
-                                        noiseSelector}),
+                                        noiseSelector,
+                                        effectCurves}),
       presetManager(project, core::PresetLibrary(core::PresetLibrary::defaultFolder()), kStateType)
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
@@ -40,6 +41,9 @@ PluginProcessor::PluginProcessor()
     engine.setWavetableSources(&wavetable1.source(), &wavetable2.source());
     engine.setTockSource(&tockSelector.source());
     engine.setNoiseSource(&noiseSelector.source());
+    fxRacks.setCurveState(&effectCurves);
+    for (int instance = 0; instance < dsp::defaultEffectRegistry().instanceCount(); ++instance)
+        engine.setEffectCurveSource(instance, effectCurves.source(instance));
 }
 
 double PluginProcessor::getTailLengthSeconds() const

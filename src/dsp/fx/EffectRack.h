@@ -2,6 +2,7 @@
 #pragma once
 
 #include "dsp/fx/EffectPool.h"
+#include "dsp/fx/NoteTriggers.h"
 
 #include <array>
 #include <atomic>
@@ -49,12 +50,16 @@ class EffectRack
 
     // Processes the block in place with the pool's current state (EffectPool::setParameters must
     // have run for this block) and the contents `packed` that the caller read once for the block.
+    // `triggers` (from 0.3, docs/decisions/0012 item 1) lets the rack tell each running effect about
+    // the note-ons whose sound reaches it in this block: the note's position in the log plus the
+    // rack's input delay plus the latencies of the effects in front of it.
     void process(EffectPool& pool, std::uint64_t packed, int oversamplingFactor,
-                 juce::AudioBuffer<float>& buffer) noexcept;
+                 juce::AudioBuffer<float>& buffer, const RackTriggers& triggers = {}) noexcept;
 
   private:
     void processChunk(EffectPool& pool, const std::array<int, kMaxRackEffects>& members, int count,
-                      int padSamples, juce::AudioBuffer<float>& buffer) noexcept;
+                      int padSamples, int oversamplingFactor, std::int64_t chunkClock,
+                      const RackTriggers& triggers, juce::AudioBuffer<float>& buffer) noexcept;
 
     std::atomic<std::uint64_t> packedValue{0};
     std::vector<float> padLine; // numChannels * padCapacity, a ring per channel

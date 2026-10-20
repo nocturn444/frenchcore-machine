@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "core/EffectCurveState.h"
 #include "core/EnvelopeState.h"
 #include "core/FxRackState.h"
 #include "core/NoiseSelector.h"
@@ -30,6 +31,7 @@ class ProjectState
         std::array<WavetableSelector*, 2> wavetables;
         TockSelector& tock;
         NoiseSelector& noise;
+        EffectCurveState& effectCurves;
     };
 
     explicit ProjectState(const Parts& parts) : parts(parts) {}

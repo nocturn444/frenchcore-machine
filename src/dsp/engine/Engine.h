@@ -68,6 +68,14 @@ class Engine
     // playback; the publisher must outlive the engine. Without it the noise is silent.
     void setNoiseSource(PublishedPointer<NoiseSample>* source) noexcept { noiseSource = source; }
 
+    // Where an effect instance's drawn curve comes from (docs/decisions/0012 item 3): the pool index
+    // (EffectRegistry::instanceIndex) and its publisher, which must outlive the engine. Call before
+    // playback. Without a source an effect uses its default curve.
+    void setEffectCurveSource(int instance, PublishedPointer<EffectCurve>* source) noexcept
+    {
+        pool.setCurveSource(instance, source);
+    }
+
     // Real-time safe. Call once per block, before process().
     void setParameters(const EngineParameters& newParameters) noexcept;
 
@@ -128,6 +136,11 @@ class Engine
     std::array<PublishedPointer<WavetableData>*, kNumOscillators> wavetableSources{};
     PublishedPointer<TockSample>* tockSource = nullptr;
     PublishedPointer<NoiseSample>* noiseSource = nullptr;
+    // The engine's own sample clock and the position of the recent note-ons on it, so the racks can
+    // tell each effect the sample where a note's sound reaches it (docs/decisions/0012 item 1).
+    std::int64_t sampleClock = 0;
+    std::int64_t noteClock = 0; // the clock position of the MIDI event being handled
+    NoteLog noteLog;
     int lastNote = -1; // the note the settling pitch follows when Key Track is on
     juce::SmoothedValue<float> outputGain{1.0f};
     std::atomic<float> noteSemitonesNow{0.0f};

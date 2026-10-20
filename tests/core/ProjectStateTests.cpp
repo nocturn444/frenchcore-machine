@@ -28,7 +28,7 @@ struct Rig
 {
     Rig()
         : project(ProjectState::Parts{
-              processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock, noise})
+              processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock, noise, curves})
     {
     }
 
@@ -64,6 +64,7 @@ struct Rig
     fcm::core::WavetableSelector wavetable2{processor.state, 1};
     fcm::core::TockSelector tock{processor.state};
     fcm::core::NoiseSelector noise{processor.state};
+    fcm::core::EffectCurveState curves{fcm::dsp::defaultEffectRegistry()};
     ProjectState project;
 };
 
@@ -405,9 +406,9 @@ TEST_CASE("A version 1 project opens with its effects in the Main rack and its s
     REQUIRE(target.getParameter("eq.enabled") == 1.0f);
     REQUIRE(target.getParameter("eq2.enabled") == 0.0f); // the new copies start at their defaults
 
-    // Saving it again writes version 2 with the racks and no FxChain.
+    // Saving it again writes the current version with the racks and no FxChain.
     const auto saved = target.project.capture();
-    REQUIRE(static_cast<int>(saved["stateVersion"]) == 2);
+    REQUIRE(static_cast<int>(saved["stateVersion"]) == fcm::core::kStateVersion);
     REQUIRE(saved.getChildWithName("FxRacks").isValid());
     REQUIRE_FALSE(saved.getChildWithName("FxChain").isValid());
 }

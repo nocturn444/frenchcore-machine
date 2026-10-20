@@ -109,11 +109,19 @@ void migrateFrom1To2(juce::ValueTree& state)
 }
 } // namespace
 
+namespace
+{
+// Version 2 to 3 (docs/decisions/0012 item 3): 0.3 adds the optional "EffectCurves" node, and a state
+// without it means every effect's default curve, so there is nothing to rewrite. The step exists so
+// that a 0.2 project is a known version, and so the version number says which build wrote a state.
+void migrateFrom2To3(juce::ValueTree&) {}
+} // namespace
+
 std::span<const Migration> stateMigrations() noexcept
 {
     // Add one entry here, and bump kStateVersion, whenever the state format changes.
-    static_assert(kStateVersion == 2, "kStateVersion changed: add the migration from the previous version");
-    static const Migration steps[] = {{1, &migrateFrom1To2}};
+    static_assert(kStateVersion == 3, "kStateVersion changed: add the migration from the previous version");
+    static const Migration steps[] = {{1, &migrateFrom1To2}, {2, &migrateFrom2To3}};
     return steps;
 }
 
