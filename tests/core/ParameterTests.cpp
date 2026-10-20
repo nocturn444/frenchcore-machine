@@ -163,11 +163,15 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
     for (const char* control : {"enabled", "mix", "size", "decay", "damping", "predelay", "lowcut"})
         allowed.insert(std::string("reverb.") + control);
 
+    // Added in 0.3, stage 2: the Peak (docs/specs/fx-peak.md section 3).
+    for (const char* control : {"enabled", "mix", "freq", "amount", "hardness"})
+        allowed.insert(std::string("peak.") + control);
+
     // The copies 2 to 4 of every effect have the same IDs as copy 1 with the number after the effect ID.
     const auto firstCopies = allowed;
     for (const auto& id : firstCopies)
         for (const char* effect :
-             {"distortion", "eq", "stereo", "filter", "transient", "compressor", "reverb"})
+             {"distortion", "eq", "stereo", "filter", "transient", "compressor", "reverb", "peak"})
             if (id.rfind(std::string(effect) + ".", 0) == 0)
                 for (int copy = 2; copy <= 4; ++copy)
                     allowed.insert(effect + std::to_string(copy) + id.substr(std::string(effect).size()));

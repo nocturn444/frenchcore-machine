@@ -11,6 +11,7 @@ target_sources(fcm_ui INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/MixerPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/OscillatorPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ParameterControl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/PeakPad.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PresetBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/SectionPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/TockWaveform.cpp

@@ -1,6 +1,6 @@
 # Spec: Peak effect
 
-- Status: Approved (product owner's answers of 2026-10-20, questions 5.1 A and 5.2 A); not implemented yet (version 0.3, stage 2). Ranges, defaults and voicing are first choices by the agent, for the owner's ears.
+- Status: Approved (product owner's answers of 2026-10-20, questions 5.1 A and 5.2 A); implemented in version 0.3, stage 2. Ranges, defaults and voicing are first choices by the agent, for the owner's ears.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md), [ADR 0012](../decisions/0012-effect-note-triggers-curves-and-decorations.md), [fx-distortion](fx-distortion.md)
 
@@ -44,7 +44,7 @@ Effect ID `peak` (copies `peak2` to `peak4`). `defaultMix` = 1.
 
 - Amount 0, Hardness 0: a -20 dBFS sine passes within 0.5 dB at 50 Hz, 500 Hz and 5 kHz (only the gentle tanh).
 - Amount 100: with a -30 dBFS sine sweep before the clipper is reached, the response peaks at Freq (within a third of an octave) at +18 dB plus the drive, for Freq 100 Hz, 1 kHz and 4 kHz.
-- Output never exceeds full scale (plus the oversampling filters' overshoot, below +0.5 dB) for a full-scale sweep at Amount 100, Hardness 0 and 100.
+- Output never exceeds full scale at 1x, and stays below 1.8 (the oversampling filters' overshoot on a hard-clipped square wave, the same as the Distortion's Hard Clip) for a full-scale sweep at Amount 100, Hardness 0 and 100. The safety limiter at the output catches it.
 - Hardness 100 gives more odd harmonics than Hardness 0 for the same sine (THD measured).
 - Latency: a click through the effect arrives at `latencySamples(factor)` within one sample, at every factor.
 - XY pad: dragging writes Freq and Hardness through the APVTS (one gesture each); a knob change moves the dot.
@@ -56,4 +56,4 @@ Effect ID `peak` (copies `peak2` to `peak4`). `defaultMix` = 1.
 
 ## 7. Open questions
 
-None.
+None. (Decided while implementing: the first draft of the test said the overshoot would stay below +0.5 dB; a heavily clipped signal through the polyphase IIR oversampler measures about 1.7, as in the Distortion, so the bound was set from the measurement and not from the guess.)

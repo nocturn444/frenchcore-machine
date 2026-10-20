@@ -18,6 +18,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/fx/StereoTests.cpp
     dsp/fx/TransientTests.cpp
     dsp/fx/RegisteredEffectsTests.cpp
+    dsp/fx/PeakTests.cpp
     dsp/fx/ReverbTests.cpp
     dsp/EngineTests.cpp
     dsp/EnvelopeEngineTests.cpp

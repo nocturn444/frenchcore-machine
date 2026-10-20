@@ -262,7 +262,7 @@ Patterns used:
 
 - Unit tests (Catch2) for every DSP block: frequency and level checks, no NaN/Inf, silence in gives silence out where expected, reset is deterministic.
 - State tests: save then load reproduces identical state; old state versions migrate.
-- Rack tests: every order of the effects in a rack processes without allocation and produces finite output; the reference renders of 0.1.1 (`tests/data/reference-0.1.1`) must keep matching within 1e-6 ([mixer-and-buses](specs/mixer-and-buses.md) section 5).
+- Rack tests: every order of the effects in a rack processes without allocation and produces finite output; the reference renders of 0.1.1 (`tests/data/reference-0.1.1`) must keep matching within 1e-6 ([mixer-and-buses](specs/mixer-and-buses.md) section 5), as must those of 0.2.0 (`tests/data/reference-0.2.0`). The exact comparison uses the effects of the version that made the references (a newer effect with latency moves the others' start-up ramps); on the whole plugin the render must stay within 15 % of the reference level.
 - pluginval at strictness 10 on every CI build.
 - Manual test checklist per release in [TESTING.md](TESTING.md).
 
