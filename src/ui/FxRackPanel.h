@@ -3,6 +3,7 @@
 
 #include "core/FxRackState.h"
 #include "dsp/fx/EffectRegistry.h"
+#include "ui/EffectDecorations.h"
 #include "ui/ParameterControl.h"
 
 #include <functional>
@@ -22,9 +23,10 @@ namespace fcm::ui
 class FxRackPanel : public juce::Component, private juce::ChangeListener
 {
   public:
-    // `note` gives the pitch the tail is on (semitones from C3) to the pictures that follow it.
+    // `environment` is what the decorations are given: the note, the curves and the way to open a
+    // larger editor over the rack (docs/decisions/0012 item 4).
     FxRackPanel(juce::AudioProcessorValueTreeState& state, core::FxRackState& racks, dsp::RackId rack,
-                const dsp::EffectRegistry& registry, std::function<float()> note = {});
+                const dsp::EffectRegistry& registry, DecorationEnvironment environment = {});
     ~FxRackPanel() override;
 
     void resized() override;
@@ -39,7 +41,7 @@ class FxRackPanel : public juce::Component, private juce::ChangeListener
     {
       public:
         Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry, const std::string& instanceId,
-             juce::AudioProcessorValueTreeState& state, const std::function<float()>& note);
+             juce::AudioProcessorValueTreeState& state, const DecorationEnvironment& environment);
 
         const std::string& id() const noexcept { return instance; }
         int preferredHeight() const noexcept { return height; }
@@ -99,7 +101,7 @@ class FxRackPanel : public juce::Component, private juce::ChangeListener
 
     juce::AudioProcessorValueTreeState& parameters;
     core::FxRackState& racks;
-    std::function<float()> noteSource;
+    DecorationEnvironment environment;
     dsp::RackId rackId;
     const dsp::EffectRegistry& registry;
 

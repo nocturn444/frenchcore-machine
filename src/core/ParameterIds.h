@@ -10,7 +10,7 @@ namespace fcm::core
 
 // Version of the saved plugin state. Bump it and add a migration in StateMigrations when the
 // state format changes (docs/ARCHITECTURE.md §5).
-inline constexpr int kStateVersion = 2;
+inline constexpr int kStateVersion = 3;
 
 // Parameter IDs are permanent once released: never rename, remove or reuse one.
 namespace ParameterIds

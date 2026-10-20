@@ -67,7 +67,7 @@ void EffectRack::reset() noexcept
 }
 
 void EffectRack::process(EffectPool& pool, std::uint64_t packed, int oversamplingFactor,
-                         juce::AudioBuffer<float>& buffer) noexcept
+                         juce::AudioBuffer<float>& buffer, const RackTriggers& triggers) noexcept
 {
     const int total = buffer.getNumSamples();
     const int channels = std::min(buffer.getNumChannels(), pool.wet.getNumChannels());
@@ -94,21 +94,28 @@ void EffectRack::process(EffectPool& pool, std::uint64_t packed, int oversamplin
             pointers[static_cast<size_t>(c)] = buffer.getWritePointer(c) + start;
 
         juce::AudioBuffer<float> chunk(pointers.data(), used, std::min(chunkSize, total - start));
-        processChunk(pool, members, count, padSamples, chunk);
+        processChunk(pool, members, count, padSamples, oversamplingFactor, triggers.clockStart + start,
+                     triggers, chunk);
     }
 }
 
 void EffectRack::processChunk(EffectPool& pool, const std::array<int, kMaxRackEffects>& members, int count,
-                              int padSamples, juce::AudioBuffer<float>& buffer) noexcept
+                              int padSamples, int oversamplingFactor, std::int64_t chunkClock,
+                              const RackTriggers& triggers, juce::AudioBuffer<float>& buffer) noexcept
 {
     using Slot = EffectPool::Slot;
 
     const int numSamples = std::min(buffer.getNumSamples(), pool.wet.getNumSamples());
     const int channels = std::min(buffer.getNumChannels(), pool.wet.getNumChannels());
 
+    // How long a note's sound takes to reach the effect at this position: the rack's input delay plus
+    // the latency of every effect in front of it (each keeps its delay whether it is on or not).
+    int delayBefore = triggers.inputDelay;
+
     for (int position = 0; position < count; ++position)
     {
-        Slot& slot = pool.slots[static_cast<size_t>(members[static_cast<size_t>(position)])];
+        const int instance = members[static_cast<size_t>(position)];
+        Slot& slot = pool.slots[static_cast<size_t>(instance)];
         const bool active = slot.mix.isSmoothing() || slot.mix.getTargetValue() > 0.0f;
 
         juce::AudioBuffer<float> wetView(pool.wet.getArrayOfWritePointers(), channels, numSamples);
@@ -121,6 +128,29 @@ void EffectRack::processChunk(EffectPool& pool, const std::array<int, kMaxRackEf
             }
             for (int c = 0; c < channels; ++c)
                 wetView.copyFrom(c, 0, buffer, c, 0, numSamples);
+
+            // The note-ons whose sound is in this effect's input during this chunk, in time order.
+            if (triggers.log != nullptr)
+            {
+                std::array<int, kMaxNoteTriggers> offsets{};
+                int found = 0;
+                for (int e = 0; e < triggers.log->size(); ++e)
+                {
+                    const std::int64_t offset = triggers.log->at(e) + delayBefore - chunkClock;
+                    if (offset < 0 || offset >= numSamples)
+                        continue;
+                    int at = found++;
+                    while (at > 0 && offsets[static_cast<size_t>(at - 1)] > static_cast<int>(offset))
+                    {
+                        offsets[static_cast<size_t>(at)] = offsets[static_cast<size_t>(at - 1)];
+                        --at;
+                    }
+                    offsets[static_cast<size_t>(at)] = static_cast<int>(offset);
+                }
+                for (int k = 0; k < found; ++k)
+                    slot.effect->noteOn(offsets[static_cast<size_t>(k)]);
+            }
+
             slot.effect->process(wetView);
         }
         else
@@ -146,6 +176,8 @@ void EffectRack::processChunk(EffectPool& pool, const std::array<int, kMaxRackEf
             }
             slot.writeIndex = (writeAt + 1) % slot.delayCapacity;
         }
+
+        delayBefore += pool.instanceLatency(instance, oversamplingFactor);
     }
 
     // The padding: whatever latency the effects of this rack do not add. The ring is always fed, so

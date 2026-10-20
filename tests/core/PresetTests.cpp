@@ -28,7 +28,7 @@ struct Rig
 {
     explicit Rig(const juce::File& folder)
         : project(ProjectState::Parts{
-              processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock, noise}),
+              processor.state, kRoot, amp, pitch, fx, {&wavetable1, &wavetable2}, tock, noise, curves}),
           presets(project, PresetLibrary(folder), kRoot)
     {
     }
@@ -60,6 +60,7 @@ struct Rig
     fcm::core::WavetableSelector wavetable2{processor.state, 1};
     fcm::core::TockSelector tock{processor.state};
     fcm::core::NoiseSelector noise{processor.state};
+    fcm::core::EffectCurveState curves{fcm::dsp::defaultEffectRegistry()};
     ProjectState project;
     PresetManager presets;
 };

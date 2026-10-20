@@ -142,6 +142,8 @@ void FxRackState::setInstanceToDefaults(int instance)
     setDefault(ParameterIds::effect(id, ParameterIds::kEffectMix));
     for (const auto& spec : registry.parameters(effectIndex))
         setDefault(ParameterIds::effect(id, spec.idSuffix));
+    if (curves != nullptr)
+        curves->reset(instance);
 }
 
 void FxRackState::copyInstance(int from, int to)
@@ -164,6 +166,8 @@ void FxRackState::copyInstance(int from, int to)
          ParameterIds::effect(toId, ParameterIds::kEffectMix));
     for (const auto& spec : registry.parameters(effectIndex))
         copy(ParameterIds::effect(fromId, spec.idSuffix), ParameterIds::effect(toId, spec.idSuffix));
+    if (curves != nullptr)
+        curves->copy(from, to);
 }
 
 std::string FxRackState::add(dsp::RackId rack, int effectIndex)

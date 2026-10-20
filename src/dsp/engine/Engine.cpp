@@ -65,6 +65,9 @@ void Engine::reset() noexcept
     for (auto& bus : buses)
         bus.reset();
     mainDirectRing.reset();
+    sampleClock = 0;
+    noteClock = 0;
+    noteLog.clear();
     notes.allNotesOff();
     glide.reset();
     voice.reset();
@@ -107,6 +110,7 @@ void Engine::noteOn(int note, int velocity) noexcept
     notes.noteOn(note);
     lastNote = note;
     updatePitchTarget();
+    noteLog.push(noteClock); // every note-on counts, legato ones included
 
     const float velocity01 = static_cast<float>(velocity) / 127.0f;
     // The note the kick settles on (the root note when the global Key Track is off), relative to C3.
@@ -218,6 +222,7 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
     const int factor = parameters.oversamplingFactor;
     const int latency = pool.latencySamples(factor);
     const int chunkSize = std::max(1, static_cast<int>(maxBlockSize));
+    const std::int64_t bufferClock = sampleClock;
     const auto busIndex = [](RackId id) { return static_cast<size_t>(id); };
 
     // A host may hand over more samples than it announced: they are processed in chunks.
@@ -240,6 +245,7 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
             renderStems(cursor - start, inChunk - cursor);
             cursor = inChunk;
             position = eventPosition;
+            noteClock = bufferClock + inChunk; // the first sample of a note's sound is this one
             handleMidi(metadata);
             ++event;
         }
@@ -252,8 +258,9 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
             auto& rack = racks[busIndex(b == 0 ? RackId::busA : RackId::busB)];
             buses[b].begin(sums[b + 1].data(), punchWeights.data(), count, latency, busBuffer);
             juce::AudioBuffer<float> view(busBuffer.getArrayOfWritePointers(), 2, count);
-            rack.process(pool, packed[b == 0 ? busIndex(RackId::busA) : busIndex(RackId::busB)], factor,
-                         view);
+            // A bus rack's input is the voice's output as it is: no delay in front of it.
+            rack.process(pool, packed[b == 0 ? busIndex(RackId::busA) : busIndex(RackId::busB)], factor, view,
+                         RackTriggers{&noteLog, bufferClock + start, 0});
         }
 
         // Main: what was sent straight to it, delayed to line up with the buses, plus the buses.
@@ -276,9 +283,13 @@ void Engine::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& m
             }
 
             // The Main rack; the first channels only, as before the racks were three.
-            racks[busIndex(RackId::main)].process(pool, packed[busIndex(RackId::main)], factor, mainView);
+            // The sound reaches Main's input one pool latency late (it is lined up with the buses).
+            racks[busIndex(RackId::main)].process(pool, packed[busIndex(RackId::main)], factor, mainView,
+                                                  RackTriggers{&noteLog, bufferClock + start, latency});
         }
     }
+
+    sampleClock += numSamples;
 
     // The racks handle two channels; any further channel (not offered by the plugin's layouts, but
     // harmless to cover) repeats the first.

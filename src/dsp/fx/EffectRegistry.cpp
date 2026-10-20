@@ -32,7 +32,7 @@ bool EffectRegistry::add(Factory factory)
 
     // The id, the name and the parameter specs are static data of the effect type, so the views stay
     // valid after the probe is gone (docs/specs/fx-chain.md §4).
-    entries.push_back({factory, descriptor, parameters});
+    entries.push_back({factory, descriptor, parameters, probe->defaultCurve(), probe->curvePresets()});
     return true;
 }
 
@@ -45,6 +45,17 @@ std::span<const ParameterSpec> EffectRegistry::parameters(int index) const noexc
 {
     return index >= 0 && index < count() ? entries[static_cast<size_t>(index)].parameters
                                          : std::span<const ParameterSpec>{};
+}
+
+const EffectCurve* EffectRegistry::defaultCurve(int index) const noexcept
+{
+    return index >= 0 && index < count() ? entries[static_cast<size_t>(index)].defaultCurve : nullptr;
+}
+
+std::span<const NamedCurve> EffectRegistry::curvePresets(int index) const noexcept
+{
+    return index >= 0 && index < count() ? entries[static_cast<size_t>(index)].curvePresets
+                                         : std::span<const NamedCurve>{};
 }
 
 int EffectRegistry::indexOf(std::string_view id) const noexcept

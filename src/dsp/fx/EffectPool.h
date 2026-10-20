@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "dsp/envelope/PublishedPointer.h"
 #include "dsp/fx/Effect.h"
 #include "dsp/fx/EffectRegistry.h"
 
@@ -33,6 +34,15 @@ class EffectPool
     void setParameters(const std::array<EffectSlotParameters, kMaxInstances>& slots, int oversamplingFactor,
                        const EffectContext& context, std::uint64_t inRack) noexcept;
 
+    // (from 0.3, docs/decisions/0012 item 3) Where an instance's drawn curve is published, or nullptr
+    // (the effect then uses its default). Set once, before the audio runs; the pool acquires each
+    // source once per block for the instances that are in a rack and hands the curve to the effect.
+    void setCurveSource(int instance, PublishedPointer<EffectCurve>* source) noexcept
+    {
+        if (instance >= 0 && instance < kMaxInstances)
+            curveSources[static_cast<size_t>(instance)] = source;
+    }
+
     // The sum of the latencies of every instance at this factor (docs/decisions/0010 item 6).
     int latencySamples(int oversamplingFactor) const noexcept;
     // The largest that sum gets over the four factors, for sizing delay lines.
@@ -61,6 +71,7 @@ class EffectPool
     void setDelayLength(Slot& slot, int length) noexcept;
 
     const EffectRegistry* registry;
+    std::array<PublishedPointer<EffectCurve>*, kMaxInstances> curveSources{};
     std::vector<Slot> slots;
     EffectSpec spec;
     int factor = 1;

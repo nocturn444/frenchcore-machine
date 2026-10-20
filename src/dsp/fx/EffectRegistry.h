@@ -34,6 +34,11 @@ class EffectRegistry
     const EffectDescriptor* descriptor(int index) const noexcept;
     std::span<const ParameterSpec> parameters(int index) const noexcept;
 
+    // (from 0.3) The effect's default drawn curve (nullptr when it has none) and its ready-made
+    // shapes. Static data of the effect type, like the parameter specs.
+    const EffectCurve* defaultCurve(int index) const noexcept;
+    std::span<const NamedCurve> curvePresets(int index) const noexcept;
+
     // Index of the effect with this ID, or -1.
     int indexOf(std::string_view id) const noexcept;
 
@@ -62,6 +67,8 @@ class EffectRegistry
         Factory factory;
         EffectDescriptor descriptor; // copied from a throw-away instance (the views are static data)
         std::span<const ParameterSpec> parameters;
+        const EffectCurve* defaultCurve = nullptr;
+        std::span<const NamedCurve> curvePresets;
     };
 
     std::vector<Entry> entries;

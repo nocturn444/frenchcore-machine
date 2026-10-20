@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "core/EffectCurveState.h"
 #include "dsp/fx/EffectRack.h"
 #include "dsp/fx/EffectRegistry.h"
 
@@ -27,6 +28,11 @@ class FxRackState : public juce::ChangeBroadcaster
     // `targets` are where the packed values are stored for the audio thread (the engine's racks).
     FxRackState(juce::AudioProcessorValueTreeState& parameters, const dsp::EffectRegistry& registry,
                 std::array<std::atomic<std::uint64_t>*, dsp::kNumRacks> targets);
+
+    // The drawn curves of the effects (docs/decisions/0012 item 3): adding an effect resets its
+    // instance's curve to the default and duplicating one copies it. Optional (nullptr: no curves);
+    // set once, before use. Not owned.
+    void setCurveState(EffectCurveState* state) noexcept { curves = state; }
 
     // Instance IDs ("distortion", "distortion2", ...), first to last.
     const std::vector<std::string>& ids(dsp::RackId rack) const noexcept;
@@ -87,6 +93,7 @@ class FxRackState : public juce::ChangeBroadcaster
 
     juce::AudioProcessorValueTreeState& parameters;
     const dsp::EffectRegistry& registry;
+    EffectCurveState* curves = nullptr;
     std::array<std::atomic<std::uint64_t>*, dsp::kNumRacks> targets;
     std::array<std::vector<std::string>, dsp::kNumRacks> racks;
 };

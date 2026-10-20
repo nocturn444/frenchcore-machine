@@ -57,7 +57,7 @@ juce::String withoutGroup(const juce::String& name, const juce::String& group)
 
 FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
                         const std::string& instanceId, juce::AudioProcessorValueTreeState& state,
-                        const std::function<float()>& note)
+                        const DecorationEnvironment& environment)
     : rack(owner), instance(instanceId)
 {
     const int instanceIndex = registry.indexOfInstance(instanceId);
@@ -97,7 +97,8 @@ FxRackPanel::Slot::Slot(FxRackPanel& owner, const dsp::EffectRegistry& registry,
 
     if (const auto* extra = decorationFor(descriptor.id); extra != nullptr && extra->make)
     {
-        decoration = extra->make(state, juce::String(instanceId), note);
+        decoration =
+            extra->make(DecorationContext{state, juce::String(instanceId), instanceIndex, environment});
         decorationHeight = extra->height;
         addAndMakeVisible(*decoration);
     }
@@ -394,8 +395,8 @@ void FxRackPanel::Content::paint(juce::Graphics& g)
 
 FxRackPanel::FxRackPanel(juce::AudioProcessorValueTreeState& state, core::FxRackState& rackState,
                          dsp::RackId rack, const dsp::EffectRegistry& effectRegistry,
-                         std::function<float()> note)
-    : parameters(state), racks(rackState), noteSource(std::move(note)), rackId(rack), registry(effectRegistry)
+                         DecorationEnvironment env)
+    : parameters(state), racks(rackState), environment(std::move(env)), rackId(rack), registry(effectRegistry)
 {
     viewport.setViewedComponent(&content, false);
     viewport.setScrollBarsShown(true, false);
@@ -452,7 +453,7 @@ void FxRackPanel::rebuildSlots()
             std::any_of(slots.begin(), slots.end(), [&](const auto& s) { return s->id() == id; });
         if (!present)
         {
-            slots.push_back(std::make_unique<Slot>(*this, registry, id, parameters, noteSource));
+            slots.push_back(std::make_unique<Slot>(*this, registry, id, parameters, environment));
             content.addAndMakeVisible(*slots.back());
         }
     }

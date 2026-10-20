@@ -9,10 +9,8 @@ namespace fcm::ui
 const EffectDecoration* decorationFor(std::string_view effectId)
 {
     static const EffectDecoration eq{
-        96,
-        [](juce::AudioProcessorValueTreeState& state, const juce::String& instanceId,
-           const std::function<float()>& note) -> std::unique_ptr<juce::Component>
-        { return std::make_unique<EqDisplay>(state, instanceId, note); }};
+        96, [](const DecorationContext& context) -> std::unique_ptr<juce::Component>
+        { return std::make_unique<EqDisplay>(context.state, context.instanceId, context.environment.note); }};
 
     return effectId == "eq" ? &eq : nullptr;
 }

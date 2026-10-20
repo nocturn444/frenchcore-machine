@@ -7,8 +7,10 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/AllocationCounter.cpp
     dsp/AuditionTests.cpp
     dsp/BreakpointEnvelopeTests.cpp
+    dsp/EffectCurveTests.cpp
     dsp/EffectRackTests.cpp
     dsp/MixerBusTests.cpp
+    dsp/NoteTriggerTests.cpp
     dsp/fx/CompressorTests.cpp
     dsp/fx/DistortionTests.cpp
     dsp/fx/EqTests.cpp
@@ -47,6 +49,7 @@ juce_add_console_app(fcm_core_tests PRODUCT_NAME "fcm_core_tests")
 target_sources(fcm_core_tests PRIVATE
     core/AboutTextTests.cpp
     core/AuditionStateTests.cpp
+    core/EffectCurveStateTests.cpp
     core/EnvelopeStateTests.cpp
     core/EqResponseTests.cpp
     core/FxCoreTests.cpp
@@ -79,6 +82,7 @@ fcm_apply_juce_options(fcm_core_tests)
 # The loader tests wait for the message thread with runDispatchLoopUntil, which JUCE only offers
 # when modal loops are permitted.
 target_compile_definitions(fcm_core_tests PRIVATE JUCE_STANDALONE_APPLICATION=1 JUCE_MODAL_LOOPS_PERMITTED=1
-    FCM_REFERENCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/reference-0.1.1")
+    FCM_REFERENCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/reference-0.1.1"
+    FCM_REFERENCE_DIR_020="${CMAKE_CURRENT_SOURCE_DIR}/data/reference-0.2.0")
 
 catch_discover_tests(fcm_core_tests)

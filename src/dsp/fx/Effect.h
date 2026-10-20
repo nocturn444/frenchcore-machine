@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
 
+#include "dsp/fx/EffectCurve.h"
+
 #include <array>
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <span>
@@ -106,6 +108,23 @@ class Effect
 
     // Once per block, before process(), for effects that follow the note or the tempo.
     virtual void setContext(const EffectContext& context) noexcept { juce::ignoreUnused(context); }
+
+    // (from 0.3, docs/decisions/0012 item 1) Told before process(), once for every note-on whose sound
+    // reaches this effect inside the coming buffer, in time order. `sampleOffset` counts from the
+    // buffer's first sample and is already corrected for the latency of what is in front of the
+    // effect, so it is the sample where the note's sound is in the input. Effects that restart
+    // something at a note (an LFO) keep the offsets, e.g. in a PendingNoteOns, and cut process() there.
+    // Not called while the effect is off or asleep.
+    virtual void noteOn(int sampleOffset) noexcept { juce::ignoreUnused(sampleOffset); }
+
+    // (from 0.3, docs/decisions/0012 item 3) An effect with a drawn curve returns its default one
+    // (static data of the effect type; nullptr for effects without a curve), the ready-made shapes of
+    // its editor menu, and reads the current curve in setCurve() once per block before process()
+    // (nullptr means the default). Curves are not parameters: they are saved with the project and
+    // published like the envelopes.
+    virtual const EffectCurve* defaultCurve() const noexcept { return nullptr; }
+    virtual std::span<const NamedCurve> curvePresets() const noexcept { return {}; }
+    virtual void setCurve(const EffectCurve* curve) noexcept { juce::ignoreUnused(curve); }
 
     // The oversampling factor (1, 2, 4 or 8) of the global Quality setting, before process() whenever
     // it changes and once after prepare(). Effects that do not oversample ignore it.

@@ -269,7 +269,7 @@ TEST_CASE("A state from a newer version loads what is known and ignores the rest
 {
     juce::ScopedJuceInitialiser_GUI juceInitialiser;
 
-    for (const char* future : {"3", "99", "1000000", "99999999999"})
+    for (const char* future : {"4", "99", "1000000", "99999999999"})
     {
         TestProcessor processor;
         const std::string attributes = std::string("stateVersion=\"") + future + "\" brandNew=\"yes\"";
@@ -389,11 +389,31 @@ TEST_CASE("applyMigrations reports a missing step and stops", "[core][state][mig
     REQUIRE(static_cast<int>(tree["stateVersion"]) == 2); // left at the last version reached
 }
 
-TEST_CASE("This build migrates from version 1 and the format is at version 2", "[core][state][migration]")
+TEST_CASE("This build migrates from versions 1 and 2 and the format is at version 3",
+          "[core][state][migration]")
 {
-    REQUIRE(fcm::core::kStateVersion == 2);
-    REQUIRE(fcm::core::stateMigrations().size() == 1);
+    REQUIRE(fcm::core::kStateVersion == 3);
+    REQUIRE(fcm::core::stateMigrations().size() == 2);
     REQUIRE(fcm::core::stateMigrations()[0].fromVersion == 1);
+    REQUIRE(fcm::core::stateMigrations()[1].fromVersion == 2);
+}
+
+TEST_CASE("Migration 2 to 3 changes nothing but the version", "[core][state][migration]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+    juce::ValueTree tree("FrenchcoreMachineState");
+    tree.setProperty("stateVersion", 2, nullptr);
+    juce::ValueTree param("PARAM");
+    param.setProperty("id", "osc1.level", nullptr);
+    param.setProperty("value", 0.5, nullptr);
+    tree.appendChild(param, nullptr);
+    const auto before = tree.createCopy();
+
+    REQUIRE(fcm::core::applyMigrations(tree, 2, 3, fcm::core::stateMigrations()));
+    REQUIRE(static_cast<int>(tree["stateVersion"]) == 3);
+    REQUIRE(tree.getNumChildren() == before.getNumChildren());
+    // No curve node is invented: a missing node means every effect's default curve.
+    REQUIRE_FALSE(tree.getChildWithName("EffectCurves").isValid());
 }
 
 TEST_CASE("Migration 1 to 2 turns the 0.1 effect order into the Main rack", "[core][state][migration]")
