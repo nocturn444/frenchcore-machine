@@ -2,6 +2,8 @@
 add_library(fcm_ui INTERFACE)
 target_sources(fcm_ui INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/AuditionPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/CurveEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/CurveThumbnail.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EffectDecorations.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EffectsBox.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EnvelopeEditor.cpp

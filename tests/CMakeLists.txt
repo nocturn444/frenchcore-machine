@@ -22,6 +22,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/fx/FormantTests.cpp
     dsp/fx/PhaserTests.cpp
     dsp/fx/FlangerTests.cpp
+    dsp/fx/VolumeLfoTests.cpp
     dsp/fx/ReverbTests.cpp
     dsp/EngineTests.cpp
     dsp/EnvelopeEngineTests.cpp
@@ -54,6 +55,7 @@ target_sources(fcm_core_tests PRIVATE
     core/AboutTextTests.cpp
     core/AuditionStateTests.cpp
     core/EffectCurveStateTests.cpp
+    core/EffectCurveEditTests.cpp
     core/EnvelopeStateTests.cpp
     core/EqResponseTests.cpp
     core/FxCoreTests.cpp

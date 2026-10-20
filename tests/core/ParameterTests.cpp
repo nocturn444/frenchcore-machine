@@ -181,11 +181,15 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
          {"enabled", "mix", "delay", "sync", "rate", "division", "depth", "feedback", "keytrack"})
         allowed.insert(std::string("flanger.") + control);
 
+    // Added in 0.3, stage 6: the Volume LFO (docs/specs/fx-volumelfo.md section 3).
+    for (const char* control : {"enabled", "mix", "sync", "rate", "division", "depth", "smooth"})
+        allowed.insert(std::string("volumelfo.") + control);
+
     // The copies 2 to 4 of every effect have the same IDs as copy 1 with the number after the effect ID.
     const auto firstCopies = allowed;
     for (const auto& id : firstCopies)
         for (const char* effect : {"distortion", "eq", "stereo", "filter", "transient", "compressor",
-                                   "reverb", "peak", "formant", "phaser", "flanger"})
+                                   "reverb", "peak", "formant", "phaser", "flanger", "volumelfo"})
             if (id.rfind(std::string(effect) + ".", 0) == 0)
                 for (int copy = 2; copy <= 4; ++copy)
                     allowed.insert(effect + std::to_string(copy) + id.substr(std::string(effect).size()));
