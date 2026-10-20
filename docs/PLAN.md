@@ -181,7 +181,7 @@ Requested by the product owner on 2026-10-20: five new effects, a volume LFO lik
 - [x] **2. Peak** ([fx-peak](specs/fx-peak.md)), with the XY pad.
 - [x] **3. Formant filter** ([fx-formant](specs/fx-formant.md)).
 - [x] **4. Phaser** ([fx-phaser](specs/fx-phaser.md)).
-- [ ] **5. Flanger** ([fx-flanger](specs/fx-flanger.md)).
+- [x] **5. Flanger** ([fx-flanger](specs/fx-flanger.md)).
 - [ ] **6. Volume LFO** ([fx-volumelfo](specs/fx-volumelfo.md)), with the shape picture and the shape editor.
 - [ ] **7. Wrap-up.** The 0.1.1 and 0.2.0 references still pass; CPU measured again with every rack full ([TESTING](TESTING.md)); user guide, README (EN and ES) features, CHANGELOG; version 0.3.0 in `CMakeLists.txt`; release notes draft in `.github/release-notes.md`. The owner tags and publishes.
 

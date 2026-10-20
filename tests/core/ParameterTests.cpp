@@ -176,11 +176,16 @@ TEST_CASE("Released parameter IDs are unchanged", "[core][parameters]")
          {"enabled", "mix", "stages", "freq", "sync", "rate", "division", "depth", "feedback", "keytrack"})
         allowed.insert(std::string("phaser.") + control);
 
+    // Added in 0.3, stage 5: the Flanger (docs/specs/fx-flanger.md section 3).
+    for (const char* control :
+         {"enabled", "mix", "delay", "sync", "rate", "division", "depth", "feedback", "keytrack"})
+        allowed.insert(std::string("flanger.") + control);
+
     // The copies 2 to 4 of every effect have the same IDs as copy 1 with the number after the effect ID.
     const auto firstCopies = allowed;
     for (const auto& id : firstCopies)
         for (const char* effect : {"distortion", "eq", "stereo", "filter", "transient", "compressor",
-                                   "reverb", "peak", "formant", "phaser"})
+                                   "reverb", "peak", "formant", "phaser", "flanger"})
             if (id.rfind(std::string(effect) + ".", 0) == 0)
                 for (int copy = 2; copy <= 4; ++copy)
                     allowed.insert(effect + std::to_string(copy) + id.substr(std::string(effect).size()));

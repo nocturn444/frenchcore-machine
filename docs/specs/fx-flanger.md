@@ -1,6 +1,6 @@
 # Spec: Flanger effect
 
-- Status: Approved (product owner's answers of 2026-10-20, questions G.1 A, G.2 A, 3.1 A and 3.2 A); not implemented yet (version 0.3, stage 5). Ranges, defaults and voicing are first choices by the agent, for the owner's ears.
+- Status: Approved (product owner's answers of 2026-10-20, questions G.1 A, G.2 A, 3.1 A and 3.2 A); implemented in version 0.3, stage 5. Ranges, defaults and voicing are first choices by the agent, for the owner's ears.
 - Owner: nocturn4 (product), implemented by agent session
 - Related: [ADDING_AN_EFFECT](../ADDING_AN_EFFECT.md), [ADR 0012](../decisions/0012-effect-note-triggers-curves-and-decorations.md), [fx-phaser](fx-phaser.md)
 
@@ -59,4 +59,7 @@ Effect ID `flanger` (copies `flanger2` to `flanger4`). `defaultMix` = 1.
 
 ## 7. Open questions
 
-None.
+None. Decided while implementing (technical):
+- The level scaling is `min(1, 2 / peak)` with `peak = (1 + 1 / (1 - |feedback|)) / 2`, the same as the Phaser's, because `1 - 0.5 * |fb|` left the peaks near +15 dB at 95 % (against the +6 dB test above). Up to |Feedback| 67 % nothing is scaled; it uses the positive-feedback bound for both signs, which is the larger.
+- The shortest delay is 3 samples (0.07 ms at 44.1 kHz), not 0.05 ms, because the cubic interpolator reads two samples ahead of the one it interpolates from.
+- The sweep test (section 5) moves the Delay knob slowly over three seconds (a few per cent of the delay per second). A jump from 10 ms to 0.1 ms in 20 ms is a fast pitch glide of the copy, which is what a flanger does, and may exceed the signal's step.
