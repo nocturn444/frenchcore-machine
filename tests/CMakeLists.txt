@@ -7,6 +7,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/AllocationCounter.cpp
     dsp/AuditionTests.cpp
     dsp/BreakpointEnvelopeTests.cpp
+    dsp/EffectCurveTests.cpp
     dsp/EffectRackTests.cpp
     dsp/MixerBusTests.cpp
     dsp/NoteTriggerTests.cpp
@@ -48,6 +49,7 @@ juce_add_console_app(fcm_core_tests PRODUCT_NAME "fcm_core_tests")
 target_sources(fcm_core_tests PRIVATE
     core/AboutTextTests.cpp
     core/AuditionStateTests.cpp
+    core/EffectCurveStateTests.cpp
     core/EnvelopeStateTests.cpp
     core/EqResponseTests.cpp
     core/FxCoreTests.cpp

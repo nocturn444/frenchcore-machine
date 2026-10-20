@@ -247,12 +247,16 @@ class CurveEffect : public fcm::dsp::Effect
     }
     void setCurve(const fcm::dsp::EffectCurve* curve) noexcept override
     {
-        current = curve != nullptr ? curve : &rampCurve();
+        last = curve != nullptr ? curve : &rampCurve();
         ++curveCalls;
+        if (curve != nullptr)
+            lastCount = curve->count;
     }
 
-    const fcm::dsp::EffectCurve* current = nullptr;
-    int curveCalls = 0;
+    // The pool owns the instances, so tests watch the last call through static state.
+    static inline const fcm::dsp::EffectCurve* last = nullptr;
+    static inline int lastCount = 0;
+    static inline int curveCalls = 0;
 };
 
 // An effect that only exists to fill a registry: N different IDs, no parameters.

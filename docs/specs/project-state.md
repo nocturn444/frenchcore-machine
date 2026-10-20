@@ -28,7 +28,7 @@ None.
 ## 4. DSP / implementation approach
 
 - `core::ProjectState` (`src/core/ProjectState.h`) gathers the pieces of the plugin's state that are not the audio engine: the parameter tree, the two `EnvelopeState`s, the `FxRackState`, the two `WavetableSelector`s and the `TockSelector`. It has two operations, which are all the processor and the presets need:
-  - `capture()` returns the whole state as one `ValueTree` (the parameters plus the nodes `AmpEnvelope`, `PitchEnvelope`, `FxRacks` (`FxChain` in version 1), `UserWavetable1/2` and `UserTockSample` that exist), with `stateVersion` always written;
+  - `capture()` returns the whole state as one `ValueTree` (the parameters plus the nodes `AmpEnvelope`, `PitchEnvelope`, `FxRacks` (`FxChain` in version 1), `EffectCurves` (from state version 3), `UserWavetable1/2` and `UserTockSample` that exist), with `stateVersion` always written;
   - `restore(tree)` loads a tree into everything, as untrusted input ([ARCHITECTURE §12](../ARCHITECTURE.md)): the parameters through `core::loadState`, then each node through its own `restoreFrom`, which falls back to a default or to "nothing" for a missing or damaged node. A rejected tree (not our state) changes nothing.
   `toXml()` and `restoreFromXml()` do the same for the XML form that the host stores.
 - `PluginProcessor::getStateInformation` and `setStateInformation` become thin: size limit, XML parse, `ProjectState`.

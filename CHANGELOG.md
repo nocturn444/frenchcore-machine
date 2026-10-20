@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Internal
+
+- Groundwork for version 0.3 (stage 1, [ADR 0012](docs/decisions/0012-effect-note-triggers-curves-and-decorations.md)); no change in the sound or the window. Effects can be told when a note starts, at the exact sample where its sound reaches them, in Bus A, Bus B and Main, behind effects with latency, at every Quality (`Effect::noteOn`); a shared tempo LFO (`dsp::TempoLfo`); drawable per-effect curves that are saved with the project and published to the audio thread (`EffectCurve`, `core::EffectCurveState`, the new `EffectCurves` node); decorations get a context and can open a larger editor over the rack. The project state is version 3; projects from 0.1 and 0.2 open and sound the same (the reference renders of 0.1.1 and now of 0.2.0 are checked by the tests). A project saved with 0.3 opens in 0.2 without the curves.
+
 ## [0.2.0] - 2026-10-19
 
 This release also carries the 0.1.1 security fixes (0.1.1 was never released on its own; its notes are the first three sections below: "Security", "Added", "Fixed") and the 0.2 features (the last section). Originally written for 0.1.1: security fixes and finishing touches after the 0.1.0 review and security audit. No change to the sound, the controls or the project format; projects and presets from 0.1.0 open as before.

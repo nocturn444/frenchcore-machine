@@ -68,7 +68,10 @@ struct EffectCurve
     {
         if (count == 0)
             return 0.0f;
-        x = x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x);
+        if (!(x > 0.0f)) // also a number that is not a number
+            x = 0.0f;
+        else if (x > 1.0f)
+            x = 1.0f;
 
         const int last = count - 1;
         segment = segment < 0 ? 0 : (segment > last ? last : segment);

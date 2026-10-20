@@ -2,7 +2,7 @@
 
 Living summary for the product owner (nocturn4). Updated by the agent in every PR that changes something listed here. It is in English like the rest of the repository; the agent explains the important parts in Spanish in the chat.
 
-Last updated: 2026-10-20 (version 0.3 planned).
+Last updated: 2026-10-20 (version 0.3, stage 1 built).
 
 ## 1. Where the project is
 
@@ -18,11 +18,11 @@ Last updated: 2026-10-20 (version 0.3 planned).
 | 7 Hardening and release | Done. Version 0.1.0 was published on 2026-10-14 with zips for Windows, macOS and Linux. It was tried in FL Studio only (works well, reasonable RAM, saving and presets fine); not tried: automation, other sample rates, the Quality setting, other DAWs. CPU measured offline (3 % of one core at 8x with all effects on) |
 | 0.1.1 security and finishing fixes (JUCE 9.0.4, safe loading of embedded audio and of the DAW state, release zips with licence and checksums, auval in CI, licence notice in the window) | Merged on 2026-10-16 (#34, merged by the agent on the owner's instruction). Not released yet: the owner tags and publishes 0.1.1 when they want |
 | Version 0.2.0 (mixer and buses, effect copies, Filter, Compressor with Multiband, Transient shaper, Reverb, noise oscillator, Tock rework, extreme EQ) | Done. All stages and the follow-ups after the owner's trial (#36 to #50) are merged; released as v0.2.0 on 2026-10-19 |
-| Version 0.3.0 (Peak, Formant, Phaser, Flanger, Volume LFO) | Planned and documented on 2026-10-20 from the owner's answers ([PLAN](PLAN.md), section "Version 0.3.0"; [ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md)). Stage 0 (documentation) in review; stages 1 to 7 not started |
+| Version 0.3.0 (Peak, Formant, Phaser, Flanger, Volume LFO) | Planned and documented on 2026-10-20 from the owner's answers ([PLAN](PLAN.md), section "Version 0.3.0"; [ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md)). Stage 0 (documentation) merged; stage 1 (groundwork: note triggers, curves, state version 3, decoration context) built and in review; stages 2 to 7 not started |
 
 ## 2. Open pull requests
 
-- Version 0.3 stage 0 (documentation only): the plan, ADR 0012 and the specs of the five effects. Docs: the agent may merge it once CI is green, but asks the owner first.
+- Version 0.3 stage 1 (branch `feat/groundwork-note-triggers-curves`): the 0.2.0 reference renders as test data, note triggers through the racks, `TempoLfo`, effect curves and state version 3, the decoration context and the larger editor over the rack. No change in sound or window. Feature: the owner reviews and merges.
 
 Everything else is merged into `main`, up to v0.2.0 and its follow-ups.
 
@@ -74,6 +74,9 @@ Decisions that were not the owner's to make (technical, or a reasonable default)
 | 2026-10-16 | Stage 6 measurement and choices: the limiter takes only about 3 dB off the Tock at +12 dB; the real reasons it is hard to hear are its low default level (-26 dB under the kick's first 10 ms at -12 dB, about -4 dB at the knob's maximum) and the amp envelope. So Amp Env off is the fix, and the Level default and range are not changed (the owner decides). Trim fades are added only when a handle is moved; Pogo with a positive value makes the part end sooner; the 0.1 to 0.2 migration turns Amp Env on. | `docs/specs/tock.md` sections 8.1 and 8.5b |
 | 2026-10-16 | Stage 7: CPU in the worst case of the 0.2 window (all 24 effects on, multiband compressors, 8x) is 19 % of one core (13.8 % at the default 2x), against 1.6 % for the 0.1 effects; the version in CMake is 0.2.0 (it also carries 0.1.1's changes, which were never released). | `docs/TESTING.md` |
 | 2026-10-19 | After the owner's trial: Air Burst and Thump always play once (owner chose this option); Tock Key Track follows the settling note relative to C3 like the noise, off by default, added to Tune (Synth and Sample); in the Tock box its switch sits with Amp Env at the right of the waveform. | `docs/specs/noise-oscillator.md`, `docs/specs/tock.md` section 9 |
+| 2026-10-20 | 0.3 stage 1: the engine keeps a log of the last 16 note-ons on its own sample clock; a rack tells each running effect about a note when `note position + rack input delay + the latencies of the effects in front of it` falls in the buffer it is processing (the input delay is 0 for the buses and one pool latency for Main). Measured, not assumed: tests find the sample where the sound first shows in the effect's input and compare it with the note, in the three racks, behind 0, 1 and 2 effects with latency, at every Quality, for host blocks from 16 to 1000 samples. A burst of more than 16 note-ons within a few milliseconds keeps the last 16. | `docs/decisions/0012-effect-note-triggers-curves-and-decorations.md`, `tests/dsp/NoteTriggerTests.cpp` |
+| 2026-10-20 | 0.3 stage 1: curves are valid with `x` never decreasing (two points may share an `x`, for the vertical edges of the Gate shapes), first at 0 and last at 1; the saved `Point` numbers are read like the envelopes' and then checked; an invalid curve falls back to the default for that copy only. The 0.2 to 0.3 migration is empty. The curve node is always written (it is empty while no effect has a curve). | `src/core/EffectCurveState.cpp` |
+| 2026-10-20 | 0.3 stage 1: the larger editor over the rack closes by deferred deletion, because deleting it inside the click of a tab (a JUCE radio button) crashed the Standalone; found by trying it under a virtual display and fixed. It also closes on Escape, Done, a tab change and any change of the racks. | `src/ui/EffectsBox.cpp` |
 | 2026-10-16 | The mixer goes in a tab of the Effects box and the noise in the free LFO box, so the window keeps its size (owner: "it has to fit my screen"). | `docs/specs/ui-grid-layout.md` §8 |
 | 2026-10-20 | Version 0.3 technical choices: effects get `noteOn` delivered at the sample where the note's sound reaches them (so LFOs restart in time behind any latency), a shared tempo LFO, one drawable curve per copy saved in `EffectCurves` (state version 3, empty migration), interactive decorations and a larger editor over the rack; Peak oversampled like Distortion (the reported latency grows); first voicings of the five effects (formant table from Peterson and Barney 1952, Pump as the Volume LFO default shape). | ADR 0012, `docs/specs/fx-peak.md`, `fx-formant.md`, `fx-phaser.md`, `fx-flanger.md`, `fx-volumelfo.md` |
 
@@ -88,6 +91,8 @@ Things only the owner can do in GitHub (the agent cannot). Steps in Spanish are 
 - Decide what to do with the personal email in the first commit (pending with the security review; rewriting the history also means re-creating or withdrawing the 0.1.0 tag and release).
 - Optionally, edit the notes of the 0.1.0 release with the known limitations (the text is in `.github/release-notes.md`).
 - When the 0.1.1 pull request is merged: start the release (`docs/RELEASING.md`, version `v0.1.1`), check the draft and publish it.
+
+Version 0.3, stage 1 (groundwork): there is nothing new to hear or see; the point is that nothing changed. Open a project or preset of yours from 0.1 or 0.2 and check it sounds the same (the tests already compare every factory preset and two big test projects with the 0.1.1 and 0.2.0 sound). The new effects need this groundwork, so they come in the next stages.
 
 Things to look at and listen to (feedback round):
 

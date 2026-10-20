@@ -154,7 +154,8 @@ PluginEditor::PluginEditor(PluginProcessor& owner)
           owner.getPitchEnvelope(), owner.getState(), [&owner] { return owner.currentTempo(); },
           ui::EnvelopePanel::pitchConfig()),
       fxArea(owner.getState(), owner.getFxRacks(), dsp::defaultEffectRegistry(),
-             [&owner] { return owner.currentNoteSemitones(); }),
+             ui::DecorationEnvironment{
+                 [&owner] { return owner.currentNoteSemitones(); }, &owner.getEffectCurves(), {}}),
       noisePanel(owner.getState(), [&owner](const juce::File& file) { owner.loadUserNoiseSample(file); }),
       tockPanel(owner.getState(), owner.tock(),
                 [&owner](const juce::File& file) { owner.loadUserTockSample(file); }),
