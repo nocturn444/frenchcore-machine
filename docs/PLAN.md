@@ -180,7 +180,7 @@ Requested by the product owner on 2026-10-20: five new effects, a volume LFO lik
 - [x] **1. Groundwork ([ADR 0012](decisions/0012-effect-note-triggers-curves-and-decorations.md)), no change in sound.** First commit: reference renders of 0.2.0 as test data (every factory preset, plus a test project that uses Bus A with Apply To Tail, Bus B and every 0.2 effect), checked like the 0.1.1 ones ([mixer-and-buses](specs/mixer-and-buses.md) §5). Then note triggers through the racks (with timing tests at every Quality and rack position), `dsp::TempoLfo`, effect curves (`EffectCurve`, `core::EffectCurveState`, the `EffectCurves` node, state version 3 with an empty migration from 2, add/duplicate rules, hostile-input tests) and the decoration context with the larger editor over the rack. Tested with test-only effects; no user-visible change.
 - [x] **2. Peak** ([fx-peak](specs/fx-peak.md)), with the XY pad.
 - [x] **3. Formant filter** ([fx-formant](specs/fx-formant.md)).
-- [ ] **4. Phaser** ([fx-phaser](specs/fx-phaser.md)).
+- [x] **4. Phaser** ([fx-phaser](specs/fx-phaser.md)).
 - [ ] **5. Flanger** ([fx-flanger](specs/fx-flanger.md)).
 - [ ] **6. Volume LFO** ([fx-volumelfo](specs/fx-volumelfo.md)), with the shape picture and the shape editor.
 - [ ] **7. Wrap-up.** The 0.1.1 and 0.2.0 references still pass; CPU measured again with every rack full ([TESTING](TESTING.md)); user guide, README (EN and ES) features, CHANGELOG; version 0.3.0 in `CMakeLists.txt`; release notes draft in `.github/release-notes.md`. The owner tags and publishes.
