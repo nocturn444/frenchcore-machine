@@ -79,6 +79,14 @@ void Engine::reset() noexcept
 void Engine::setParameters(const EngineParameters& newParameters) noexcept
 {
     parameters = newParameters;
+    // A preset or project was loaded: every smoothed value, the effects' Mix included, goes to its new
+    // target at once, so the first note after the load is the loaded sound and not a blend with what
+    // was switched off a moment ago.
+    if (snapRequested.exchange(false))
+    {
+        snapParameters = true;
+        pool.snapMixAtNextUpdate();
+    }
     voice.setParameters(parameters, snapParameters);
     mixer.setParameters(parameters.mixer, snapParameters);
     for (size_t i = 0; i < buses.size(); ++i)

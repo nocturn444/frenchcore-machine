@@ -32,7 +32,8 @@ PluginProcessor::PluginProcessor()
                                         {&wavetable1, &wavetable2},
                                         tockSelector,
                                         noiseSelector,
-                                        effectCurves}),
+                                        effectCurves,
+                                        [this] { engine.requestSnap(); }}),
       presetManager(project, core::PresetLibrary(core::PresetLibrary::defaultFolder()), kStateType)
 {
     state.state.setProperty(kStateVersionProperty, core::kStateVersion, nullptr);
