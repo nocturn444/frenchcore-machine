@@ -91,6 +91,10 @@ class Engine
     // The contents of a rack (any thread may store a packed value, EffectRack::pack) and the
     // latency the effects add at the current Quality, for the host (docs/specs/fx-chain.md,
     // docs/decisions/0010).
+    // Any thread: the next block's parameters take effect at once, without the ramps that smooth a
+    // control moved by hand (a preset or project was just loaded).
+    void requestSnap() noexcept { snapRequested.store(true); }
+
     std::atomic<std::uint64_t>& rackValue(RackId rack) noexcept
     {
         return racks[static_cast<size_t>(rack)].value();
@@ -144,6 +148,7 @@ class Engine
     int lastNote = -1; // the note the settling pitch follows when Key Track is on
     juce::SmoothedValue<float> outputGain{1.0f};
     std::atomic<float> noteSemitonesNow{0.0f};
+    std::atomic<bool> snapRequested{false};
 };
 
 } // namespace fcm::dsp

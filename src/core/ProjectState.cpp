@@ -62,6 +62,8 @@ StateLoadResult ProjectState::restore(const juce::ValueTree& saved)
         parts.wavetables[i]->update();
     }
 
+    if (parts.restored)
+        parts.restored();
     return result;
 }
 

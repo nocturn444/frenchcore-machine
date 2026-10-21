@@ -20,6 +20,7 @@ target_sources(fcm_dsp_tests PRIVATE
     dsp/fx/RegisteredEffectsTests.cpp
     dsp/fx/PeakTests.cpp
     dsp/fx/FormantTests.cpp
+    dsp/LoadSnapTests.cpp
     dsp/fx/PhaserTests.cpp
     dsp/fx/FlangerTests.cpp
     dsp/fx/VolumeLfoTests.cpp

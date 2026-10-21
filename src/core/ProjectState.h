@@ -10,6 +10,7 @@
 #include "core/WavetableSelector.h"
 
 #include <array>
+#include <functional>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <memory>
 
@@ -32,6 +33,9 @@ class ProjectState
         TockSelector& tock;
         NoiseSelector& noise;
         EffectCurveState& effectCurves;
+        // Called on the message thread after a state was restored (not when it was rejected): the
+        // plugin asks the engine to take the loaded values at once.
+        std::function<void()> restored = {};
     };
 
     explicit ProjectState(const Parts& parts) : parts(parts) {}

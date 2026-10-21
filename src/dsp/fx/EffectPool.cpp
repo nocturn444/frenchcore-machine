@@ -97,7 +97,7 @@ void EffectPool::setParameters(const std::array<EffectSlotParameters, kMaxInstan
 
         const float mix = std::isfinite(wanted.mix) ? std::clamp(wanted.mix, 0.0f, 1.0f) : 1.0f;
         const float target = wanted.enabled ? mix : 0.0f;
-        if (firstBlock)
+        if (firstBlock || snapMixNext)
             slot.mix.setCurrentAndTargetValue(target);
         else
             slot.mix.setTargetValue(target);
@@ -133,6 +133,7 @@ void EffectPool::setParameters(const std::array<EffectSlotParameters, kMaxInstan
             slot.effect->setCurve(curveSources[i]->acquire());
     }
     firstBlock = false;
+    snapMixNext = false;
 }
 
 int EffectPool::latencySamples(int oversamplingFactor) const noexcept

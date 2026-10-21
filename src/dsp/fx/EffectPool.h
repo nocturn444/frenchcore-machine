@@ -28,6 +28,11 @@ class EffectPool
     void prepare(const EffectSpec& spec);
     void reset() noexcept;
 
+    // The next setParameters() puts every effect's Mix at its target at once instead of ramping to it
+    // (a new preset or project was loaded: the sound that follows must be the loaded one from its
+    // first sample, not a blend with the effects still switched off).
+    void snapMixAtNextUpdate() noexcept { snapMixNext = true; }
+
     // Once per block, before the racks process. `slots` has one entry per pool index (entries
     // beyond the registry are ignored). `inRack` has a bit per pool index: an instance that is in no
     // rack is not touched, and is reset when it joins one.
@@ -76,6 +81,7 @@ class EffectPool
     EffectSpec spec;
     int factor = 1;
     bool firstBlock = true;
+    bool snapMixNext = false;
     juce::AudioBuffer<float> wet; // scratch for the racks (they run one after the other)
 };
 

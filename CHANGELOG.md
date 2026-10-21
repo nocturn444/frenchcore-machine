@@ -20,6 +20,10 @@ Version 0.3.0 (ready for review; not released): five new effects (Peak, Formant,
 
 - **Volume LFO** (stage 6 of version 0.3, [spec](docs/specs/fx-volumelfo.md)): a volume shaper in the style of LFOTool. The level follows a **shape you draw**, one cycle long, repeated at a note value of the tempo (**Sync**, the default) or at a **Rate** in Hz, and started again at every note. Ten ready-made shapes (Pump, the default, Sidechain, Gate 1/2, 1/4 and 1/8, Saw Down, Saw Up, Triangle, Sine, Square), **Depth** and **Smooth** (`volumelfo.sync`, `rate`, `division`, `depth`, `smooth`). In the strip a picture of the shape; clicking it opens a larger editor over the rack, inside the Effects box, with the same gestures as the envelope editor, a Shape menu and a Grid menu. The drawn shape is saved with the project and the presets, and copied when you duplicate the effect. No delay.
 
+### Fixed
+
+- Loading a preset (or a project) while notes keep playing, for example with Auto-play on, could make the first hit after the load much louder than the preset should be (in a test, about twice the level): the effects the preset switches on took 10 ms to fade in, so the attack of a note that came right after passed almost untouched. Now every control, the effects' Mix included, takes the loaded value at once. Controls moved by hand still glide.
+
 ### Internal
 
 - The reference renders of 0.1.1 and 0.2.0 are now compared exactly with the effects of the version that made them, and loosely (within 15 % of the level) with the whole plugin: an effect that reports latency moves the start-up ramps of the others, so the whole plugin cannot match to 1e-6. The exact comparison still proves that the engine and every older effect are unchanged.
